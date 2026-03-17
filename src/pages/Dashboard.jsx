@@ -19,6 +19,7 @@ export default function Dashboard() {
 
   const tabs = [
     { id: 'equipo', label: 'Mi Equipo', icon: Users },
+    { id: 'jugadores', label: 'Jugadores', icon: Users }, // Changed to JUGADORES
     { id: 'ranking', label: 'Ranking', icon: Trophy },
     { id: 'fechas', label: 'Fechas', icon: CalendarDays },
   ];
@@ -47,6 +48,7 @@ export default function Dashboard() {
         {/* Tab Content */}
         <div className="animate-fade-in min-h-[500px]">
           {activeTab === 'equipo' && <MiEquipo />}
+          {activeTab === 'jugadores' && <PlayersTab />}
           {activeTab === 'ranking' && <RankingTab />}
           {activeTab === 'fechas' && (
             <div className="bg-white rounded-3xl border border-neutral/20 shadow-xl p-4 md:p-8">

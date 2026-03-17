@@ -152,3 +152,54 @@ export async function upsertEstadisticas(statsArray) {
   return true;
 }
 
+export async function getPlayersStatistics() {
+  // 1. Obtener todos los jugadores
+  const { data: players, error: pError } = await supabase.from('jugadores').select('*');
+  if (pError) {
+    console.error('Error fetching players:', pError);
+    return [];
+  }
+
+  // 2. Obtener todas las estadísticas
+  const { data: stats, error: sError } = await supabase.from('estadisticas_partido').select('*');
+  if (sError) {
+    console.error('Error fetching stats:', sError);
+  }
+
+  // 3. Obtener convocatorias para determinar la categoría más reciente
+  const { data: convocatorias, error: cError } = await supabase
+    .from('convocados_fecha')
+    .select('jugador_id, categoria, fecha_id')
+    .order('fecha_id', { ascending: false });
+    
+  if (cError) {
+    console.error('Error fetching convocatorias:', cError);
+  }
+
+  // 4. Procesar y consolidar
+  return players.map(player => {
+    const playerStats = (stats || []).filter(s => s.jugador_id === player.id);
+    
+    // Calculamos puntos acumulados
+    const totalPoints = playerStats.reduce((acc, s) => {
+      return acc + (
+        (s.tries * SCORING.TRY) +
+        (s.conversiones * SCORING.CONVERSION) +
+        (s.penales * SCORING.PENAL) +
+        (s.amarillas * SCORING.AMARILLA) +
+        (s.rojas * SCORING.ROJA) +
+        SCORING.PRESENCIA
+      );
+    }, 0);
+
+    // Buscamos la categoría más reciente en la que fue convocado
+    const mostRecentConv = (convocatorias || []).find(c => c.jugador_id === player.id);
+    
+    return {
+      ...player,
+      puntos: totalPoints,
+      categoria: mostRecentConv?.categoria || 'Sin Categoría',
+    };
+  });
+}
+
