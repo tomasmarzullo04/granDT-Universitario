@@ -226,8 +226,10 @@ export default function AdminDragDropBuilder() {
       setTimeout(() => setSuccess(false), 5000);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
-      console.error(err);
-      setError('Hubo un error al guardar los planteles. Verifica tu conexión.');
+      console.error('Error saving planteles:', err);
+      // Extraemos el mensaje de error si está disponible de Supabase
+      const msg = err.message || err.details || 'Verifica tu conexión.';
+      setError(`Error al guardar: ${msg}`);
     } finally {
       setSaving(false);
     }
