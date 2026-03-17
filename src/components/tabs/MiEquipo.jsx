@@ -149,8 +149,9 @@ export default function MiEquipo() {
     // NUEVA REGLA: El jugador solo puede ir en su posición oficial de la convocatoria
     const targetLabel = pitchPositions[index].label;
     if (player.posicion && player.posicion !== 'Jugador' && player.posicion !== targetLabel) {
-      setError(`¡Posición Incorrecta! ${player.nombre} juega de ${player.posicion}.`);
+      setError(`¡Atención! No podés poner a ${player.nombre} en esta posición porque en esta fecha jugará de ${player.posicion}.`);
       setSelectedPosition(null);
+      window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll up to see the alert
       return;
     }
 
