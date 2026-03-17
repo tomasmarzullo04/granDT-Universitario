@@ -146,6 +146,14 @@ export default function MiEquipo() {
   };
 
   const assignToSlot = (player, index) => {
+    // NUEVA REGLA: El jugador solo puede ir en su posición oficial de la convocatoria
+    const targetLabel = pitchPositions[index].label;
+    if (player.posicion && player.posicion !== 'Jugador' && player.posicion !== targetLabel) {
+      setError(`¡Posición Incorrecta! ${player.nombre} juega de ${player.posicion}.`);
+      setSelectedPosition(null);
+      return;
+    }
+
     // Rule: One player can only be in one slot
     const alreadyInSlotIdx = pitchSlots.findIndex(p => p && p.id === player.id);
     
@@ -531,6 +539,9 @@ export default function MiEquipo() {
                                }`}>
                                   {player.categoria}
                                </span>
+                               <span className="text-[8px] text-neutral font-black uppercase tracking-widest bg-neutral-light/50 px-2 py-0.5 rounded-md border border-neutral/10">
+                                  {player.posicion}
+                               </span>
                             </div>
                           </div>
                           
@@ -559,8 +570,8 @@ export default function MiEquipo() {
                  </h4>
                  <ul className="text-xs space-y-2 font-bold opacity-90">
                     <li>- Arrastrá los jugadores a su posición en la pizarra.</li>
+                    <li>- **Importante**: Cada jugador solo puede ir en la posición en la que fue convocado.</li>
                     <li>- Respetá el 5-5-5: ¡Igualdad de categorías!</li>
-                    <li>- Guardá tu equipo antes del silbatazo inicial.</li>
                  </ul>
               </div>
             </div>
