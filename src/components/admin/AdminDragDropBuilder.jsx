@@ -98,16 +98,19 @@ export default function AdminDragDropBuilder() {
 
   const handleDragOver = (e) => {
     e.preventDefault();
-    e.currentTarget.classList.add('scale-110', 'border-accent');
+    e.currentTarget.classList.add('scale-125', 'border-yellow-400', 'border-solid', 'bg-yellow-400/20', 'z-50');
+    e.currentTarget.classList.remove('border-dashed', 'border-white/20');
   };
 
   const handleDragLeave = (e) => {
-    e.currentTarget.classList.remove('scale-110', 'border-accent');
+    e.currentTarget.classList.remove('scale-125', 'border-yellow-400', 'border-solid', 'bg-yellow-400/20', 'z-50');
+    e.currentTarget.classList.add('border-dashed', 'border-white/20');
   };
 
   const handleDrop = (e, targetIndex) => {
     e.preventDefault();
-    e.currentTarget.classList.remove('scale-110', 'border-accent');
+    e.currentTarget.classList.remove('scale-125', 'border-yellow-400', 'border-solid', 'bg-yellow-400/20', 'z-50');
+    e.currentTarget.classList.add('border-dashed', 'border-white/20');
     
     const playerId = e.dataTransfer.getData('playerId');
     if (!playerId) return;

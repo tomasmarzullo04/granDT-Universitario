@@ -113,13 +113,32 @@ export default function MiEquipo() {
 
   // D&D Handlers
   const handleDragStart = (e, playerId) => {
-    e.dataTransfer.setData('playerId', playerId);
+    e.dataTransfer.setData('playerId', String(playerId));
+    e.currentTarget.classList.add('opacity-40');
+  };
+
+  const handleDragEnd = (e) => {
+    e.currentTarget.classList.remove('opacity-40');
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.currentTarget.classList.add('scale-125', 'border-yellow-400', 'border-solid', 'bg-yellow-400/20', 'z-50');
+    e.currentTarget.classList.remove('border-dashed', 'border-white/20');
+  };
+
+  const handleDragLeave = (e) => {
+    e.currentTarget.classList.remove('scale-125', 'border-yellow-400', 'border-solid', 'bg-yellow-400/20', 'z-50');
+    e.currentTarget.classList.add('border-dashed', 'border-white/20');
   };
 
   const handleDrop = (e, index) => {
     e.preventDefault();
+    e.currentTarget.classList.remove('scale-125', 'border-yellow-400', 'border-solid', 'bg-yellow-400/20', 'z-50');
+    e.currentTarget.classList.add('border-dashed', 'border-white/20');
+    
     const playerId = e.dataTransfer.getData('playerId');
-    const player = convocados.find(p => p.id === playerId);
+    const player = convocados.find(p => String(p.id) === playerId);
     if (player) {
       assignToSlot(player, index);
     }
@@ -397,14 +416,15 @@ export default function MiEquipo() {
                       }`}
                       style={{ top: pos.top, left: pos.left }}
                       onClick={() => handlePositionClick(i)}
-                      onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('scale-110'); }}
-                      onDragLeave={(e) => { e.currentTarget.classList.remove('scale-110'); }}
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
                       onDrop={(e) => handleDrop(e, i)}
                     >
                       {player ? (
                         <div 
                           draggable
                           onDragStart={(e) => handleDragStart(e, player.id)}
+                          onDragEnd={handleDragEnd}
                           className="w-full h-full bg-primary border-[3px] border-white rounded-full flex flex-col items-center justify-center p-1 cursor-grab active:cursor-grabbing shadow-xl relative group animate-pop-in"
                         >
                           <div className="text-[8px] sm:text-[9px] font-black text-white text-center leading-tight uppercase line-clamp-2 px-1">
@@ -486,6 +506,7 @@ export default function MiEquipo() {
                           key={player.id}
                           draggable={!isSelected}
                           onDragStart={(e) => handleDragStart(e, player.id)}
+                          onDragEnd={handleDragEnd}
                           onClick={() => {
                             if (!isSelected && selectedPosition !== null) {
                                assignToSlot(player, selectedPosition);
