@@ -53,8 +53,7 @@ export default function MiEquipo() {
 
   const displayTeamName = useMemo(() => {
     if (!profile) return 'Cargando equipo...';
-    if (profile.team_name && profile.team_name !== 'Admin Team') return `Tu Equipo: ${profile.team_name}`;
-    return `Equipo de ${profile.full_name || 'Nuevo Socio'}`;
+    return profile.team_name || 'Mi Dream Team';
   }, [profile]);
 
   const counts = useMemo(() => {
