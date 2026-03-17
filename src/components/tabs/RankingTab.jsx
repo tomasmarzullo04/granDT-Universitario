@@ -8,12 +8,14 @@ export default function RankingTab() {
 
   useEffect(() => {
     async function fetchRanking() {
-      // Obtenemos a los perfiles
-      const { data, error } = await supabase.from('profiles').select('*');
+      // Obtenemos solo a los perfiles que son jugadores
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('role', 'player');
       
       if (!error && data) {
         // Por ahora simulamos los puntos en 0, asignándolos manualmente para el ranking. 
-        // Más adelante será una consulta calculada.
         const sortedProfiles = data.map((p) => ({
           ...p,
           puntos: 0,
