@@ -30,15 +30,18 @@ export default function MiEquipo() {
     if (!convocados || !Array.isArray(convocados)) return teams;
     
     convocados.forEach(p => {
-      if (p && teams[p.categoria]) {
-        // Find index based on the saved position label
-        let idx = pitchPositionLabels.indexOf(p.posicion);
-        if (idx === -1) {
-            // Fallback to numeric if somehow saved differently
-            idx = (parseInt(p.posicion) || 0) - 1;
-        }
-        if (idx >= 0 && idx < 15) {
-            teams[p.categoria][idx] = p;
+      if (p) {
+        // Find matching category key case-insensitively
+        const catKey = Object.keys(teams).find(k => k.toLowerCase() === p.categoria?.toLowerCase());
+        
+        if (catKey) {
+          let idx = pitchPositionLabels.indexOf(p.posicion);
+          if (idx === -1) {
+              idx = (parseInt(p.posicion) || 0) - 1;
+          }
+          if (idx >= 0 && idx < 15) {
+              teams[catKey][idx] = p;
+          }
         }
       }
     });

@@ -47,15 +47,25 @@ export async function getConvocados(fechaId) {
 
   // Mapeamos los datos para devolver un array plano de jugadores,
   // utilizando la categoría y posición de la convocatoria actual.
-  return data
-    .filter(convocado => convocado.jugadores !== null)
-    .map(convocado => ({
-      ...convocado.jugadores,
-      categoria: convocado.categoria || 'Sin Categoría',
-      posicion: convocado.posicion_actual || 'Jugador', // Lo mapeamos a 'posicion' para no romper PlayerCard
-      // Normalizamos 'Pre-intermedia' a 'pre' y 'Primera' a 'primera'
-      categoryDef: convocado.categoria === 'Pre-intermedia' ? 'pre' : (convocado.categoria ? convocado.categoria.toLowerCase() : 'primera')
-    }));
+  try {
+    return data
+      .filter(convocado => convocado.jugadores !== null)
+      .map(convocado => {
+        // Manejar caso donde jugadores venga como objeto o como array de un elemento
+        const playerInfo = Array.isArray(convocado.jugadores) ? convocado.jugadores[0] : convocado.jugadores;
+        
+        return {
+          ...playerInfo,
+          categoria: convocado.categoria || 'Sin Categoría',
+          posicion: convocado.posicion_actual || 'Jugador',
+          // Normalizamos para lógica interna
+          categoryDef: convocado.categoria === 'Pre-intermedia' ? 'pre' : (convocado.categoria ? convocado.categoria.toLowerCase() : 'primera')
+        };
+      });
+  } catch (err) {
+    console.error('Error mapping convocados data:', err);
+    return [];
+  }
 }
 
 // Guarda la selección de 15 jugadores para un usuario en una fecha
