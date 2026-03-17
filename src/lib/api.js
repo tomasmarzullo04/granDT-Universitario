@@ -33,15 +33,13 @@ export async function getConvocados(fechaId) {
       posicion_actual,
       jugadores (
         id,
-        nombre,
-        foto_url
+        nombre
       )
     `)
     .eq('fecha_id', fechaId);
 
   if (fetchErr) {
     console.error('Error fetching convocados (Supabase):', fetchErr);
-    console.error('Error Details:', fetchErr.details, fetchErr.hint, fetchErr.message);
     return [];
   }
 

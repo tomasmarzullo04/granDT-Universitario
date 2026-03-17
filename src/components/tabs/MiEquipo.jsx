@@ -69,11 +69,16 @@ export default function MiEquipo() {
         // Fetch user's current selection
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          const { data: selection } = await supabase
+          console.log('Buscando selección para usuario:', user.id, 'en fecha:', fecha.id);
+          const { data: selection, error: selErr } = await supabase
             .from('equipos_usuarios')
             .select('jugador_id')
             .eq('usuario_id', user.id)
             .eq('fecha_id', fecha.id);
+          
+          if (selErr) {
+            console.error('Error al cargar selección del usuario:', selErr);
+          }
           
           if (selection && selection.length > 0) {
             const selectedIds = selection.map(s => s.jugador_id);
