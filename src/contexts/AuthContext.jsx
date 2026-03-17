@@ -6,7 +6,7 @@ const AuthContext = createContext({});
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [session, setSession] = useState(null);
-  const [role, setRole] = useState(null);
+  const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -15,7 +15,7 @@ export const AuthProvider = ({ children }) => {
       setSession(session);
       setUser(session?.user || null);
       if (session?.user) {
-        fetchRole(session.user.id);
+        fetchProfile(session.user.id);
       } else {
         setLoading(false);
       }
@@ -27,9 +27,9 @@ export const AuthProvider = ({ children }) => {
         setSession(session);
         setUser(session?.user || null);
         if (session?.user) {
-          fetchRole(session.user.id);
+          fetchProfile(session.user.id);
         } else {
-          setRole(null);
+          setProfile(null);
           setLoading(false);
         }
       }
@@ -38,21 +38,19 @@ export const AuthProvider = ({ children }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const fetchRole = async (userId) => {
+  const fetchProfile = async (userId) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('role')
+        .select('*')
         .eq('id', userId)
         .maybeSingle();
       
-      console.log('Perfil recuperado:', data);
-
       if (!error && data) {
-        setRole(data.role);
+        setProfile(data);
       } else {
-        if (error) console.error('Error fetching role:', error);
-        setRole(null);
+        if (error) console.error('Error fetching profile:', error);
+        setProfile(null);
       }
     } catch (err) {
       console.error(err);
@@ -68,7 +66,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ session, user, role, loading, signOut }}>
+    <AuthContext.Provider value={{ session, user, profile, role: profile?.role, loading, signOut }}>
       {!loading && children}
     </AuthContext.Provider>
   );

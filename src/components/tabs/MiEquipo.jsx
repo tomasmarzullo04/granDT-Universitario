@@ -1,11 +1,13 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
 import { getActiveFecha, getConvocados } from '../../lib/api';
 import { Save, Loader2, AlertCircle, CheckCircle, Search, Trophy, Info } from 'lucide-react';
 import RugbyPitch from '../RugbyPitch';
 import TeamCounters from '../TeamCounters';
 
 export default function MiEquipo() {
+  const { profile } = useAuth();
   const [activeFecha, setActiveFecha] = useState(null);
   const [convocados, setConvocados] = useState([]);
   const [selectedPlayers, setSelectedPlayers] = useState([]);
@@ -14,7 +16,6 @@ export default function MiEquipo() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [search, setSearch] = useState('');
-  const [teamName, setTeamName] = useState('Mi Gran DT');
 
   useEffect(() => {
     async function init() {
@@ -43,24 +44,18 @@ export default function MiEquipo() {
             const selected = normalized.filter(p => selectedIds.includes(p.id));
             setSelectedPlayers(selected);
           }
-
-          // Fetch profile for team name
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('full_name, team_name')
-            .eq('id', user.id)
-            .single();
-          
-          if (profile) {
-            const displayName = profile.team_name || 'Mi Dream Team';
-            setTeamName(`Tu Equipo: ${displayName}`);
-          }
         }
       }
       setLoading(false);
     }
     init();
   }, []);
+
+  const displayTeamName = useMemo(() => {
+    if (!profile) return 'Cargando equipo...';
+    if (profile.team_name && profile.team_name !== 'Admin Team') return `Tu Equipo: ${profile.team_name}`;
+    return `Equipo de ${profile.full_name || 'Nuevo Socio'}`;
+  }, [profile]);
 
   const counts = useMemo(() => {
     const res = { primera: 0, intermedia: 0, pre: 0 };
@@ -166,7 +161,13 @@ export default function MiEquipo() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-black text-primary tracking-tight">{teamName}</h2>
+          <h2 className="text-3xl font-black text-primary tracking-tight">
+            {!profile ? (
+              <span className="opacity-20 animate-pulse">Cargando equipo...</span>
+            ) : (
+              displayTeamName
+            )}
+          </h2>
           <p className="text-sm font-bold text-neutral uppercase tracking-widest mt-1">
             Matchday vs {activeFecha.rival}
           </p>
