@@ -44,8 +44,8 @@ export default function Signup() {
         options: {
           data: {
             full_name: fullName,
-            team_name: role === 'player' ? teamName : 'Admin Team',
-            role: role,
+            team_name: teamName,
+            role: 'player',
           }
         }
       });
@@ -61,9 +61,8 @@ export default function Signup() {
         throw new Error('Este correo ya está registrado en el sistema.');
       }
 
-      // Redirect based on role
-      if (role === 'admin') navigate('/admin');
-      else navigate('/dashboard');
+      // Redirect player to dashboard
+      navigate('/dashboard');
       
     } catch (err) {
       setError(err.message || 'Ocurrió un error al intentar crear tu cuenta.');
@@ -86,7 +85,7 @@ export default function Signup() {
           </div>
           <div className="text-center">
             <h1 className="text-2xl font-black tracking-tight text-primary mb-1">Unite al Gran DT</h1>
-            <h2 className="text-xs font-bold tracking-widest uppercase text-accent">Crea tu cuenta de socio</h2>
+            <h2 className="text-xs font-bold tracking-widest uppercase text-accent">Registro de Jugadores</h2>
           </div>
         </div>
 
@@ -98,33 +97,6 @@ export default function Signup() {
         )}
 
         <form onSubmit={handleSignup} className="space-y-4">
-          <div className="grid grid-cols-2 gap-3 mb-2">
-            <button
-              type="button"
-              onClick={() => setRole('player')}
-              className={`p-4 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all ${
-                role === 'player' 
-                ? 'border-accent bg-accent/5 text-accent' 
-                : 'border-neutral/10 text-neutral hover:border-neutral/30'
-              }`}
-            >
-              <Trophy className="w-6 h-6" />
-              <span className="text-xs font-black uppercase">Jugador</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setRole('admin')}
-              className={`p-4 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all ${
-                role === 'admin' 
-                ? 'border-primary bg-primary/5 text-primary' 
-                : 'border-neutral/10 text-neutral hover:border-neutral/30'
-              }`}
-            >
-              <ShieldCheck className="w-6 h-6" />
-              <span className="text-xs font-black uppercase">Admin</span>
-            </button>
-          </div>
-
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">Nombre Completo</label>
             <input
@@ -137,31 +109,17 @@ export default function Signup() {
             />
           </div>
 
-          {role === 'player' ? (
-            <div className="animate-fade-in">
-              <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">Nombre de tu Equipo</label>
-              <input
-                type="text"
-                required
-                value={teamName}
-                onChange={(e) => setTeamName(e.target.value)}
-                className="w-full bg-neutral-light border border-neutral/30 rounded-xl px-4 py-3 text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-all font-bold"
-                placeholder="Ej: Los Gladiadores"
-              />
-            </div>
-          ) : (
-            <div className="animate-fade-in">
-              <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">Código Secreto de Admin</label>
-              <input
-                type="password"
-                required
-                value={adminCode}
-                onChange={(e) => setAdminCode(e.target.value)}
-                className="w-full bg-neutral-light border border-neutral/30 rounded-xl px-4 py-3 text-primary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all font-bold"
-                placeholder="••••••••"
-              />
-            </div>
-          )}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">Nombre de tu Equipo</label>
+            <input
+              type="text"
+              required
+              value={teamName}
+              onChange={(e) => setTeamName(e.target.value)}
+              className="w-full bg-neutral-light border border-neutral/30 rounded-xl px-4 py-3 text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-all font-bold"
+              placeholder="Ej: Los Gladiadores"
+            />
+          </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">Correo Electrónico</label>
