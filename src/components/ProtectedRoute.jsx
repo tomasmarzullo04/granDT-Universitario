@@ -21,7 +21,12 @@ export default function ProtectedRoute({ requireAdmin = false }) {
     return <Navigate to="/login" replace />;
   }
 
-  // Logged in but needs Admin clearance and doesn't have it -> Go to dashboard
+  // Admin trying to access player dashboard -> Send to /admin
+  if (!requireAdmin && role === 'admin') {
+    return <Navigate to="/admin" replace />;
+  }
+
+  // Player trying to access admin panel -> Send to /dashboard
   if (requireAdmin && role !== 'admin') {
     return <Navigate to="/dashboard" replace />;
   }
