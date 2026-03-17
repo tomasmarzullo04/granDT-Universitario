@@ -218,6 +218,7 @@ export default function AdminDragDropBuilder() {
 
       // 3. Insertar si hay algo que guardar
       if (allInserts.length > 0) {
+        console.log('Admin intentando guardar convocados:', allInserts);
         const { error: insertError } = await supabase.from('convocados_fecha').insert(allInserts);
         if (insertError) throw insertError;
       }

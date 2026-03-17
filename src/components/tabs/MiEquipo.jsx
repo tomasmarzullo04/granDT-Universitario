@@ -298,7 +298,9 @@ export default function MiEquipo() {
                          );
                        })
                      ) : (
-                       <p className="text-xs font-bold text-neutral col-span-2 py-4">No hay convocados para este plantel aún.</p>
+                       <div className="col-span-2 py-8 text-center bg-neutral-light/20 rounded-2xl border border-dashed border-neutral/20">
+                          <p className="text-xs font-black text-neutral uppercase tracking-widest">Todavía no hay convocados oficiales para esta fecha</p>
+                       </div>
                      )}
                   </div>
                </div>
