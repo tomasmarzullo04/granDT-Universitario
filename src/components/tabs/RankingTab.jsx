@@ -14,16 +14,20 @@ export default function RankingTab() {
       if (!error && data) {
         // Por ahora simulamos los puntos en 0, asignándolos manualmente para el ranking. 
         // Más adelante será una consulta calculada.
-        const profilesWithMockPoints = data.map((p, index) => ({
+        const sortedProfiles = data.map((p) => ({
           ...p,
           puntos: 0,
-          tendencia: index % 3 === 0 ? 'up' : index % 3 === 1 ? 'down' : 'same' // Mock tendencia
+          tendencia: 'same'
         }));
         
-        // Orden simplificado por puntos (todos tienen 0 por ahora pero prepara la estructura)
-        profilesWithMockPoints.sort((a, b) => b.puntos - a.puntos);
+        sortedProfiles.sort((a, b) => {
+          if (b.puntos !== a.puntos) return b.puntos - a.puntos;
+          const nameA = a.full_name || a.email;
+          const nameB = b.full_name || b.email;
+          return nameA.localeCompare(nameB);
+        });
         
-        setProfiles(profilesWithMockPoints);
+        setProfiles(sortedProfiles);
       }
       setLoading(false);
     }

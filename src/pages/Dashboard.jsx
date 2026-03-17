@@ -2,17 +2,9 @@ import { useState } from 'react';
 import PlayerLayout from '../components/PlayerLayout';
 import { Users, Trophy, CalendarDays } from 'lucide-react';
 import MiEquipo from '../components/tabs/MiEquipo';
-import PlayersTab from '../components/tabs/PlayersTab'; // This might be used for ranking or a modified version
+import PlayersTab from '../components/tabs/PlayersTab';
+import RankingTab from '../components/tabs/RankingTab';
 import ProximasFechas from '../components/ProximasFechas';
-
-// Dummy ranking for now if PlayersTab isn't ready
-const RankingTab = () => (
-  <div className="bg-white rounded-3xl border border-neutral/20 shadow-xl p-8 text-center animate-fade-in">
-    <Trophy className="w-16 h-16 text-yellow-500 mx-auto mb-4 opacity-50" />
-    <h3 className="text-2xl font-black text-primary mb-2">Próximamente</h3>
-    <p className="text-neutral">El ranking global se habilitará cuando terminen los primeros partidos.</p>
-  </div>
-);
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('equipo'); // 'equipo' | 'ranking' | 'fechas'
