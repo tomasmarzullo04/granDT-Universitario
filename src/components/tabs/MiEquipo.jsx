@@ -6,23 +6,39 @@ import { Save, Loader2, AlertCircle, CheckCircle, Search, Trophy, Info, Users } 
 import RugbyPitch from '../RugbyPitch';
 import TeamCounters from '../TeamCounters';
 
-const pitchPositionLabels = [
-  'PILAR 1', 'HOOKER', 'PILAR 3', 'SEGUNDA 4', 'SEGUNDA 5',
-  'TERCERA 6', 'TERCERA 7', 'OCTAVO', 'MEDIO SCRUM', 'APERTURA',
-  'WING IZQ.', '1ER CENTRO', '2DO CENTRO', 'WING DER.', 'FULLBACK'
+const pitchPositions = [
+  { top: '15%', left: '25%', label: 'PILAR 1' },
+  { top: '15%', left: '50%', label: 'HOOKER' },
+  { top: '15%', left: '75%', label: 'PILAR 3' },
+  { top: '24%', left: '38%', label: 'SEGUNDA 4' },
+  { top: '24%', left: '62%', label: 'SEGUNDA 5' },
+  { top: '35%', left: '25%', label: 'TERCERA 6' },
+  { top: '35%', left: '75%', label: 'TERCERA 7' },
+  { top: '38%', left: '50%', label: 'OCTAVO' },
+  { top: '48%', left: '45%', label: 'MEDIO SCRUM' },
+  { top: '56%', left: '65%', label: 'APERTURA' },
+  { top: '70%', left: '16%', label: 'WING IZQ.' },
+  { top: '65%', left: '42%', label: '1ER CENTRO' },
+  { top: '74%', left: '72%', label: '2DO CENTRO' },
+  { top: '82%', left: '86%', label: 'WING DER.' },
+  { top: '90%', left: '50%', label: 'FULLBACK' },
 ];
 
 export default function MiEquipo() {
   const { profile } = useAuth();
   const [activeFecha, setActiveFecha] = useState(null);
   const [convocados, setConvocados] = useState([]);
-  const [selectedPlayers, setSelectedPlayers] = useState([]);
+  const [pitchSlots, setPitchSlots] = useState(Array(15).fill(null));
+  const [selectedPosition, setSelectedPosition] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [search, setSearch] = useState('');
-  const [refCategory, setRefCategory] = useState('Primera'); // 'Primera', 'Intermedia', 'Pre-intermedia'
+  const [refCategory, setRefCategory] = useState('Primera');
+
+  // Helper to get selected players from slots
+  const selectedPlayers = useMemo(() => pitchSlots.filter(Boolean), [pitchSlots]);
   
   // Group official teams for reference (Mapped to pitch indices)
   const officialTeams = useMemo(() => {
@@ -31,11 +47,9 @@ export default function MiEquipo() {
     
     convocados.forEach(p => {
       if (p) {
-        // Find matching category key case-insensitively
         const catKey = Object.keys(teams).find(k => k.toLowerCase() === p.categoria?.toLowerCase());
-        
         if (catKey) {
-          let idx = pitchPositionLabels.indexOf(p.posicion);
+          let idx = pitchPositions.findIndex(pos => pos.label.toUpperCase() === p.posicion?.toUpperCase());
           if (idx === -1) {
               idx = (parseInt(p.posicion) || 0) - 1;
           }
@@ -51,40 +65,32 @@ export default function MiEquipo() {
   useEffect(() => {
     async function init() {
       const fecha = await getActiveFecha();
-      console.log('Fecha activa detectada:', fecha?.id, 'vs', fecha?.rival);
       setActiveFecha(fecha);
       if (fecha) {
-        // Pool of selectable players (only those selected by Admin)
         const players = await getConvocados(fecha.id);
-        console.log('Convocados crudos desde API:', players);
-        
-        // Normalize categories for counters and logic
         const normalized = players.map(p => ({
           ...p,
           categoryKey: p.categoria === 'Pre-intermedia' ? 'pre' : p.categoria?.toLowerCase() || ''
         }));
-        console.log('Convocados normalizados:', normalized);
         setConvocados(normalized);
 
-        // Fetch user's current selection
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          console.log('Buscando selección para usuario:', user.id, 'en fecha:', fecha.id);
-          const { data: selection, error: selErr } = await supabase
+          const { data: selection } = await supabase
             .from('equipos_usuarios')
-            .select('jugador_id')
+            .select('jugador_id, posicion_cancha')
             .eq('usuario_id', user.id)
             .eq('fecha_id', fecha.id);
           
-          if (selErr) {
-            console.error('Error al cargar selección del usuario:', selErr);
-          }
-          
           if (selection && selection.length > 0) {
-            const selectedIds = selection.map(s => s.jugador_id);
-            // Reconstruct selected players from the pool
-            const selected = normalized.filter(p => selectedIds.includes(p.id));
-            setSelectedPlayers(selected);
+            const newSlots = Array(15).fill(null);
+            selection.forEach(s => {
+              const p = normalized.find(p => p.id === s.jugador_id);
+              if (p && s.posicion_cancha >= 1 && s.posicion_cancha <= 15) {
+                newSlots[s.posicion_cancha - 1] = p;
+              }
+            });
+            setPitchSlots(newSlots);
           }
         }
       }
@@ -92,11 +98,6 @@ export default function MiEquipo() {
     }
     init();
   }, []);
-
-  const displayTeamName = useMemo(() => {
-    if (!profile) return 'Cargando equipo...';
-    return profile.team_name || 'Mi Dream Team';
-  }, [profile]);
 
   const counts = useMemo(() => {
     const res = { primera: 0, intermedia: 0, pre: 0 };
@@ -110,41 +111,75 @@ export default function MiEquipo() {
 
   const isValid = selectedPlayers.length === 15 && counts.primera === 5 && counts.intermedia === 5 && counts.pre === 5;
 
-  const togglePlayer = (player) => {
-    const isSelected = selectedPlayers.find(p => p.id === player.id);
-    if (isSelected) {
-      setSelectedPlayers(prev => prev.filter(p => p.id !== player.id));
-      setError(null);
-      return;
+  // D&D Handlers
+  const handleDragStart = (e, playerId) => {
+    e.dataTransfer.setData('playerId', playerId);
+  };
+
+  const handleDrop = (e, index) => {
+    e.preventDefault();
+    const playerId = e.dataTransfer.getData('playerId');
+    const player = convocados.find(p => p.id === playerId);
+    if (player) {
+      assignToSlot(player, index);
+    }
+    setSelectedPosition(null);
+  };
+
+  const assignToSlot = (player, index) => {
+    // Rule: One player can only be in one slot
+    const alreadyInSlotIdx = pitchSlots.findIndex(p => p && p.id === player.id);
+    
+    const newSlots = [...pitchSlots];
+    
+    // If moving from another slot, clear it
+    if (alreadyInSlotIdx !== -1) {
+      newSlots[alreadyInSlotIdx] = null;
     }
 
-    if (selectedPlayers.length >= 15) {
-      setError('Ya seleccionaste el máximo de 15 jugadores.');
-      return;
+    // Check category limit before adding if not already in the team
+    if (alreadyInSlotIdx === -1) {
+      const cat = player.categoryKey;
+      if (cat === 'primera' && counts.primera >= 5) {
+        setError('¡Límite alcanzado! Ya elegiste 5 de Primera.'); return;
+      }
+      if (cat === 'intermedia' && counts.intermedia >= 5) {
+        setError('¡Límite alcanzado! Ya elegiste 5 de Intermedia.'); return;
+      }
+      if (cat === 'pre' && counts.pre >= 5) {
+        setError('¡Límite alcanzado! Ya elegiste 5 de Pre.'); return;
+      }
     }
 
-    // STRICT VALIDATION: 5 per category
-    const cat = player.categoryKey;
-    if (cat === 'primera' && counts.primera >= 5) {
-      setError('¡Límite alcanzado! Solo podés elegir 5 jugadores de Primera.');
-      return;
+    // Swap if slot occupied
+    const occupied = newSlots[index];
+    if (occupied && alreadyInSlotIdx !== -1) {
+       newSlots[alreadyInSlotIdx] = occupied;
     }
-    if (cat === 'intermedia' && counts.intermedia >= 5) {
-      setError('¡Límite alcanzado! Solo podés elegir 5 jugadores de Intermedia.');
-      return;
-    }
-    if (cat === 'pre' && counts.pre >= 5) {
-      setError('¡Límite alcanzado! Solo podés elegir 5 jugadores de Pre-intermedia.');
-      return;
-    }
-
+    
+    newSlots[index] = player;
+    setPitchSlots(newSlots);
     setError(null);
-    setSelectedPlayers(prev => [...prev, player]);
+  };
+
+  const removeFromSlot = (e, index) => {
+    e.stopPropagation();
+    const newSlots = [...pitchSlots];
+    newSlots[index] = null;
+    setPitchSlots(newSlots);
+  };
+
+  const handlePositionClick = (index) => {
+    if (pitchSlots[index]) {
+      removeFromSlot({ stopPropagation: () => {} }, index);
+    } else {
+      setSelectedPosition(index);
+    }
   };
 
   const handleSave = async () => {
     if (!isValid) {
-      setError('Debes cumplir la regla 5-5-5 (5 de cada categoría) para sumar 15 jugadores.');
+      setError('Debes cumplir la regla 5-5-5 para guardar.');
       return;
     }
 
@@ -152,20 +187,15 @@ export default function MiEquipo() {
     setError(null);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      
-      // Clear previous selection for this date
-      await supabase
-        .from('equipos_usuarios')
-        .delete()
-        .match({ usuario_id: user.id, fecha_id: activeFecha.id });
+      await supabase.from('equipos_usuarios').delete().match({ usuario_id: user.id, fecha_id: activeFecha.id });
 
-      // Insert new selection
-      const inserts = selectedPlayers.map(p => ({
+      const inserts = pitchSlots.map((p, idx) => p ? ({
         usuario_id: user.id,
         fecha_id: activeFecha.id,
         jugador_id: p.id,
+        posicion_cancha: idx + 1,
         es_capitan: false 
-      }));
+      }) : null).filter(Boolean);
 
       const { error: insertErr } = await supabase.from('equipos_usuarios').insert(inserts);
       if (insertErr) throw insertErr;
@@ -174,7 +204,7 @@ export default function MiEquipo() {
       setTimeout(() => setSuccess(false), 4000);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
-      setError('Hubo un problema al guardar tu equipo. Intentá de nuevo.');
+      setError('Error al guardar. Intentá de nuevo.');
       console.error(err);
     } finally {
       setSaving(false);
@@ -332,17 +362,80 @@ export default function MiEquipo() {
           <TeamCounters counts={counts} />
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            {/* Pitch Selection View */}
+            {/* Pitch Selection View (Interactive) */}
             <div className="lg:col-span-7 bg-white rounded-[2rem] border border-neutral/20 shadow-2xl p-6 relative overflow-hidden flex flex-col items-center">
               <div className="absolute inset-0 bg-neutral-light/10 pointer-events-none"></div>
+              
               <div className="relative z-10 w-full mb-6 flex items-center justify-between px-2">
-                 <h4 className="font-black text-primary text-sm uppercase tracking-[0.2em]">Tu Pizarra</h4>
+                 <h4 className="font-black text-primary text-sm uppercase tracking-[0.2em]">Tu Pizarra Interactiva</h4>
                  <div className="flex items-center gap-2">
                     <span className={`w-3 h-3 rounded-full ${isValid ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'bg-neutral-light opacity-50'}`}></span>
                     <span className="text-[10px] font-black text-neutral uppercase">Estado: {isValid ? 'LISTO' : 'EN PROCESO'}</span>
                  </div>
               </div>
-              <RugbyPitch players={selectedPlayers} />
+
+              {/* INTERACTIVE PITCH */}
+              <div 
+                className="relative w-full aspect-[2/3] max-w-md mx-auto rounded-3xl border-[6px] border-neutral-light/50 overflow-hidden shadow-2xl transition-all duration-500 bg-[#1B4D3E]"
+              >
+                {/* Field Detail Lines */}
+                <div className="absolute inset-x-0 top-0 h-[10%] bg-white/5 border-b border-white/20"></div>
+                <div className="absolute inset-x-0 bottom-0 h-[10%] bg-white/5 border-t border-white/20"></div>
+                <div className="absolute inset-x-0 top-1/2 -mt-[1px] border-t-[3px] border-white/30"></div>
+                <div className="absolute inset-x-0 top-[22%] border-t-[2px] border-white/25"></div>
+                <div className="absolute inset-x-0 top-[78%] border-t-[2px] border-white/25"></div>
+
+                {pitchPositions.map((pos, i) => {
+                  const player = pitchSlots[i];
+                  const isSelected = selectedPosition === i;
+                  
+                  return (
+                    <div
+                      key={i}
+                      className={`absolute -translate-x-1/2 -translate-y-1/2 w-[55px] h-[55px] sm:w-[62px] sm:h-[62px] z-10 transition-all duration-300 ${
+                         isSelected && !player ? 'scale-125' : ''
+                      }`}
+                      style={{ top: pos.top, left: pos.left }}
+                      onClick={() => handlePositionClick(i)}
+                      onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('scale-110'); }}
+                      onDragLeave={(e) => { e.currentTarget.classList.remove('scale-110'); }}
+                      onDrop={(e) => handleDrop(e, i)}
+                    >
+                      {player ? (
+                        <div 
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, player.id)}
+                          className="w-full h-full bg-primary border-[3px] border-white rounded-full flex flex-col items-center justify-center p-1 cursor-grab active:cursor-grabbing shadow-xl relative group animate-pop-in"
+                        >
+                          <div className="text-[8px] sm:text-[9px] font-black text-white text-center leading-tight uppercase line-clamp-2 px-1">
+                             {player.nombre?.split(' ').length > 1 ? player.nombre?.split(' ').slice(1).join(' ') : player.nombre}
+                          </div>
+                          
+                          <button 
+                            onClick={(e) => removeFromSlot(e, i)}
+                            className="absolute -top-1 -right-1 w-5 h-5 bg-red-600 text-white rounded-full flex items-center justify-center text-[10px] font-black shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-20 border-2 border-white"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ) : (
+                        <div className={`w-full h-full rounded-full flex flex-col items-center justify-center p-1 backdrop-blur-[1px] transition-all border-2 border-dashed ${
+                            isSelected 
+                            ? 'bg-yellow-400/30 border-yellow-400 scale-110 shadow-[0_0_15px_rgba(250,204,21,0.5)]' 
+                            : 'bg-white/5 border-white/20 hover:bg-white/10 hover:border-white/40'
+                        }`}>
+                          <div className={`font-black text-sm sm:text-lg leading-none ${isSelected ? 'text-yellow-400' : 'text-white/40'}`}>
+                            {i + 1}
+                          </div>
+                          <div className={`text-[6px] sm:text-[7px] font-black uppercase tracking-tighter text-center leading-[1] px-1 ${isSelected ? 'text-yellow-400/80' : 'text-white/20'}`}>
+                             {pos.label}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
               
               <div className="mt-8 w-full">
                  <h4 className="font-black text-primary text-[10px] uppercase tracking-widest text-center mb-4">Jugadores Seleccionados ({selectedPlayers.length}/15)</h4>
@@ -350,7 +443,10 @@ export default function MiEquipo() {
                     {selectedPlayers.map(p => (
                       <button 
                         key={p.id}
-                        onClick={() => togglePlayer(p)}
+                        onClick={() => {
+                          const idx = pitchSlots.findIndex(slot => slot && slot.id === p.id);
+                          if (idx !== -1) removeFromSlot({ stopPropagation: () => {} }, idx);
+                        }}
                         className="bg-primary text-white text-[9px] font-black px-4 py-2 rounded-xl flex items-center gap-2 hover:bg-red-600 hover:scale-[1.05] transition-all shadow-md group border border-white/20"
                       >
                         {p.nombre.toUpperCase()} 
@@ -358,21 +454,21 @@ export default function MiEquipo() {
                       </button>
                     ))}
                     {selectedPlayers.length === 0 && (
-                       <p className="text-xs font-bold text-neutral opacity-40 py-4 uppercase tracking-widest">Hacé clic en los jugadores de la lista</p>
+                       <p className="text-xs font-bold text-neutral opacity-40 py-4 uppercase tracking-widest text-center w-full">Arrastrá jugadores a la cancha o hacé clic en un número</p>
                     )}
                  </div>
               </div>
             </div>
 
-            {/* Selection Pool */}
-            <div className="lg:col-span-5 flex flex-col gap-4 h-[600px] lg:h-auto">
+            {/* Selection Pool (Convocados) */}
+            <div className="lg:col-span-5 flex flex-col gap-4 h-[700px] lg:h-auto">
               <div className="bg-white rounded-3xl border border-neutral/20 shadow-xl overflow-hidden flex flex-col flex-1">
                 <div className="p-5 border-b border-neutral/20 bg-primary/5">
                   <div className="relative">
                     <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-primary/40" />
                     <input
                       type="text"
-                      placeholder="Buscar por nombre..."
+                      placeholder="Buscar convocado..."
                       value={search}
                       onChange={e => setSearch(e.target.value)}
                       className="w-full pl-12 pr-4 py-3 bg-white border border-neutral/30 rounded-2xl text-sm font-black text-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none shadow-sm"
@@ -381,60 +477,69 @@ export default function MiEquipo() {
                 </div>
                 
                 <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar bg-neutral-light/20">
-                  {filteredList.map(player => (
-                    <button
-                      key={player.id}
-                      onClick={() => togglePlayer(player)}
-                      className="w-full text-left p-4 bg-white rounded-2xl border-2 border-transparent hover:border-accent hover:shadow-lg transition-all flex items-center justify-between group transform hover:-translate-y-0.5"
-                    >
-                      <div className="min-w-0">
-                        <p className="font-black text-primary group-hover:text-accent transition-colors truncate">{player.nombre}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                           <span className={`text-[8px] font-black uppercase tracking-tighter px-2 py-0.5 rounded-md ${
-                              player.categoryKey === 'primera' ? 'bg-primary text-white' : 
-                              player.categoryKey === 'intermedia' ? 'bg-accent text-white' : 
-                              'bg-neutral-light text-primary'
-                           }`}>
-                              {player.categoria}
-                           </span>
-                           <span className="text-[8px] text-neutral font-bold uppercase tracking-widest">{player.posicion}</span>
+                  {convocados
+                    .filter(p => p.nombre.toLowerCase().includes(search.toLowerCase()))
+                    .map(player => {
+                      const isSelected = selectedPlayers.find(s => s.id === player.id);
+                      return (
+                        <div
+                          key={player.id}
+                          draggable={!isSelected}
+                          onDragStart={(e) => handleDragStart(e, player.id)}
+                          onClick={() => {
+                            if (!isSelected && selectedPosition !== null) {
+                               assignToSlot(player, selectedPosition);
+                               setSelectedPosition(null);
+                            }
+                          }}
+                          className={`w-full text-left p-4 rounded-2xl border-2 transition-all flex items-center justify-between group ${
+                            isSelected 
+                            ? 'bg-neutral-light/50 border-neutral/10 opacity-40 cursor-not-allowed' 
+                            : selectedPosition !== null
+                              ? 'bg-yellow-50 border-yellow-300 hover:bg-yellow-100 cursor-pointer shadow-md'
+                              : 'bg-white border-neutral/10 hover:border-accent hover:shadow-lg cursor-grab active:cursor-grabbing transform hover:-translate-y-0.5'
+                          }`}
+                        >
+                          <div className="min-w-0">
+                            <p className={`font-black uppercase text-xs ${isSelected ? 'text-neutral' : 'text-primary'}`}>{player.nombre}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                               <span className={`text-[8px] font-black uppercase tracking-tighter px-2 py-0.5 rounded-md ${
+                                  player.categoryKey === 'primera' ? 'bg-primary text-white' : 
+                                  player.categoryKey === 'intermedia' ? 'bg-accent text-white' : 
+                                  'bg-neutral-light text-primary'
+                               }`}>
+                                  {player.categoria}
+                               </span>
+                            </div>
+                          </div>
+                          
+                          {isSelected ? (
+                            <CheckCircle className="w-5 h-5 text-green-500" />
+                          ) : (
+                            <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
+                               selectedPosition !== null ? 'bg-yellow-400 text-white animate-pulse' : 'bg-neutral-light text-primary group-hover:bg-accent group-hover:text-white'
+                            }`}>
+                              <span className="text-sm font-black">+</span>
+                            </div>
+                          )}
                         </div>
-                      </div>
-                      <div className="w-10 h-10 rounded-xl bg-neutral-light flex items-center justify-center text-primary group-hover:bg-accent group-hover:text-white transition-all shadow-sm">
-                        <span className="text-xl font-black group-hover:scale-110 transition-transform">+</span>
-                      </div>
-                    </button>
-                  ))}
-                  
-                  {filteredList.length === 0 && convocados.length > 0 && (
-                    <div className="p-12 text-center opacity-40 flex flex-col items-center">
-                      <Trophy className="w-12 h-12 mb-4 text-primary" />
-                      <p className="text-sm font-black uppercase tracking-widest leading-loose">
-                        {search ? 'Sin coincidencias' : 'Todos seleccionados'}
-                      </p>
-                    </div>
-                  )}
-                  
-                  {convocados.length === 0 && !loading && (
-                    <div className="p-12 text-center text-neutral">
-                       <p className="font-black italic">El administrador está armando los planteles...</p>
-                    </div>
-                  )}
+                      );
+                    })}
                 </div>
               </div>
               
               {/* Rules Card */}
               <div className="bg-primary p-6 rounded-3xl shadow-xl text-white relative overflow-hidden group">
-                 <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                 <div className="absolute -right-4 -bottom-4 opacity-10">
                     <Trophy className="w-24 h-24" />
                  </div>
                  <h4 className="font-black text-lg mb-2 flex items-center gap-2">
-                    <Info className="w-5 h-5 text-accent" /> REGLAS PRO
+                    <Info className="w-5 h-5 text-accent" /> MODALIDAD GRAN DT
                  </h4>
                  <ul className="text-xs space-y-2 font-bold opacity-90">
-                    <li className="flex gap-2"><span>-</span> <span>Elegí 5 de Primera, 5 de Intermedia y 5 de Pre.</span></li>
-                    <li className="flex gap-2"><span>-</span> <span>Podés cambiar tu equipo hasta que cierre la fecha.</span></li>
-                    <li className="flex gap-2"><span>-</span> <span>¡El ranking se actualiza automáticamente!</span></li>
+                    <li>- Arrastrá los jugadores a su posición en la pizarra.</li>
+                    <li>- Respetá el 5-5-5: ¡Igualdad de categorías!</li>
+                    <li>- Guardá tu equipo antes del silbatazo inicial.</li>
                  </ul>
               </div>
             </div>

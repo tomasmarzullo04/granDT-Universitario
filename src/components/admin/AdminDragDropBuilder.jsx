@@ -151,7 +151,9 @@ export default function AdminDragDropBuilder() {
   };
 
   const handlePositionClick = (index) => {
-    if (!planteles[activeCategory][index]) {
+    if (planteles[activeCategory][index]) {
+      removeFromPitch({ stopPropagation: () => {} }, activeCategory, index);
+    } else {
       setSelectedPosition(selectedPosition === index ? null : index);
     }
   };
