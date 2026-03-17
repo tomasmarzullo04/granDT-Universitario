@@ -51,16 +51,19 @@ export default function MiEquipo() {
   useEffect(() => {
     async function init() {
       const fecha = await getActiveFecha();
+      console.log('Fecha activa detectada:', fecha?.id, 'vs', fecha?.rival);
       setActiveFecha(fecha);
       if (fecha) {
         // Pool of selectable players (only those selected by Admin)
         const players = await getConvocados(fecha.id);
+        console.log('Convocados crudos desde API:', players);
         
         // Normalize categories for counters and logic
         const normalized = players.map(p => ({
           ...p,
           categoryKey: p.categoria === 'Pre-intermedia' ? 'pre' : p.categoria?.toLowerCase() || ''
         }));
+        console.log('Convocados normalizados:', normalized);
         setConvocados(normalized);
 
         // Fetch user's current selection
