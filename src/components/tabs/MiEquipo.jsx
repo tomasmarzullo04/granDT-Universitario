@@ -151,7 +151,7 @@ export default function MiEquipo() {
     if (player.posicion && player.posicion !== 'Jugador' && player.posicion !== targetLabel) {
       setError(`¡Atención! No podés poner a ${player.nombre} en esta posición porque en esta fecha jugará de ${player.posicion}.`);
       setSelectedPosition(null);
-      window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll up to see the alert
+      // Removed window.scrollTo to keep user in place
       return;
     }
 
@@ -403,6 +403,15 @@ export default function MiEquipo() {
                     <span className="text-[10px] font-black text-neutral uppercase">Estado: {isValid ? 'LISTO' : 'EN PROCESO'}</span>
                  </div>
               </div>
+
+              {/* LOCALIZED WARNING MESSAGE */}
+              {error && error.includes('Atención') && (
+                <div className="relative z-20 w-full mb-6 bg-red-50 border-2 border-red-200 text-red-600 p-4 rounded-2xl flex items-center gap-3 animate-shake shadow-md font-bold text-xs">
+                  <AlertCircle className="w-5 h-5 shrink-0" />
+                  <p>{error}</p>
+                  <button onClick={() => setError(null)} className="ml-auto text-red-400 hover:text-red-600 font-black text-lg">×</button>
+                </div>
+              )}
 
               {/* INTERACTIVE PITCH */}
               <div 
