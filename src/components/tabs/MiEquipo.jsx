@@ -27,13 +27,15 @@ export default function MiEquipo() {
   // Group official teams for reference (Mapped to pitch indices)
   const officialTeams = useMemo(() => {
     const teams = { Primera: Array(15).fill(null), Intermedia: Array(15).fill(null), 'Pre-intermedia': Array(15).fill(null) };
+    if (!convocados || !Array.isArray(convocados)) return teams;
+    
     convocados.forEach(p => {
-      if (teams[p.categoria]) {
+      if (p && teams[p.categoria]) {
         // Find index based on the saved position label
         let idx = pitchPositionLabels.indexOf(p.posicion);
         if (idx === -1) {
             // Fallback to numeric if somehow saved differently
-            idx = parseInt(p.posicion) - 1;
+            idx = (parseInt(p.posicion) || 0) - 1;
         }
         if (idx >= 0 && idx < 15) {
             teams[p.categoria][idx] = p;
@@ -277,15 +279,18 @@ export default function MiEquipo() {
                <div className="space-y-3">
                   <h4 className="font-black text-primary uppercase text-sm border-b pb-2">Convocados: {refCategory}</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                     {officialTeams[refCategory].length > 0 ? (
-                       officialTeams[refCategory].map((p, idx) => (
-                         <div key={p.id} className="flex items-center gap-3 p-2 bg-white rounded-xl border border-neutral/10 shadow-sm">
-                            <span className="w-6 h-6 bg-primary text-white text-[10px] font-black rounded-md flex items-center justify-center shrink-0">
-                               {idx + 1}
-                            </span>
-                            <span className="text-xs font-bold text-primary truncate leading-none">{p.nombre}</span>
-                         </div>
-                       ))
+                     {officialTeams[refCategory]?.some(p => p !== null) ? (
+                       officialTeams[refCategory].map((p, idx) => {
+                         if (!p) return null;
+                         return (
+                           <div key={p.id || idx} className="flex items-center gap-3 p-2 bg-white rounded-xl border border-neutral/10 shadow-sm">
+                              <span className="w-6 h-6 bg-primary text-white text-[10px] font-black rounded-md flex items-center justify-center shrink-0">
+                                 {idx + 1}
+                              </span>
+                              <span className="text-xs font-bold text-primary truncate leading-none">{p.nombre || 'Jugador'}</span>
+                           </div>
+                         );
+                       })
                      ) : (
                        <p className="text-xs font-bold text-neutral col-span-2 py-4">No hay convocados para este plantel aún.</p>
                      )}

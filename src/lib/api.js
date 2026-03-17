@@ -47,13 +47,15 @@ export async function getConvocados(fechaId) {
 
   // Mapeamos los datos para devolver un array plano de jugadores,
   // utilizando la categoría y posición de la convocatoria actual.
-  return data.map(convocado => ({
-    ...convocado.jugadores,
-    categoria: convocado.categoria || 'Sin Categoría',
-    posicion: convocado.posicion_actual || 'Jugador', // Lo mapeamos a 'posicion' para no romper PlayerCard
-    // Normalizamos 'Pre-intermedia' a 'pre' y 'Primera' a 'primera'
-    categoryDef: convocado.categoria === 'Pre-intermedia' ? 'pre' : (convocado.categoria ? convocado.categoria.toLowerCase() : 'primera')
-  }));
+  return data
+    .filter(convocado => convocado.jugadores !== null)
+    .map(convocado => ({
+      ...convocado.jugadores,
+      categoria: convocado.categoria || 'Sin Categoría',
+      posicion: convocado.posicion_actual || 'Jugador', // Lo mapeamos a 'posicion' para no romper PlayerCard
+      // Normalizamos 'Pre-intermedia' a 'pre' y 'Primera' a 'primera'
+      categoryDef: convocado.categoria === 'Pre-intermedia' ? 'pre' : (convocado.categoria ? convocado.categoria.toLowerCase() : 'primera')
+    }));
 }
 
 // Guarda la selección de 15 jugadores para un usuario en una fecha
