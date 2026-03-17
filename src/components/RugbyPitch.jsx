@@ -57,7 +57,12 @@ export default function RugbyPitch({ players }) {
             </div>
             
             <div className="mt-1 bg-black/60 px-2 py-0.5 rounded text-[10px] md:text-xs text-white font-bold max-w-[80px] truncate text-center backdrop-blur-sm">
-              {player ? (player.nombre || player.name).split(' ')[0] : 'Vacío'}
+              {(() => {
+                if (!player) return 'Vacío';
+                const p = Array.isArray(player) ? player[0] : player;
+                const name = p?.nombre || p?.name || 'Jugador';
+                return name.split(' ')[0];
+              })()}
             </div>
           </div>
         );

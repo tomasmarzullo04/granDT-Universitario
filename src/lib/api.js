@@ -26,10 +26,9 @@ export async function getActiveFecha() {
 
 // Obtiene los jugadores convocados para una fecha específica
 export async function getConvocados(fechaId) {
-  const { data, error } = await supabase
+  const { data, error: fetchErr } = await supabase
     .from('convocados_fecha')
     .select(`
-      id,
       categoria,
       posicion_actual,
       jugadores (
@@ -40,8 +39,9 @@ export async function getConvocados(fechaId) {
     `)
     .eq('fecha_id', fechaId);
 
-  if (error) {
-    console.error('Error fetching convocados:', error);
+  if (fetchErr) {
+    console.error('Error fetching convocados (Supabase):', fetchErr);
+    console.error('Error Details:', fetchErr.details, fetchErr.hint, fetchErr.message);
     return [];
   }
 

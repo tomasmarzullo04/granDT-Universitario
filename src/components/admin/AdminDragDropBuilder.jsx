@@ -74,7 +74,9 @@ export default function AdminDragDropBuilder() {
                  idx = parseInt(c.posicion_actual) - 1;
              }
              if (idx >= 0 && idx < 15 && newPlanteles[c.categoria]) {
-                newPlanteles[c.categoria][idx] = c.jugadores;
+                // Safeguard: handle potential array result from join
+                const playerInfo = Array.isArray(c.jugadores) ? c.jugadores[0] : c.jugadores;
+                newPlanteles[c.categoria][idx] = playerInfo;
              }
           });
           setPlanteles(newPlanteles);
