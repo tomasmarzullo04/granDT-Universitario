@@ -3,28 +3,23 @@ import React from 'react';
 // Generates a proper absolute position for each of the 15 players on a vertical pitch
 // Coordinates are in percentages % (x, y) starting top-left
 const pitchPositions = [
-  // Front Row (1, 2, 3)
-  { top: '15%', left: '20%' },
-  { top: '15%', left: '50%' },
-  { top: '15%', left: '80%' },
-  // Second Row (4, 5)
-  { top: '25%', left: '35%' },
-  { top: '25%', left: '65%' },
-  // Back Row (6, 8, 7)
-  { top: '35%', left: '25%' },
-  { top: '38%', left: '50%' }, // Number 8 slightly deeper
-  { top: '35%', left: '75%' },
-  // Half backs (9, 10)
-  { top: '48%', left: '45%' }, // Scrum-half
-  { top: '56%', left: '60%' }, // Fly-half
-  // Centers (12, 13)
-  { top: '65%', left: '40%' },
-  { top: '65%', left: '75%' },
-  // Wings (11, 14)
-  { top: '75%', left: '15%' },
-  { top: '75%', left: '85%' },
-  // Fullback (15)
-  { top: '88%', left: '50%' },
+  // Forwards
+  { top: '15%', left: '25%' }, // 1 Pilar 1
+  { top: '15%', left: '50%' }, // 2 Hooker
+  { top: '15%', left: '75%' }, // 3 Pilar 3
+  { top: '24%', left: '38%' }, // 4 Segunda 4
+  { top: '24%', left: '62%' }, // 5 Segunda 5
+  { top: '35%', left: '25%' }, // 6 Tercera 6
+  { top: '35%', left: '75%' }, // 7 Tercera 7
+  { top: '38%', left: '50%' }, // 8 Octavo
+  // Backs
+  { top: '48%', left: '45%' }, // 9 Medio Scrum
+  { top: '56%', left: '65%' }, // 10 Apertura
+  { top: '70%', left: '16%' }, // 11 Wing Izq
+  { top: '65%', left: '42%' }, // 12 1er Centro
+  { top: '74%', left: '72%' }, // 13 2do Centro
+  { top: '82%', left: '86%' }, // 14 Wing Der
+  { top: '90%', left: '50%' }, // 15 Fullback
 ];
 
 export default function RugbyPitch({ players }) {

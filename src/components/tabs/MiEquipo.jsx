@@ -8,8 +8,8 @@ import TeamCounters from '../TeamCounters';
 
 const pitchPositionLabels = [
   'PILAR 1', 'HOOKER', 'PILAR 3', 'SEGUNDA 4', 'SEGUNDA 5',
-  'TERCERA 6', 'OCTAVO', 'TERCERA 7', 'MEDIO SCRUM', 'APERTURA',
-  '1ER CENTRO', '2DO CENTRO', 'WING IZQ.', 'WING DER.', 'FULLBACK'
+  'TERCERA 6', 'TERCERA 7', 'OCTAVO', 'MEDIO SCRUM', 'APERTURA',
+  'WING IZQ.', '1ER CENTRO', '2DO CENTRO', 'WING DER.', 'FULLBACK'
 ];
 
 export default function MiEquipo() {

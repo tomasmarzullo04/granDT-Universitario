@@ -4,34 +4,24 @@ import { getActiveFecha } from '../../lib/api';
 import { Save, Loader2, AlertCircle, Search, Users, CheckCircle } from 'lucide-react';
 
 const pitchPositions = [
-  // Front Row (1, 2, 3) - Pilares y Hooker (Bien separados)
-  { top: '15%', left: '25%', label: 'PILAR 1' }, 
-  { top: '15%', left: '50%', label: 'HOOKER' }, 
-  { top: '15%', left: '75%', label: 'PILAR 3' },
+  // Forwards (1-8)
+  { top: '15%', left: '25%', label: 'PILAR 1' },    // 1
+  { top: '15%', left: '50%', label: 'HOOKER' },     // 2
+  { top: '15%', left: '75%', label: 'PILAR 3' },    // 3
+  { top: '24%', left: '38%', label: 'SEGUNDA 4' },  // 4
+  { top: '24%', left: '62%', label: 'SEGUNDA 5' },  // 5
+  { top: '35%', left: '25%', label: 'TERCERA 6' },  // 6
+  { top: '35%', left: '75%', label: 'TERCERA 7' },  // 7
+  { top: '38%', left: '50%', label: 'OCTAVO' },     // 8
   
-  // Second Row (4, 5) - Segundas líneas
-  { top: '24%', left: '38%', label: 'SEGUNDA 4' }, 
-  { top: '24%', left: '62%', label: 'SEGUNDA 5' },
-  
-  // Back Row (6, 8, 7) - Tercera línea y Octavo
-  { top: '35%', left: '25%', label: 'TERCERA 6' }, 
-  { top: '36%', left: '50%', label: 'OCTAVO' }, 
-  { top: '35%', left: '75%', label: 'TERCERA 7' },
-  
-  // Half backs (9, 10) - Medios
-  { top: '48%', left: '45%', label: 'MEDIO SCRUM' }, 
-  { top: '56%', left: '65%', label: 'APERTURA' },
-  
-  // Centers (12, 13) - Centros escalonados
-  { top: '65%', left: '42%', label: '1ER CENTRO' }, 
-  { top: '74%', left: '72%', label: '2DO CENTRO' },
-  
-  // Wings (11, 14) - Wings bien abiertos
-  { top: '70%', left: '16%', label: 'WING IZQ.' }, 
-  { top: '82%', left: '86%', label: 'WING DER.' },
-  
-  // Fullback (15) - Fullback al fondo
-  { top: '90%', left: '50%', label: 'FULLBACK' },
+  // Backs (9-15)
+  { top: '48%', left: '45%', label: 'MEDIO SCRUM' }, // 9
+  { top: '56%', left: '65%', label: 'APERTURA' },    // 10
+  { top: '70%', left: '16%', label: 'WING IZQ.' },   // 11
+  { top: '65%', left: '42%', label: '1ER CENTRO' },  // 12
+  { top: '74%', left: '72%', label: '2DO CENTRO' },  // 13
+  { top: '82%', left: '86%', label: 'WING DER.' },   // 14
+  { top: '90%', left: '50%', label: 'FULLBACK' },    // 15
 ];
 
 export default function AdminDragDropBuilder() {
