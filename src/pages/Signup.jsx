@@ -5,6 +5,7 @@ import { UserPlus, Loader2, AlertCircle } from 'lucide-react';
 
 export default function Signup() {
   const [fullName, setFullName] = useState('');
+  const [teamName, setTeamName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -15,6 +16,7 @@ export default function Signup() {
 
   const validateForm = () => {
     if (!fullName.trim()) return 'El nombre de usuario es obligatorio.';
+    if (!teamName.trim()) return 'El nombre de tu equipo es obligatorio.';
     if (password.length < 6) return 'La contraseña debe tener al menos 6 caracteres.';
     if (password !== confirmPassword) return 'Las contraseñas no coinciden.';
     return null;
@@ -39,6 +41,7 @@ export default function Signup() {
         options: {
           data: {
             full_name: fullName,
+            team_name: teamName,
           }
         }
       });
@@ -104,6 +107,17 @@ export default function Signup() {
               onChange={(e) => setFullName(e.target.value)}
               className="w-full bg-neutral-light border border-neutral/30 rounded-xl px-4 py-3 text-primary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
               placeholder="Juan Pérez"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">Nombre de tu Equipo</label>
+            <input
+              type="text"
+              required
+              value={teamName}
+              onChange={(e) => setTeamName(e.target.value)}
+              className="w-full bg-neutral-light border border-neutral/30 rounded-xl px-4 py-3 text-primary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+              placeholder="Ej: Los Gladiadores"
             />
           </div>
           <div>

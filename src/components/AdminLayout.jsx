@@ -1,0 +1,56 @@
+import { Shield, LogOut, LayoutDashboard, ClipboardCheck } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { useNavigate, useLocation } from 'react-router-dom';
+
+export default function AdminLayout({ children }) {
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/login');
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
+      <header className="bg-primary text-white p-4 shadow-lg sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <div className="bg-white p-1 rounded-full shadow-sm w-10 h-10 flex items-center justify-center overflow-hidden">
+              <img src="/escudo.jpg" alt="Escudo" className="w-full h-full object-contain" />
+            </div>
+            <div>
+              <h1 className="font-bold text-lg leading-tight uppercase tracking-tighter">Admin Portal</h1>
+              <p className="text-[10px] text-white/70 font-bold tracking-[0.2em] uppercase">Club Universitario</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            <div className="hidden md:flex items-center gap-1 bg-white/10 px-3 py-1.5 rounded-full border border-white/20">
+              <Shield className="w-3.5 h-3.5 text-accent" />
+              <span className="text-xs font-bold uppercase tracking-wider">{user?.email?.split('@')[0]}</span>
+            </div>
+            <button 
+              onClick={handleSignOut}
+              className="p-2 hover:bg-white/10 rounded-full transition-colors text-white/80 hover:text-white"
+              title="Cerrar Sesión"
+            >
+              <LogOut className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main className="flex-1 w-full max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
+        {children}
+      </main>
+      
+      {/* Footer Nav for Mobile (Optional, but pro) */}
+      <nav className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-md border border-neutral/20 rounded-2xl shadow-xl px-6 py-3 flex gap-8 z-50">
+         <button className="text-primary opacity-40 hover:opacity-100 transition-opacity"><LayoutDashboard className="w-6 h-6" /></button>
+         <button className="text-primary opacity-40 hover:opacity-100 transition-opacity"><ClipboardCheck className="w-6 h-6" /></button>
+      </nav>
+    </div>
+  );
+}

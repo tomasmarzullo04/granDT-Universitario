@@ -1,84 +1,63 @@
-import { useState, useEffect } from 'react';
-import Layout from '../components/Layout';
-import MyTeamTab from '../components/tabs/MyTeamTab';
-import RankingTab from '../components/tabs/RankingTab';
-import EquiposOficiales from '../components/EquiposOficiales';
-import { Users, Trophy, Shield, Calendar, Loader2 } from 'lucide-react';
-import { getActiveFecha } from '../lib/api';
+import { useState } from 'react';
+import PlayerLayout from '../components/PlayerLayout';
+import { Users, Trophy, CalendarDays } from 'lucide-react';
+import MiEquipo from '../components/tabs/MiEquipo';
+import PlayersTab from '../components/tabs/PlayersTab'; // This might be used for ranking or a modified version
+import ProximasFechas from '../components/ProximasFechas';
+
+// Dummy ranking for now if PlayersTab isn't ready
+const RankingTab = () => (
+  <div className="bg-white rounded-3xl border border-neutral/20 shadow-xl p-8 text-center animate-fade-in">
+    <Trophy className="w-16 h-16 text-yellow-500 mx-auto mb-4 opacity-50" />
+    <h3 className="text-2xl font-black text-primary mb-2">Próximamente</h3>
+    <p className="text-neutral">El ranking global se habilitará cuando terminen los primeros partidos.</p>
+  </div>
+);
 
 export default function Dashboard() {
-  const [activeTab, setActiveTab] = useState('team');
-  const [activeFecha, setActiveFecha] = useState(null);
-  const [loadingHeader, setLoadingHeader] = useState(true);
+  const [activeTab, setActiveTab] = useState('equipo'); // 'equipo' | 'ranking' | 'fechas'
 
-  useEffect(() => {
-    async function fetchHeader() {
-      const fecha = await getActiveFecha();
-      setActiveFecha(fecha);
-      setLoadingHeader(false);
-    }
-    fetchHeader();
-  }, []);
-
-  const renderTab = () => {
-    switch (activeTab) {
-      case 'team': return <MyTeamTab activeFechaGlobal={activeFecha} />;
-      case 'ranking': return <RankingTab />;
-      case 'oficiales': return <EquiposOficiales />;
-      default: return <MyTeamTab activeFechaGlobal={activeFecha} />;
-    }
-  };
+  const tabs = [
+    { id: 'equipo', label: 'Mi Equipo', icon: Users },
+    { id: 'ranking', label: 'Ranking', icon: Trophy },
+    { id: 'fechas', label: 'Fechas', icon: CalendarDays },
+  ];
 
   return (
-    <Layout>
-      {/* Dynamic Header */}
-      <div className="bg-white border-b border-neutral/20 px-4 py-3 shadow-sm flex items-center justify-between sticky top-[60px] md:top-0 z-40">
-        <div className="flex items-center gap-2 text-primary">
-          <Calendar className="w-5 h-5 text-accent" />
-          {loadingHeader ? (
-             <div className="h-4 w-32 bg-neutral/20 rounded animate-pulse" />
-          ) : activeFecha ? (
-             <span className="font-bold text-sm sm:text-base truncate">
-               Próximo partido: <span className="text-accent">{activeFecha.rival}</span>
-             </span>
-          ) : (
-             <span className="font-bold text-sm text-neutral">Torneo en Receso</span>
+    <PlayerLayout>
+      <div className="flex flex-col gap-6">
+        {/* Navigation Tabs */}
+        <div className="flex bg-white p-1.5 rounded-2xl border border-neutral/20 shadow-sm sticky top-[80px] z-40 overflow-x-auto no-scrollbar">
+          {tabs.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-black transition-all whitespace-nowrap ${
+                activeTab === tab.id 
+                  ? 'bg-primary text-white shadow-lg scale-[1.02]' 
+                  : 'text-neutral hover:bg-neutral-light'
+              }`}
+            >
+              <tab.icon className="w-4 h-4" />
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Tab Content */}
+        <div className="animate-fade-in min-h-[500px]">
+          {activeTab === 'equipo' && <MiEquipo />}
+          {activeTab === 'ranking' && <RankingTab />}
+          {activeTab === 'fechas' && (
+            <div className="bg-white rounded-3xl border border-neutral/20 shadow-xl p-4 md:p-8">
+              <h2 className="text-2xl font-black text-primary mb-6 flex items-center gap-3">
+                <CalendarDays className="w-8 h-8 text-accent" /> Fixture Completo
+              </h2>
+              <ProximasFechas />
+            </div>
           )}
         </div>
       </div>
-
-      {/* Content Area */}
-      <div className="flex-1 w-full bg-base relative">
-        {renderTab()}
-      </div>
-
-      <nav className="fixed bottom-0 left-0 right-0 bg-primary shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] z-50">
-        <div className="max-w-md mx-auto grid grid-cols-3 items-center">
-          <button 
-            onClick={() => setActiveTab('team')}
-            className={`flex flex-col items-center justify-center p-3 sm:py-4 transition-all duration-300 relative border-t-2 ${activeTab === 'team' ? 'text-white border-accent bg-white/10' : 'text-white/60 border-transparent hover:text-white'}`}
-          >
-            <Shield className={`w-6 h-6 mb-1 transition-transform ${activeTab === 'team' ? '-translate-y-1' : ''}`} />
-            <span className="text-[10px] uppercase font-bold tracking-widest z-10">Equipo</span>
-          </button>
-          
-          <button 
-            onClick={() => setActiveTab('ranking')}
-            className={`flex flex-col items-center justify-center p-3 sm:py-4 transition-all duration-300 relative border-t-2 ${activeTab === 'ranking' ? 'text-white border-accent bg-white/10' : 'text-white/60 border-transparent hover:text-white'}`}
-          >
-            <Trophy className={`w-6 h-6 mb-1 transition-transform ${activeTab === 'ranking' ? '-translate-y-1' : ''}`} />
-            <span className="text-[10px] uppercase font-bold tracking-widest z-10">Ranking</span>
-          </button>
-          
-          <button 
-            onClick={() => setActiveTab('oficiales')}
-            className={`flex flex-col items-center justify-center p-3 sm:py-4 transition-all duration-300 relative border-t-2 ${activeTab === 'oficiales' ? 'text-white border-accent bg-white/10' : 'text-white/60 border-transparent hover:text-white'}`}
-          >
-            <Users className={`w-6 h-6 mb-1 transition-transform ${activeTab === 'oficiales' ? '-translate-y-1' : ''}`} />
-            <span className="text-[10px] uppercase font-bold tracking-widest z-10">Oficiales</span>
-          </button>
-        </div>
-      </nav>
-    </Layout>
+    </PlayerLayout>
   );
 }

@@ -1,11 +1,23 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import Admin from './pages/Admin';
+
+function RootRedirect() {
+  const { user, role, loading } = useAuth();
+  
+  if (loading) return null; // Or a simple loader
+
+  if (!user) return <Navigate to="/login" replace />;
+  
+  if (role === 'admin') return <Navigate to="/admin" replace />;
+  
+  return <Navigate to="/dashboard" replace />;
+}
 
 export default function App() {
   return (
@@ -16,8 +28,8 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           
-          {/* Default / Fallback */}
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          {/* Root Redirect */}
+          <Route path="/" element={<RootRedirect />} />
 
           {/* Protected Routes for Players */}
           <Route element={<ProtectedRoute />}>
@@ -29,7 +41,7 @@ export default function App() {
             <Route path="/admin" element={<Admin />} />
           </Route>
           
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          <Route path="*" element={<RootRedirect />} />
         </Routes>
       </AuthProvider>
     </Router>

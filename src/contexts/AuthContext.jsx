@@ -44,12 +44,15 @@ export const AuthProvider = ({ children }) => {
         .from('profiles')
         .select('role')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
       
+      console.log('Perfil recuperado:', data);
+
       if (!error && data) {
         setRole(data.role);
       } else {
-        console.error('Error fetching role:', error);
+        if (error) console.error('Error fetching role:', error);
+        setRole(null);
       }
     } catch (err) {
       console.error(err);

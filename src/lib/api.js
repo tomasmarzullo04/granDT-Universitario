@@ -1,5 +1,14 @@
 import { supabase } from './supabase';
 
+export const SCORING = {
+  TRY: 5,
+  CONVERSION: 2,
+  PENAL: 3,
+  AMARILLA: -3,
+  ROJA: -10,
+  PRESENCIA: 2 // Assuming presence still counts 2 from previous logic or general rugby fantasy rules
+};
+
 // Obtiene la fecha que esté "abierta" actualmente
 export async function getActiveFecha() {
   const { data, error } = await supabase

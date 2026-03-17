@@ -336,28 +336,28 @@ export default function AdminDragDropBuilder() {
           </div>
 
           <div 
-            className="flex-1 relative w-full h-[800px] max-w-lg mx-auto rounded-2xl border-4 border-neutral-light overflow-hidden shadow-sm"
-            style={{ backgroundColor: '#0C4F2A' }}
+            className="flex-1 relative w-full h-[800px] max-w-lg mx-auto rounded-2xl border-4 border-neutral-light overflow-hidden shadow-2xl"
+            style={{ backgroundColor: '#1B4D3E' }} /* Verde Bosque */
           >
             {/* Field Lines (Schematic) */}
-            <div className="absolute inset-x-0 top-1/2 -mt-[1px] border-t-[3px] border-white/80"></div>
-            <div className="absolute inset-x-0 top-[22%] border-t-[2px] border-white/80"></div> {/* 22m */}
-            <div className="absolute inset-x-0 top-[35%] border-t-[2px] border-dashed border-white/60"></div> {/* 10m */}
-            <div className="absolute inset-x-0 top-[65%] border-t-[2px] border-dashed border-white/60"></div> {/* 10m */}
-            <div className="absolute inset-x-0 top-[78%] border-t-[2px] border-white/80"></div> {/* 22m */}
+            <div className="absolute inset-x-0 top-1/2 -mt-[1px] border-t-[3px] border-white/40"></div>
+            <div className="absolute inset-x-0 top-[22%] border-t-[2px] border-white/40"></div> {/* 22m */}
+            <div className="absolute inset-x-0 top-[35%] border-t-[2px] border-dashed border-white/30"></div> {/* 10m */}
+            <div className="absolute inset-x-0 top-[65%] border-t-[2px] border-dashed border-white/30"></div> {/* 10m */}
+            <div className="absolute inset-x-0 top-[78%] border-t-[2px] border-white/40"></div> {/* 22m */}
 
             {/* H Posts (Postes Clásicos In-goal Superior) */}
             <div className="absolute top-[2%] left-1/2 -translate-x-1/2 w-[16%] h-[9%] pointer-events-none z-0">
-               <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-white"></div>
-               <div className="absolute right-0 top-0 bottom-0 w-[4px] bg-white"></div>
-               <div className="absolute left-0 right-0 bottom-[25%] h-[4px] bg-white"></div>
+               <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-white/20"></div>
+               <div className="absolute right-0 top-0 bottom-0 w-[4px] bg-white/20"></div>
+               <div className="absolute left-0 right-0 bottom-[25%] h-[4px] bg-white/20"></div>
             </div>
 
             {/* H Posts (Postes Clásicos In-goal Inferior) */}
             <div className="absolute bottom-[2%] left-1/2 -translate-x-1/2 w-[16%] h-[9%] pointer-events-none z-0">
-               <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-white"></div>
-               <div className="absolute right-0 top-0 bottom-0 w-[4px] bg-white"></div>
-               <div className="absolute left-0 right-0 top-[25%] h-[4px] bg-white"></div>
+               <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-white/20"></div>
+               <div className="absolute right-0 top-0 bottom-0 w-[4px] bg-white/20"></div>
+               <div className="absolute left-0 right-0 top-[25%] h-[4px] bg-white/20"></div>
             </div>
 
             {/* Drop Zones */}
@@ -367,7 +367,7 @@ export default function AdminDragDropBuilder() {
               return (
                 <div
                   key={i}
-                  className={`absolute -translate-x-1/2 -translate-y-1/2 w-[58px] h-[58px] sm:w-[66px] sm:h-[66px] z-10 transition-transform ${
+                  className={`absolute -translate-x-1/2 -translate-y-1/2 w-[52px] h-[52px] sm:w-[58px] sm:h-[58px] z-10 transition-transform ${
                      isSelected && !player ? 'ring-4 ring-yellow-400 rounded-full scale-110' : ''
                   }`}
                   style={{ top: pos.top, left: pos.left }}
@@ -381,24 +381,23 @@ export default function AdminDragDropBuilder() {
                       draggable
                       onDragStart={(e) => handleDragStart(e, player.id)}
                       onDragEnd={handleDragEnd}
-                      className="w-full h-full bg-accent border-[3px] border-dashed border-accent-light rounded-full flex flex-col items-center justify-center p-1 cursor-grab active:cursor-grabbing shadow-lg relative group"
+                      className="w-full h-full bg-accent border-[2px] border-accent-light rounded-full flex flex-col items-center justify-center p-1 cursor-grab active:cursor-grabbing shadow-lg relative group"
                     >
-                      <div className="text-[10px] sm:text-[11px] font-black text-white text-center leading-tight tracking-tight uppercase line-clamp-2 w-full break-words">
+                      <div className="text-[8px] sm:text-[9px] font-black text-white text-center leading-tight tracking-tight uppercase line-clamp-2 w-full break-words">
                          {player.nombre?.split(' ')[1] ? player.nombre?.split(' ').slice(1).join(' ') : player.nombre}
                       </div>
-                      <div className="text-[7.5px] text-white/90 font-bold uppercase mt-0.5 tracking-wider">{pos.label}</div>
                       
                       <button 
                         onClick={(e) => removeFromPitch(e, activeCategory, i)}
-                        className="absolute -top-1 -right-1 w-5 h-5 bg-red-600 text-white rounded-full flex items-center justify-center text-xs font-black shadow-md md:opacity-0 group-hover:opacity-100 transition-opacity z-20"
+                        className="absolute -top-1 -right-1 w-4 h-4 bg-red-600 text-white rounded-full flex items-center justify-center text-[10px] font-black shadow-md md:opacity-0 group-hover:opacity-100 transition-opacity z-20"
                       >
                         ×
                       </button>
                     </div>
                   ) : (
-                    <div className="w-full h-full bg-white border-[3px] border-primary rounded-full flex flex-col items-center justify-center p-1 pointer-events-none shadow-md">
-                      <div className="text-primary opacity-25 font-black text-[13px] sm:text-[15px] leading-none mb-0.5">{i + 1}</div>
-                      <div className="text-primary font-black text-[7px] sm:text-[8px] uppercase leading-[1.1] text-center tracking-tight break-words px-0.5 w-full">
+                    <div className="w-full h-full bg-white/10 border-[1px] border-white/20 rounded-full flex flex-col items-center justify-center p-1 pointer-events-none backdrop-blur-[2px]">
+                      <div className="text-white/40 font-black text-[10px] sm:text-[12px] leading-none mb-0.5">{i + 1}</div>
+                      <div className="text-white/30 font-black text-[6px] sm:text-[7px] uppercase leading-[1.1] text-center tracking-tighter break-words px-0.5 w-full">
                          {pos.label}
                       </div>
                     </div>
