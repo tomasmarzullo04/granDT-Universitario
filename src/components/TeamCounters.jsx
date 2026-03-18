@@ -1,4 +1,4 @@
-export default function TeamCounters({ counts }) {
+export default function TeamCounters({ counts, activeCategory }) {
   const categories = [
     { id: 'primera', label: 'Primera', count: counts.primera, target: 5 },
     { id: 'intermedia', label: 'Intermedia', count: counts.intermedia, target: 5 },
@@ -15,7 +15,9 @@ export default function TeamCounters({ counts }) {
               w-16 h-16 rounded-full flex flex-col items-center justify-center font-bold text-lg border-2 shadow-inner transition-all duration-500
               ${isComplete 
                 ? 'bg-primary border-primary text-white shadow-md' 
-                : 'bg-transparent border-neutral/30 text-primary'
+                : activeCategory === cat.id
+                  ? 'bg-white border-accent text-accent ring-2 ring-accent/20'
+                  : 'bg-transparent border-neutral/30 text-primary'
               }
             `}>
               <span>{cat.count}</span>

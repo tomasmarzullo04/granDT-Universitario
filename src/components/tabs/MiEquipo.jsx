@@ -36,6 +36,7 @@ export default function MiEquipo() {
   const [success, setSuccess] = useState(false);
   const [search, setSearch] = useState('');
   const [refCategory, setRefCategory] = useState('Primera');
+  const [poolCategory, setPoolCategory] = useState('primera');
 
   // Helper to get selected players from slots
   const selectedPlayers = useMemo(() => pitchSlots.filter(Boolean), [pitchSlots]);
@@ -387,7 +388,7 @@ export default function MiEquipo() {
              </div>
           </div>
 
-          <TeamCounters counts={counts} />
+          <TeamCounters counts={counts} activeCategory={poolCategory} />
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* Pitch Selection View (Interactive) */}
@@ -503,22 +504,46 @@ export default function MiEquipo() {
             {/* Selection Pool (Convocados) */}
             <div className="lg:col-span-5 flex flex-col gap-4 h-[700px] lg:h-auto">
               <div className="bg-white rounded-3xl border border-neutral/20 shadow-xl overflow-hidden flex flex-col flex-1">
-                <div className="p-5 border-b border-neutral/20 bg-primary/5">
+                <div className="p-5 border-b border-neutral/20 bg-primary/5 space-y-4">
+                  {/* Category Filter Tabs */}
+                  <div className="flex bg-neutral-light p-1 rounded-xl border border-neutral/20">
+                     {[
+                       { id: 'primera', label: 'Primera' },
+                       { id: 'intermedia', label: 'Intermedia' },
+                       { id: 'pre', label: 'Pre' }
+                     ].map(cat => (
+                       <button
+                         key={cat.id}
+                         onClick={() => setPoolCategory(cat.id)}
+                         className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest transition-all rounded-lg ${
+                           poolCategory === cat.id 
+                           ? 'bg-primary text-white shadow-md' 
+                           : 'text-neutral hover:bg-white/50'
+                         }`}
+                       >
+                         {cat.label}
+                       </button>
+                     ))}
+                  </div>
+
                   <div className="relative">
-                    <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-primary/40" />
+                    <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-primary/40" />
                     <input
                       type="text"
-                      placeholder="Buscar convocado..."
+                      placeholder={`Buscar en ${poolCategory === 'pre' ? 'Pre-inter' : poolCategory.charAt(0).toUpperCase() + poolCategory.slice(1)}...`}
                       value={search}
                       onChange={e => setSearch(e.target.value)}
-                      className="w-full pl-12 pr-4 py-3 bg-white border border-neutral/30 rounded-2xl text-sm font-black text-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none shadow-sm"
+                      className="w-full pl-10 pr-4 py-2.5 bg-white border border-neutral/30 rounded-xl text-xs font-black text-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none shadow-sm"
                     />
                   </div>
                 </div>
                 
                 <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar bg-neutral-light/20">
                   {convocados
-                    .filter(p => p.nombre.toLowerCase().includes(search.toLowerCase()))
+                    .filter(p => 
+                      p.categoryKey === poolCategory &&
+                      p.nombre.toLowerCase().includes(search.toLowerCase())
+                    )
                     .map(player => {
                       const isSelected = selectedPlayers.find(s => s.id === player.id);
                       return (
@@ -533,7 +558,7 @@ export default function MiEquipo() {
                                setSelectedPosition(null);
                             }
                           }}
-                          className={`w-full text-left p-4 rounded-2xl border-2 transition-all flex items-center justify-between group ${
+                          className={`w-full text-left p-3 rounded-xl border-2 transition-all flex items-center justify-between group ${
                             isSelected 
                             ? 'bg-neutral-light/50 border-neutral/10 opacity-40 cursor-not-allowed' 
                             : selectedPosition !== null
@@ -541,34 +566,32 @@ export default function MiEquipo() {
                               : 'bg-white border-neutral/10 hover:border-accent hover:shadow-lg cursor-grab active:cursor-grabbing transform hover:-translate-y-0.5'
                           }`}
                         >
-                          <div className="min-w-0">
-                            <p className={`font-black uppercase text-xs ${isSelected ? 'text-neutral' : 'text-primary'}`}>{player.nombre}</p>
+                          <div className="min-w-0 flex-1">
+                            <p className={`font-black uppercase text-[11px] leading-tight ${isSelected ? 'text-neutral' : 'text-primary'}`}>{player.nombre}</p>
                             <div className="flex items-center gap-2 mt-1">
-                               <span className={`text-[8px] font-black uppercase tracking-tighter px-2 py-0.5 rounded-md ${
-                                  player.categoryKey === 'primera' ? 'bg-primary text-white' : 
-                                  player.categoryKey === 'intermedia' ? 'bg-accent text-white' : 
-                                  'bg-neutral-light text-primary'
-                               }`}>
-                                  {player.categoria}
-                               </span>
-                               <span className="text-[8px] text-neutral font-black uppercase tracking-widest bg-neutral-light/50 px-2 py-0.5 rounded-md border border-neutral/10">
+                               <span className="text-[9px] text-accent font-black uppercase tracking-tight bg-accent/10 px-2 py-0.5 rounded-md border border-accent/20">
                                   {player.posicion}
                                </span>
                             </div>
                           </div>
                           
                           {isSelected ? (
-                            <CheckCircle className="w-5 h-5 text-green-500" />
+                            <CheckCircle className="w-4 h-4 text-green-500" />
                           ) : (
-                            <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
+                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${
                                selectedPosition !== null ? 'bg-yellow-400 text-white animate-pulse' : 'bg-neutral-light text-primary group-hover:bg-accent group-hover:text-white'
                             }`}>
-                              <span className="text-sm font-black">+</span>
+                              <span className="text-xs font-black">+</span>
                             </div>
                           )}
                         </div>
                       );
                     })}
+                  {convocados.filter(p => p.categoryKey === poolCategory).length === 0 && (
+                    <div className="py-8 text-center bg-white/50 rounded-2xl border border-dashed border-neutral/20">
+                      <p className="text-[10px] font-black text-neutral uppercase tracking-widest px-4">No hay jugadores convocados para esta categoría</p>
+                    </div>
+                  )}
                 </div>
               </div>
               
