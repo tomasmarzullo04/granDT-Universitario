@@ -538,7 +538,7 @@ export default function MiEquipo() {
                   </div>
                 </div>
                 
-                <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar bg-neutral-light/20">
+                <div className="flex-1 overflow-y-auto p-2 sm:p-3 grid grid-cols-2 gap-2 custom-scrollbar bg-neutral-light/20 content-start">
                   {convocados
                     .filter(p => 
                       p.categoryKey === poolCategory &&
@@ -546,6 +546,9 @@ export default function MiEquipo() {
                     )
                     .map(player => {
                       const isSelected = selectedPlayers.find(s => s.id === player.id);
+                      // Get initials for avatar
+                      const initials = player.nombre?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || '?';
+                      
                       return (
                         <div
                           key={player.id}
@@ -558,32 +561,42 @@ export default function MiEquipo() {
                                setSelectedPosition(null);
                             }
                           }}
-                          className={`w-full text-left p-3 rounded-xl border-2 transition-all flex items-center justify-between group ${
+                          className={`relative group flex items-center gap-2 p-1.5 rounded-lg border-2 transition-all cursor-pointer ${
                             isSelected 
-                            ? 'bg-neutral-light/50 border-neutral/10 opacity-40 cursor-not-allowed' 
+                            ? 'bg-neutral-light/50 border-neutral/10 opacity-60 grayscale' 
                             : selectedPosition !== null
-                              ? 'bg-yellow-50 border-yellow-300 hover:bg-yellow-100 cursor-pointer shadow-md'
-                              : 'bg-white border-neutral/10 hover:border-accent hover:shadow-lg cursor-grab active:cursor-grabbing transform hover:-translate-y-0.5'
+                              ? 'bg-yellow-50 border-yellow-300 hover:bg-yellow-100 shadow-sm'
+                              : 'bg-white border-neutral/10 hover:border-accent hover:shadow-md'
                           }`}
                         >
-                          <div className="min-w-0 flex-1">
-                            <p className={`font-black uppercase text-[11px] leading-tight ${isSelected ? 'text-neutral' : 'text-primary'}`}>{player.nombre}</p>
-                            <div className="flex items-center gap-2 mt-1">
-                               <span className="text-[9px] text-accent font-black uppercase tracking-tight bg-accent/10 px-2 py-0.5 rounded-md border border-accent/20">
-                                  {player.posicion}
-                               </span>
-                            </div>
+                          {/* Small Avatar/Initials */}
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 border ${
+                            isSelected ? 'bg-neutral/20 text-neutral' : 'bg-primary/10 text-primary border-primary/20'
+                          }`}>
+                            <span className="text-[8px] font-black">{initials}</span>
+                          </div>
+
+                          <div className="min-w-0 flex-1 flex flex-col leading-tight">
+                            <p className={`font-black uppercase text-[9px] truncate ${isSelected ? 'text-neutral' : 'text-primary'}`}>
+                              {player.nombre}
+                            </p>
+                            <span className={`text-[7px] font-bold uppercase tracking-tighter truncate ${isSelected ? 'text-neutral/70' : 'text-accent'}`}>
+                              {player.posicion || 'JUGADOR'}
+                            </span>
                           </div>
                           
-                          {isSelected ? (
-                            <CheckCircle className="w-4 h-4 text-green-500" />
-                          ) : (
-                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${
-                               selectedPosition !== null ? 'bg-yellow-400 text-white animate-pulse' : 'bg-neutral-light text-primary group-hover:bg-accent group-hover:text-white'
-                            }`}>
-                              <span className="text-xs font-black">+</span>
-                            </div>
-                          )}
+                          {/* Selection Indicator */}
+                          <div className="shrink-0 flex items-center justify-center">
+                            {isSelected ? (
+                              <CheckCircle className="w-3.5 h-3.5 text-green-500" />
+                            ) : (
+                              <div className={`w-5 h-5 rounded-md flex items-center justify-center transition-all ${
+                                 selectedPosition !== null ? 'bg-yellow-400 text-white animate-pulse' : 'bg-neutral-light text-primary group-hover:bg-accent group-hover:text-white'
+                              }`}>
+                                <span className="text-xs font-black">+</span>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       );
                     })}
