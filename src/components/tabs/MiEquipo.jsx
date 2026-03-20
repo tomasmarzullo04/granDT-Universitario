@@ -87,9 +87,6 @@ export default function MiEquipo() {
     init();
   }, []);
 
-  const budgetTotal = profile?.presupuesto_inicial || 100000000;
-  const spent = useMemo(() => selectedPlayers.reduce((acc, p) => acc + (p.precio || 5000000), 0), [selectedPlayers]);
-  const remainingBalance = budgetTotal - spent;
 
   const counts = useMemo(() => {
     const res = { primera: 0, intermedia: 0, pre: 0 };
@@ -102,7 +99,7 @@ export default function MiEquipo() {
   }, [selectedPlayers]);
 
   const isAdmin = profile?.role === 'admin';
-  const isValid = isAdmin ? (selectedPlayers.length === 15) : (selectedPlayers.length === 15 && counts.primera === 5 && counts.intermedia === 5 && counts.pre === 5 && remainingBalance >= 0);
+  const isValid = selectedPlayers.length === 15 && counts.primera === 5 && counts.intermedia === 5 && counts.pre === 5;
 
   // D&D Handlers
   const handleDragStart = (e, playerId) => {
@@ -157,13 +154,7 @@ export default function MiEquipo() {
     }
 
     // Check category limit before adding if not already in the team
-    if (alreadyInSlotIdx === -1 && !isAdmin) {
-      // VALIDACIÓN DE PRESUPUESTO
-      if (player.precio > remainingBalance) {
-        setError(`¡Presupuesto insuficiente! El precio de ${player.nombre} es $${player.precio.toLocaleString()} y tu saldo es $${remainingBalance.toLocaleString()}.`);
-        return;
-      }
-
+    if (alreadyInSlotIdx === -1) {
       const cat = player.categoryKey;
       if (cat === 'primera' && counts.primera >= 5) {
         setError('¡Límite alcanzado! Ya elegiste 5 de Primera.'); return;
@@ -206,7 +197,7 @@ export default function MiEquipo() {
 
   const handleSave = async () => {
     if (!isValid) {
-      setError(isAdmin ? 'Debes seleccionar 15 jugadores para guardar.' : 'Debes cumplir la regla 5-5-5 para guardar.');
+      setError('Debes completar el equipo con 5 de Primera, 5 de Intermedia y 5 de Pre para guardar.');
       return;
     }
 
@@ -399,7 +390,7 @@ export default function MiEquipo() {
              </div>
           </div>
 
-          {!isAdmin && <TeamCounters counts={counts} activeCategory={poolCategory} budget={{ total: budgetTotal, remaining: remainingBalance, spent }} />}
+          <TeamCounters counts={counts} activeCategory={poolCategory} />
 
 
 
@@ -608,7 +599,7 @@ export default function MiEquipo() {
                               {player.nombre}
                             </p>
                             <span className={`text-[7px] font-bold uppercase tracking-tighter truncate ${isSelected ? 'text-neutral/70' : 'text-accent'}`}>
-                              {player.posicion || 'JUGADOR'} {!isAdmin && `• $${ (player.precio || 5000000).toLocaleString() }`}
+                              {player.posicion || 'JUGADOR'}
                             </span>
                           </div>
                           
@@ -638,8 +629,9 @@ export default function MiEquipo() {
                  </h4>
                  <ul className="text-xs space-y-2 font-bold opacity-90">
                     <li>- Arrastrá los jugadores a su posición en la pizarra.</li>
-                    <li>- **Importante**: Cada jugador solo puede ir en la posición en la que fue convocado.</li>
-                    <li>- Respetá el 5-5-5: ¡Igualdad de categorías!</li>
+                    <li>- **Sin límites de presupuesto**: Elegí a quienes quieras.</li>
+                    <li>- **Regla 5-5-5**: Elegí exactamente 5 por categoría.</li>
+                    <li>- Respetá las posiciones oficiales de la convocatoria.</li>
                  </ul>
               </div>
 
@@ -700,7 +692,7 @@ export default function MiEquipo() {
                     const canAfford = player.precio <= remainingBalance;
                     // Si ya tenemos 5 de esa categoría, deshabilitar (a menos que ya esté en el equipo)
                     const catLimitReached = counts[player.categoryKey] >= 5 && !alreadySelected;
-                    const isDisabled = !isAdmin && ((alreadySelected && !pitchSlots[activeSlotIndex]?.id === player.id) || !canAfford || catLimitReached);
+                    const isDisabled = (alreadySelected && !pitchSlots[activeSlotIndex]?.id === player.id) || catLimitReached;
 
                     return (
                       <button
@@ -734,15 +726,13 @@ export default function MiEquipo() {
                             {player.nombre}
                           </p>
                           <p className="text-[9px] font-bold text-neutral opacity-50 uppercase tracking-widest mt-0.5">
-                             {!isAdmin && `$${(player.precio || 5000000).toLocaleString()} • `}{player.posicion}
+                             {player.posicion}
                           </p>
                         </div>
 
                         <div className="shrink-0 flex items-center">
                           {alreadySelected ? (
                             <CheckCircle className="w-5 h-5 text-green-500" />
-                          ) : !canAfford ? (
-                            <div className="bg-red-50 text-red-500 text-[8px] font-black px-2 py-1 rounded-md uppercase border border-red-100">Sin Saldo</div>
                           ) : catLimitReached ? (
                             <div className="bg-yellow-50 text-yellow-600 text-[8px] font-black px-2.5 py-1.5 rounded-lg uppercase border border-yellow-200 shadow-sm">Cupo lleno</div>
                           ) : (
@@ -763,11 +753,9 @@ export default function MiEquipo() {
               )}
             </div>
 
-            {!isAdmin && (
-              <div className="bg-neutral-light/50 p-4 text-center">
-                 <p className="text-[9px] font-black text-neutral uppercase tracking-[0.3em]">REGLA 5-5-5 ACTIVA: {counts.primera}/5 · {counts.intermedia}/5 · {counts.pre}/5</p>
-              </div>
-            )}
+            <div className="bg-neutral-light/50 p-4 text-center">
+                 <p className="text-[9px] font-black text-neutral uppercase tracking-[0.3em]">REGLA 5-5-5: {counts.primera}/5 · {counts.intermedia}/5 · {counts.pre}/5</p>
+            </div>
           </div>
         </div>
       )}

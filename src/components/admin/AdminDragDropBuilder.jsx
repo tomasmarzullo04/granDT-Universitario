@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { getActiveFecha, updatePlayerPrice } from '../../lib/api';
+import { getActiveFecha } from '../../lib/api';
 import { Save, Loader2, AlertCircle, Search, Users, CheckCircle } from 'lucide-react';
 
 import { PITCH_POSITIONS } from '../../constants/pitchPositions';
@@ -170,21 +170,6 @@ export default function AdminDragDropBuilder() {
     });
   };
 
-  const handlePriceChange = async (playerId, newPrice) => {
-    try {
-      const price = parseInt(newPrice);
-      if (isNaN(price)) return;
-      
-      // Update local state first for immediate feedback
-      setJugadores(prev => prev.map(p => p.id === playerId ? { ...p, precio: price } : p));
-      
-      // Update database
-      await updatePlayerPrice(playerId, price);
-    } catch (err) {
-      console.error('Error updating price:', err);
-      setError('Error al actualizar el precio del jugador.');
-    }
-  };
 
   const handleSave = async () => {
     if (!activeFecha) return;
@@ -484,17 +469,6 @@ export default function AdminDragDropBuilder() {
                     </div>
                     
                     <div className="flex flex-col items-end gap-2 ml-3 shrink-0">
-                      {/* OCULTO: Admin God-Mode (Tactical Focus)
-                      <div className="flex items-center gap-1 bg-neutral-light px-2 py-1 rounded-lg border border-neutral/20">
-                        <span className="text-[10px] font-black text-primary/40">$</span>
-                        <input
-                          type="number"
-                          defaultValue={player.precio || 5000000}
-                          onBlur={(e) => handlePriceChange(player.id, e.target.value)}
-                          className="w-20 bg-transparent text-[11px] font-black text-primary focus:outline-none"
-                        />
-                      </div>
-                      */}
                       {status && (
                         <div className="flex items-center gap-1.5 bg-primary/10 text-primary font-black text-[9px] px-3 py-1.5 rounded-full border border-primary/20 shrink-0">
                           <CheckCircle className="w-3 h-3" /> {status.toUpperCase()}
