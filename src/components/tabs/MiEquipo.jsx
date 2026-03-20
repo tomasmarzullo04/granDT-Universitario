@@ -769,10 +769,10 @@ export default function MiEquipo() {
                   })
                   .map(player => {
                     const alreadySelected = selectedPlayers.find(s => s.id === player.id);
-                    const canAfford = player.precio <= remainingBalance;
                     // Si ya tenemos 5 de esa categoría, deshabilitar (a menos que ya esté en el equipo)
                     const catLimitReached = counts[player.categoryKey] >= 5 && !alreadySelected;
-                    const isDisabled = (alreadySelected && !pitchSlots[activeSlotIndex]?.id === player.id) || catLimitReached;
+                    // Fix: Corrected precedence with !== and removed canAfford
+                    const isDisabled = (alreadySelected && pitchSlots[activeSlotIndex]?.id !== player.id) || catLimitReached;
 
                     return (
                       <button
@@ -824,10 +824,10 @@ export default function MiEquipo() {
                   })}
               </div>
 
-              {convocados.filter(p => p.posicion === PITCH_POSITIONS[activeSlotIndex].label).length === 0 && (
+              {(convocados || []).filter(p => p.posicion === PITCH_POSITIONS[activeSlotIndex].label).length === 0 && (
                 <div className="py-12 text-center bg-neutral-light/20 rounded-3xl border-2 border-dashed border-neutral/20">
                    <p className="text-xs font-black text-neutral uppercase tracking-widest leading-loose">
-                     No hay jugadores oficiales<br/>designados para este puesto aún.
+                     ⚠️ El Staff aún no cargó los jugadores<br/>oficiales para este puesto.
                    </p>
                 </div>
               )}
