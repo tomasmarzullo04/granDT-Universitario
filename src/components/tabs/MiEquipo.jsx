@@ -101,7 +101,8 @@ export default function MiEquipo() {
     return res;
   }, [selectedPlayers]);
 
-  const isValid = selectedPlayers.length === 15 && counts.primera === 5 && counts.intermedia === 5 && counts.pre === 5 && remainingBalance >= 0;
+  const isAdmin = profile?.role === 'admin';
+  const isValid = isAdmin ? (selectedPlayers.length === 15) : (selectedPlayers.length === 15 && counts.primera === 5 && counts.intermedia === 5 && counts.pre === 5 && remainingBalance >= 0);
 
   // D&D Handlers
   const handleDragStart = (e, playerId) => {
@@ -156,7 +157,7 @@ export default function MiEquipo() {
     }
 
     // Check category limit before adding if not already in the team
-    if (alreadyInSlotIdx === -1) {
+    if (alreadyInSlotIdx === -1 && !isAdmin) {
       // VALIDACIÓN DE PRESUPUESTO
       if (player.precio > remainingBalance) {
         setError(`¡Presupuesto insuficiente! El precio de ${player.nombre} es $${player.precio.toLocaleString()} y tu saldo es $${remainingBalance.toLocaleString()}.`);
@@ -205,7 +206,7 @@ export default function MiEquipo() {
 
   const handleSave = async () => {
     if (!isValid) {
-      setError('Debes cumplir la regla 5-5-5 para guardar.');
+      setError(isAdmin ? 'Debes seleccionar 15 jugadores para guardar.' : 'Debes cumplir la regla 5-5-5 para guardar.');
       return;
     }
 
@@ -398,7 +399,7 @@ export default function MiEquipo() {
              </div>
           </div>
 
-          <TeamCounters counts={counts} activeCategory={poolCategory} budget={{ total: budgetTotal, remaining: remainingBalance, spent }} />
+          {!isAdmin && <TeamCounters counts={counts} activeCategory={poolCategory} budget={{ total: budgetTotal, remaining: remainingBalance, spent }} />}
 
 
 
@@ -607,7 +608,7 @@ export default function MiEquipo() {
                               {player.nombre}
                             </p>
                             <span className={`text-[7px] font-bold uppercase tracking-tighter truncate ${isSelected ? 'text-neutral/70' : 'text-accent'}`}>
-                              {player.posicion || 'JUGADOR'} • ${ (player.precio || 5000000).toLocaleString() }
+                              {player.posicion || 'JUGADOR'} {!isAdmin && `• $${ (player.precio || 5000000).toLocaleString() }`}
                             </span>
                           </div>
                           
@@ -699,7 +700,7 @@ export default function MiEquipo() {
                     const canAfford = player.precio <= remainingBalance;
                     // Si ya tenemos 5 de esa categoría, deshabilitar (a menos que ya esté en el equipo)
                     const catLimitReached = counts[player.categoryKey] >= 5 && !alreadySelected;
-                    const isDisabled = (alreadySelected && !pitchSlots[activeSlotIndex]?.id === player.id) || !canAfford || catLimitReached;
+                    const isDisabled = !isAdmin && ((alreadySelected && !pitchSlots[activeSlotIndex]?.id === player.id) || !canAfford || catLimitReached);
 
                     return (
                       <button
@@ -733,7 +734,7 @@ export default function MiEquipo() {
                             {player.nombre}
                           </p>
                           <p className="text-[9px] font-bold text-neutral opacity-50 uppercase tracking-widest mt-0.5">
-                             ${(player.precio || 5000000).toLocaleString()} • {player.posicion}
+                             {!isAdmin && `$${(player.precio || 5000000).toLocaleString()} • `}{player.posicion}
                           </p>
                         </div>
 
@@ -762,10 +763,11 @@ export default function MiEquipo() {
               )}
             </div>
 
-            {/* Footer Summary */}
-            <div className="bg-neutral-light/50 p-4 text-center">
-               <p className="text-[9px] font-black text-neutral uppercase tracking-[0.3em]">REGLA 5-5-5 ACTIVA: {counts.primera}/5 · {counts.intermedia}/5 · {counts.pre}/5</p>
-            </div>
+            {!isAdmin && (
+              <div className="bg-neutral-light/50 p-4 text-center">
+                 <p className="text-[9px] font-black text-neutral uppercase tracking-[0.3em]">REGLA 5-5-5 ACTIVA: {counts.primera}/5 · {counts.intermedia}/5 · {counts.pre}/5</p>
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -484,6 +484,7 @@ export default function AdminDragDropBuilder() {
                     </div>
                     
                     <div className="flex flex-col items-end gap-2 ml-3 shrink-0">
+                      {/* OCULTO: Admin God-Mode (Tactical Focus)
                       <div className="flex items-center gap-1 bg-neutral-light px-2 py-1 rounded-lg border border-neutral/20">
                         <span className="text-[10px] font-black text-primary/40">$</span>
                         <input
@@ -493,6 +494,7 @@ export default function AdminDragDropBuilder() {
                           className="w-20 bg-transparent text-[11px] font-black text-primary focus:outline-none"
                         />
                       </div>
+                      */}
                       {status && (
                         <div className="flex items-center gap-1.5 bg-primary/10 text-primary font-black text-[9px] px-3 py-1.5 rounded-full border border-primary/20 shrink-0">
                           <CheckCircle className="w-3 h-3" /> {status.toUpperCase()}
