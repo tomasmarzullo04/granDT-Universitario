@@ -438,7 +438,7 @@ export default function AdminDragDropBuilder() {
                     <div className={`w-full h-full rounded-full flex flex-col items-center justify-center p-1 backdrop-blur-[1px] transition-all border-2 border-dashed ${
                         isSelected 
                         ? 'bg-yellow-400/30 border-yellow-400 scale-110 shadow-[0_0_15px_rgba(250,204,21,0.5)]' 
-                        : isDragging
+                        : (isDragging || activePlayerMenu)
                           ? 'bg-accent/20 border-accent/50 animate-pulse-subtle border-solid'
                           : 'bg-white/5 border-white/20 hover:bg-white/10 hover:border-white/40'
                     }`}>
@@ -486,9 +486,9 @@ export default function AdminDragDropBuilder() {
                   <div key={player.id} className="relative group">
                     <div
                       draggable={!isUsed}
-                      onClick={() => handlePlayerClick(player, isUsed)}
                       onDragStart={(e) => handleDragStart(e, player.id)}
                       onDragEnd={handleDragEnd}
+                      onClick={() => handlePlayerClick(player, isUsed)}
                       className={`p-4 rounded-2xl border-2 flex justify-between items-center transition-all ${
                         isUsed 
                           ? 'opacity-40 grayscale border-neutral/10 bg-neutral-light/50 cursor-not-allowed scale-[0.98]' 

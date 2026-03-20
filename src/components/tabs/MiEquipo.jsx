@@ -139,12 +139,17 @@ export default function MiEquipo() {
       assignToSlot(player, index);
     }
     setSelectedPosition(null);
+    setIsDragging(false);
   };
 
   const assignToSlot = (player, index) => {
     // NUEVA REGLA: El jugador solo puede ir en su posición oficial de la convocatoria
     const targetLabel = PITCH_POSITIONS[index].label;
-    if (player.posicion && player.posicion !== 'Jugador' && player.posicion !== targetLabel) {
+    // Comprobación de posición oficial (insensible a mayúsculas/minúsculas)
+    // Saltamos esta restricción si el usuario es Admin (God Mode)
+    if (!isAdmin && player.posicion && 
+        player.posicion.toLowerCase() !== 'jugador' && 
+        player.posicion.toLowerCase() !== targetLabel.toLowerCase()) {
       setError(`¡Atención! No podés poner a ${player.nombre} en esta posición porque en esta fecha jugará de ${player.posicion}.`);
       setSelectedPosition(null);
       setActivePlayerMenu(null);
@@ -493,7 +498,7 @@ export default function MiEquipo() {
                         <div className={`w-full h-full rounded-full flex flex-col items-center justify-center p-1 backdrop-blur-[1px] transition-all border-2 border-dashed ${
                             isSelected 
                             ? 'bg-yellow-400/30 border-yellow-400 scale-110 shadow-[0_0_15px_rgba(250,204,21,0.5)]' 
-                            : isDragging
+                            : (isDragging || activePlayerMenu)
                               ? 'bg-accent/20 border-accent/50 animate-pulse-subtle border-solid'
                               : 'bg-white/5 border-white/20 hover:bg-white/10 hover:border-white/40'
                         }`}>
@@ -587,7 +592,14 @@ export default function MiEquipo() {
                             onDragEnd={handleDragEnd}
                             onClick={() => {
                               if (!isSelected) {
-                                  setActivePlayerMenu(isMenuOpen ? null : player);
+                                  if (selectedPosition !== null) {
+                                     // Si ya hay un slot seleccionado, asignar directamente
+                                     assignToSlot(player, selectedPosition);
+                                     setSelectedPosition(null);
+                                  } else {
+                                     // Si no, abrir el menú pop-over
+                                     setActivePlayerMenu(isMenuOpen ? null : player);
+                                  }
                               }
                             }}
                             className={`relative group flex items-center gap-2 p-1.5 rounded-lg border-2 transition-all cursor-pointer ${
