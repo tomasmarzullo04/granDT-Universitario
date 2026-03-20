@@ -659,7 +659,7 @@ export default function MiEquipo() {
             <div className="bg-primary p-6 text-white relative">
               <div className="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-4 sm:hidden"></div>
               <h3 className="text-xl font-black uppercase tracking-tight text-center">
-                Elegir {pitchPositions[activeSlotIndex].label}
+                Elegir {PITCH_POSITIONS[activeSlotIndex].label}
               </h3>
               <p className="text-[10px] text-white/60 font-black uppercase tracking-[0.2em] text-center mt-1">
                 Designados por el Staff
@@ -677,7 +677,7 @@ export default function MiEquipo() {
             <div className="p-0 space-y-0 max-h-[70vh] overflow-y-auto bg-neutral-light/5">
               <div className="px-4 py-6">
                 {convocados
-                  .filter(p => p.posicion === pitchPositions[activeSlotIndex].label)
+                  .filter(p => p.posicion === PITCH_POSITIONS[activeSlotIndex].label)
                   .sort((a,b) => {
                     const order = { 'primera': 1, 'intermedia': 2, 'pre': 3 };
                     return order[a.categoryKey] - order[b.categoryKey];
@@ -741,7 +741,7 @@ export default function MiEquipo() {
                   })}
               </div>
 
-              {convocados.filter(p => p.posicion === pitchPositions[activeSlotIndex].label).length === 0 && (
+              {convocados.filter(p => p.posicion === PITCH_POSITIONS[activeSlotIndex].label).length === 0 && (
                 <div className="py-12 text-center bg-neutral-light/20 rounded-3xl border-2 border-dashed border-neutral/20">
                    <p className="text-xs font-black text-neutral uppercase tracking-widest leading-loose">
                      No hay jugadores oficiales<br/>designados para este puesto aún.
