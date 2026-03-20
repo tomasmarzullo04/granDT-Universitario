@@ -8,16 +8,16 @@ export default function TeamCounters({ counts, activeCategory, budget }) {
   const isLowBudget = budget?.remaining < 10000000;
 
   return (
-    <div className="bg-white/95 backdrop-blur-sm rounded-2xl border border-neutral/20 shadow-lg mb-6 sticky top-[76px] z-40 overflow-hidden">
+    <div className="bg-white/95 backdrop-blur-sm rounded-2xl border border-neutral/20 shadow-lg mb-6 sticky top-[60px] z-40 overflow-hidden">
       <div className="flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-neutral/10">
         {/* Categories Section */}
-        <div className="flex-1 flex justify-around items-center p-4">
+        <div className="flex-1 flex justify-around items-center p-3 md:p-4">
           {categories.map((cat) => {
             const isComplete = cat.count === cat.target;
             return (
               <div key={cat.id} className="flex flex-col items-center gap-1 group">
                 <div className={`
-                  w-12 h-12 rounded-full flex flex-col items-center justify-center font-black text-sm border-2 shadow-inner transition-all duration-500
+                  w-10 h-10 md:w-12 md:h-12 rounded-full flex flex-col items-center justify-center font-black text-xs md:text-sm border-2 shadow-inner transition-all duration-500
                   ${isComplete 
                     ? 'bg-primary border-primary text-white shadow-md' 
                     : activeCategory === cat.id
@@ -26,10 +26,10 @@ export default function TeamCounters({ counts, activeCategory, budget }) {
                   }
                 `}>
                   <span>{cat.count}</span>
-                  <span className={`text-[9px] font-normal border-t px-1 opacity-80 ${isComplete ? 'border-primary' : 'border-neutral/30'}`}>5</span>
+                  <span className={`text-[8px] md:text-[9px] font-normal border-t px-1 opacity-80 ${isComplete ? 'border-primary' : 'border-neutral/30'}`}>5</span>
                 </div>
-                <span className="text-[10px] uppercase tracking-wider font-black text-neutral">
-                  {cat.label}
+                <span className="text-[9px] md:text-[10px] uppercase tracking-wider font-black text-neutral">
+                  {cat.id === 'pre' ? 'Pre' : cat.label}
                 </span>
               </div>
             );

@@ -288,27 +288,27 @@ export default function MiEquipo() {
 
   return (
     <div className="space-y-8 animate-fade-in">
-      {/* Header & Save Button */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-white p-6 md:p-8 rounded-3xl border border-neutral/20 shadow-xl">
-        <div className="space-y-1">
-          <h2 className="text-4xl font-black text-primary tracking-tighter">
+      {/* Header & Status Indicator */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-4 md:p-8 rounded-3xl border border-neutral/20 shadow-xl overflow-hidden">
+        <div className="space-y-0.5">
+          <h2 className="text-2xl md:text-4xl font-black text-primary tracking-tighter leading-none">
             {profile?.team_name || 'Mi Dream Team'}
           </h2>
-          <div className="flex items-center gap-3">
-             <span className="bg-accent text-white text-[10px] font-black px-2 py-1 rounded-md uppercase tracking-widest">Matchday</span>
-             <p className="text-base font-bold text-neutral">vs {activeFecha.rival}</p>
+          <div className="flex items-center gap-2">
+             <span className="bg-accent text-white text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest">Matchday</span>
+             <p className="text-xs md:text-base font-bold text-neutral truncate">vs {activeFecha.rival}</p>
           </div>
         </div>
         
-        <div className="flex flex-col sm:flex-row items-center gap-4">
+        <div className="flex items-center">
            {isValid ? (
-             <div className="flex items-center gap-2 text-white font-black text-xs uppercase bg-green-500 px-4 py-2 rounded-xl shadow-lg animate-bounce-subtle">
-               <CheckCircle className="w-4 h-4" />
+             <div className="flex items-center gap-2 text-white font-black text-[10px] uppercase bg-green-500 px-3 py-1.5 rounded-xl shadow-lg border border-white/20">
+               <CheckCircle className="w-3 h-3" />
                EQUIPO LISTO ✅
              </div>
            ) : (
-             <div className="flex items-center gap-2 text-primary font-black text-xs uppercase bg-neutral-light px-4 py-2 rounded-xl border border-neutral/20">
-               <Info className="w-4 h-4 text-accent" />
+             <div className="flex items-center gap-2 text-primary font-black text-[10px] uppercase bg-neutral-light px-3 py-1.5 rounded-xl border border-neutral/20 whitespace-nowrap">
+               <Info className="w-3 h-3 text-accent" />
                Faltan {15 - selectedPlayers.length} jugadores
              </div>
            )}
@@ -350,21 +350,21 @@ export default function MiEquipo() {
          <p className="text-sm text-neutral font-bold px-2 -mt-2">Consultá quiénes juegan cada partido para elegir tu equipo.</p>
          
          <div className="bg-white rounded-3xl border border-neutral/20 shadow-xl overflow-hidden">
-            <div className="flex bg-neutral-light/50 p-1">
+            <div className="flex bg-neutral-light/50 p-1 md:p-1.5 gap-1">
                {['Primera', 'Intermedia', 'Pre-intermedia'].map(cat => (
                  <button
                    key={cat}
                    onClick={() => setRefCategory(cat)}
-                   className={`flex-1 py-3 text-xs font-black uppercase tracking-widest transition-all rounded-2xl ${
-                     refCategory === cat ? 'bg-primary text-white shadow-lg' : 'text-neutral hover:bg-white'
+                   className={`flex-1 py-1.5 md:py-3 text-[9px] md:text-xs font-black uppercase tracking-widest transition-all rounded-xl md:rounded-2xl ${
+                     refCategory === cat ? 'bg-primary text-white shadow-md' : 'text-neutral hover:bg-white'
                    }`}
                  >
-                   {cat}
+                   {cat === 'Pre-intermedia' ? 'Pre' : cat}
                  </button>
                ))}
             </div>
             
-            <div className="p-4 md:p-8 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+            <div className="p-3 md:p-8 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 items-center">
                <div className="bg-neutral-light/30 rounded-2xl p-4">
                   <RugbyPitch players={officialTeams[refCategory]} />
                </div>
@@ -533,14 +533,14 @@ export default function MiEquipo() {
                 <div className="p-5 border-b border-neutral/20 bg-primary/5 space-y-4">
                   <div className="flex bg-neutral-light p-1 rounded-xl border border-neutral/20">
                      {[
-                       { id: 'primera', label: 'Primera' },
-                       { id: 'intermedia', label: 'Intermedia' },
+                       { id: 'primera', label: '1era' },
+                       { id: 'intermedia', label: 'Inter' },
                        { id: 'pre', label: 'Pre' }
                      ].map(cat => (
                        <button
                          key={cat.id}
                          onClick={() => setPoolCategory(cat.id)}
-                         className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest transition-all rounded-lg ${
+                         className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest transition-all rounded-lg ${
                            poolCategory === cat.id 
                            ? 'bg-primary text-white shadow-md' 
                            : 'text-neutral hover:bg-white/50'
@@ -642,11 +642,14 @@ export default function MiEquipo() {
               <button
                 onClick={handleSave}
                 disabled={saving || !isValid || activeFecha?.estado === 'en_juego'}
-                className={`w-full mt-10 py-5 rounded-[1.5rem] font-black tracking-wider transition-all shadow-2xl flex items-center justify-center gap-3 border-2 mb-4 ${
-                  isValid && activeFecha?.estado !== 'en_juego'
-                  ? 'bg-accent border-accent hover:bg-accent-dark text-white scale-100 hover:scale-[1.02] active:scale-95' 
-                  : 'bg-neutral-light border-neutral/10 text-neutral/40 cursor-not-allowed'
-                }`}
+                className={`
+                  w-full py-5 rounded-[1.5rem] md:rounded-[2rem] font-black tracking-wider transition-all shadow-2xl flex items-center justify-center gap-3 border-2 
+                  ${isValid && activeFecha?.estado !== 'en_juego'
+                    ? 'bg-accent border-accent hover:bg-accent-dark text-white scale-100 hover:scale-[1.02] active:scale-95' 
+                    : 'bg-neutral-light border-neutral/10 text-neutral/40 cursor-not-allowed'
+                  }
+                  fixed bottom-20 left-4 right-4 z-[60] w-[calc(100%-2rem)] md:relative md:bottom-0 md:left-0 md:right-0 md:w-full md:mt-10 md:mb-4 md:z-auto
+                `}
               >
                 {saving ? <Loader2 className="w-6 h-6 animate-spin" /> : <Save className="w-6 h-6 text-white/50 opacity-50" />}
                 GUARDAR MI EQUIPO

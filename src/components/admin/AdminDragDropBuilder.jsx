@@ -330,7 +330,7 @@ export default function AdminDragDropBuilder() {
         )}
 
         {/* Category Selector Tabs */}
-        <div className="flex gap-2 p-1 bg-neutral-light rounded-2xl border border-neutral/20 max-w-fit overflow-x-auto w-full">
+        <div className="flex gap-1 p-1 bg-neutral-light rounded-xl border border-neutral/20 overflow-x-auto no-scrollbar w-full md:max-w-fit">
           {['Primera', 'Intermedia', 'Pre-intermedia'].map(cat => {
             const count = planteles[cat].filter(Boolean).length;
             const isFull = count === 15;
@@ -338,12 +338,12 @@ export default function AdminDragDropBuilder() {
               <button
                 key={cat}
                 onClick={() => { setSelectedPosition(null); setActiveCategory(cat); }}
-                className={`flex-1 min-w-[140px] px-6 py-3 text-sm font-black tracking-wider rounded-xl transition-all flex items-center justify-center gap-2 ${
+                className={`flex-1 min-w-[100px] md:min-w-[140px] px-3 md:px-6 py-2.5 md:py-3 text-[10px] md:text-sm font-black tracking-wider rounded-lg md:rounded-xl transition-all flex items-center justify-center gap-2 ${
                   activeCategory === cat ? 'bg-primary text-white shadow-md' : 'text-neutral hover:bg-white/50'
                 }`}
               >
-                {cat} 
-                <span className={`text-[10px] px-2 py-0.5 rounded-full font-black ${isFull ? 'bg-green-500 text-white' : 'bg-neutral/20 text-neutral-dark'}`}>
+                {cat === 'Pre-intermedia' ? 'Pre' : cat} 
+                <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-black ${isFull ? 'bg-green-500 text-white' : 'bg-neutral/20 text-neutral-dark'}`}>
                   {count}/15
                 </span>
               </button>
@@ -352,9 +352,9 @@ export default function AdminDragDropBuilder() {
         </div>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-8 lg:h-[750px]">
+      <div className="flex flex-col lg:flex-row gap-4 md:gap-8 lg:h-[750px]">
         {/* PITCH AREA (Izquierda) */}
-        <div className="flex-1 bg-white border border-neutral/20 p-6 rounded-3xl shadow-xl flex flex-col relative overflow-hidden h-[650px] lg:h-full">
+        <div className="flex-1 bg-white border border-neutral/20 p-3 md:p-6 rounded-3xl shadow-xl flex flex-col relative overflow-hidden h-[600px] lg:h-full">
           <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/grass.png')] opacity-20 pointer-events-none"></div>
           
           <div className="text-center mb-6 relative z-10 flex items-center justify-center gap-3">

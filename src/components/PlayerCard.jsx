@@ -33,7 +33,7 @@ export default function PlayerCard({ player, isSelected, isCaptain, onToggle, on
         
         <div className="flex-1 min-w-0 pr-2">
           <div className="flex justify-between items-start gap-2">
-            <h3 className="font-bold text-lg text-primary leading-tight truncate">{player.nombre || player.name}</h3>
+            <h3 className="font-bold text-lg text-primary leading-tight whitespace-normal break-words">{player.nombre || player.name}</h3>
             <span className="text-accent font-black text-sm shrink-0">{price}</span>
           </div>
           <p className="text-sm text-neutral font-medium tracking-wide">{player.posicion || 'Jugador'}</p>

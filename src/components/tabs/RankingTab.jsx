@@ -37,7 +37,7 @@ export default function RankingTab() {
   return (
     <div className="p-4 flex flex-col h-full bg-white max-w-2xl mx-auto w-full pb-24">
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6 sticky top-0 bg-white p-4 -mx-4 z-10 border-b border-neutral/20">
+      <div className="flex items-center gap-3 mb-6 sticky top-[60px] md:top-0 bg-white p-4 -mx-4 z-10 border-b border-neutral/20">
         <div className="bg-primary p-2.5 rounded-xl text-white">
           <Trophy className="w-6 h-6" />
         </div>
@@ -86,13 +86,13 @@ export default function RankingTab() {
                   </div>
 
                   {/* Nombre */}
-                  <div className="text-left pl-2 truncate">
-                    <p className={`font-bold truncate ${isMe ? 'text-accent' : 'text-primary'}`}>
+                  <div className="text-left pl-2">
+                    <p className={`font-bold whitespace-normal break-words leading-tight ${isMe ? 'text-accent' : 'text-primary'}`}>
                       {profile.full_name || profile.email?.split('@')[0]}
                       {isMe && <span className="ml-2 text-[9px] font-black bg-accent text-white px-1.5 py-0.5 rounded uppercase">Vos</span>}
                     </p>
                     {profile.team_name && (
-                      <p className="text-[10px] text-neutral font-bold truncate opacity-60">{profile.team_name}</p>
+                      <p className="text-[10px] text-neutral font-bold whitespace-normal break-words opacity-60">{profile.team_name}</p>
                     )}
                   </div>
 

@@ -60,7 +60,7 @@ export default function PlayersTab() {
   return (
     <div className="flex flex-col gap-6 animate-fade-in max-w-5xl mx-auto w-full pb-20">
       {/* Search & Filter Bar */}
-      <div className="bg-white p-4 rounded-3xl border border-neutral/20 shadow-sm flex flex-col md:flex-row gap-4 sticky top-[145px] z-30">
+      <div className="bg-white p-3 md:p-4 rounded-3xl border border-neutral/20 shadow-sm flex flex-col md:flex-row gap-4 sticky top-[60px] md:top-[145px] z-30">
         <div className="relative flex-1 group">
           <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-neutral group-focus-within:text-primary transition-colors" />
           <input 
@@ -127,7 +127,7 @@ export default function PlayersTab() {
                 </div>
                 
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-black text-primary text-lg leading-none truncate group-hover:text-accent transition-colors mb-1">
+                  <h4 className="font-black text-primary text-lg leading-none whitespace-normal break-words hover:text-accent transition-colors mb-1">
                     {player.nombre}
                   </h4>
                   <span className={`

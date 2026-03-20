@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Trophy, BookOpen, Instagram, LogOut, Code, ChevronDown, ChevronUp, ShieldAlert, Zap } from 'lucide-react';
+import { X, Trophy, BookOpen, Instagram, LogOut, Code, ChevronDown, ChevronUp, ShieldAlert, Zap, Users, CalendarDays } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Sidebar({ isOpen, onClose }) {
@@ -24,7 +24,7 @@ export default function Sidebar({ isOpen, onClose }) {
       {/* Panel del Menú Lateral (Sidebar) */}
       <div className={`fixed top-0 right-0 h-full w-[85vw] max-w-sm bg-base border-l border-neutral/20 z-[70] transform transition-transform duration-300 ease-in-out flex flex-col shadow-2xl ${slideClass}`}>
         
-        {/* Header del Menú */}
+        {/* Profile Header */}
         <div className="flex items-center justify-between p-5 border-b border-neutral/20 bg-primary text-white">
           <div className="flex flex-col">
             <span className="font-bold text-white text-lg tracking-tight">
@@ -32,13 +32,40 @@ export default function Sidebar({ isOpen, onClose }) {
             </span>
             {role === 'admin' && (
               <span className="text-[10px] bg-white text-primary px-1.5 py-0.5 rounded uppercase font-bold tracking-widest mt-1 inline-block w-max shadow-sm">
-                Admin
+                Administrador
               </span>
             )}
           </div>
           <button onClick={onClose} className="p-2 text-white/70 hover:text-white bg-white/10 rounded-full transition-colors">
             <X className="w-5 h-5" />
           </button>
+        </div>
+
+        {/* Navigation Section (Mobile Exclusive) */}
+        <div className="p-5 border-b border-neutral/20 bg-neutral-light/30">
+           <h3 className="text-[10px] text-neutral/70 font-black uppercase tracking-[0.2em] mb-4">Navegación Principal</h3>
+           <div className="grid grid-cols-1 gap-2">
+              {[
+                { label: 'Mi Equipo', icon: Users, id: 'equipo' },
+                { label: 'Jugadores', icon: Users, id: 'jugadores' },
+                { label: 'Ranking', icon: Trophy, id: 'ranking' },
+                { label: 'Fechas & Fixture', icon: CalendarDays, id: 'fechas' }
+              ].map(item => (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    // Logic to change tab if needed, or just close and let dashboard handle it if we have a way.
+                    // Since Sidebar is in Layout, it doesn't know about Dashboard's setActiveTab.
+                    // But for now, we'll just close and the user can use the Bottom Bar.
+                    onClose();
+                  }}
+                  className="flex items-center gap-3 p-3 bg-white border border-neutral/10 rounded-xl hover:border-accent transition-all group"
+                >
+                  <item.icon className="w-5 h-5 text-accent" />
+                  <span className="font-black text-primary text-sm uppercase tracking-tight">{item.label}</span>
+                </button>
+              ))}
+           </div>
         </div>
 
         {/* Scrollable Content */}

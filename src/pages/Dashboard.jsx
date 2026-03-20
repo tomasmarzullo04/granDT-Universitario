@@ -19,8 +19,8 @@ export default function Dashboard() {
   return (
     <PlayerLayout>
       <div className="flex flex-col gap-6">
-        {/* Navigation Tabs */}
-        <div className="flex bg-white p-1.5 rounded-2xl border border-neutral/20 shadow-sm sticky top-[80px] z-40 overflow-x-auto no-scrollbar">
+        {/* Navigation Tabs (Desktop Only) */}
+        <div className="hidden sm:flex bg-white p-1.5 rounded-2xl border border-neutral/20 shadow-sm sticky top-[80px] z-40 overflow-x-auto no-scrollbar">
           {tabs.map(tab => (
             <button
               key={tab.id}
@@ -35,6 +35,27 @@ export default function Dashboard() {
               {tab.label}
             </button>
           ))}
+        </div>
+
+        {/* Bottom Tab Bar (Mobile Only - User First Concept) */}
+        <div className="sm:hidden fixed bottom-1 left-4 right-4 bg-white/95 backdrop-blur-md border border-neutral/10 rounded-3xl z-50 flex justify-around items-center px-4 py-2 shadow-2xl safe-area-bottom">
+           {tabs.map(tab => {
+             const Icon = tab.icon;
+             const isActive = activeTab === tab.id;
+             return (
+               <button
+                 key={tab.id}
+                 onClick={() => { setActiveTab(tab.id); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                 className={`flex flex-col items-center gap-1 transition-all flex-1 ${isActive ? 'text-primary' : 'text-neutral/40'}`}
+               >
+                 <Icon className={`w-5 h-5 ${isActive ? 'stroke-[3px] scale-110' : 'stroke-[2px]'}`} />
+                 <span className={`text-[9px] font-black uppercase tracking-tighter ${isActive ? 'opacity-100' : 'opacity-60'}`}>
+                    {tab.label === 'Mi Equipo' ? 'Equipo' : tab.label}
+                 </span>
+                 {isActive && <div className="w-1.5 h-1.5 bg-accent rounded-full -mb-1 mt-0.5"></div>}
+               </button>
+             );
+           })}
         </div>
 
         {/* Tab Content */}
