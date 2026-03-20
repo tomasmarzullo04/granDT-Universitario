@@ -1,28 +1,4 @@
-import React from 'react';
-
-// Generates a proper absolute position for each of the 15 players on a vertical pitch
-// Coordinates are in percentages % (x, y) starting top-left
-const pitchPositions = [
-  // Forwards (The Pack) - Row 1
-  { top: '10%', left: '26%' }, // 1 Pilar 1
-  { top: '10%', left: '50%' }, // 2 Hooker
-  { top: '10%', left: '74%' }, // 3 Pilar 3
-  // Forwards - Row 2
-  { top: '19%', left: '38%' }, // 4 Segunda 4
-  { top: '19%', left: '62%' }, // 5 Segunda 5
-  // Forwards - Row 3
-  { top: '28%', left: '20%' }, // 6 Tercera 6
-  { top: '28%', left: '80%' }, // 7 Tercera 7
-  { top: '32%', left: '50%' }, // 8 Octavo
-  // Backs - The Diagonal
-  { top: '44%', left: '46%' }, // 9 Medio Scrum
-  { top: '54%', left: '58%' }, // 10 Apertura
-  { top: '75%', left: '12%' }, // 11 Wing Izq
-  { top: '64%', left: '70%' }, // 12 1er Centro
-  { top: '74%', left: '82%' }, // 13 2do Centro
-  { top: '75%', left: '92%' }, // 14 Wing Der
-  { top: '92%', left: '50%' }, // 15 Fullback
-];
+import { PITCH_POSITIONS } from '../constants/pitchPositions';
 
 export default function RugbyPitch({ players }) {
   // Ensure we always have 15 slots rendering, even if some players are missing
@@ -42,9 +18,8 @@ export default function RugbyPitch({ players }) {
       <span className="absolute top-[30%] left-4 text-white/20 font-black text-2xl -translate-y-1/2">22</span>
       <span className="absolute top-[70%] left-4 text-white/20 font-black text-2xl -translate-y-1/2 rotate-180">22</span>
 
-      {/* Players */}
-      {slots.map((player, index) => {
-        const pos = pitchPositions[index];
+        {slots.map((player, index) => {
+          const pos = PITCH_POSITIONS[index];
         return (
           <div 
             key={index}

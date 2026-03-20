@@ -3,26 +3,7 @@ import { supabase } from '../../lib/supabase';
 import { getActiveFecha, updatePlayerPrice } from '../../lib/api';
 import { Save, Loader2, AlertCircle, Search, Users, CheckCircle } from 'lucide-react';
 
-const pitchPositions = [
-  // Forwards (1-8)
-  { top: '15%', left: '25%', label: 'PILAR 1' },    // 1
-  { top: '15%', left: '50%', label: 'HOOKER' },     // 2
-  { top: '15%', left: '75%', label: 'PILAR 3' },    // 3
-  { top: '24%', left: '38%', label: 'SEGUNDA 4' },  // 4
-  { top: '24%', left: '62%', label: 'SEGUNDA 5' },  // 5
-  { top: '35%', left: '25%', label: 'TERCERA 6' },  // 6
-  { top: '35%', left: '75%', label: 'TERCERA 7' },  // 7
-  { top: '38%', left: '50%', label: 'OCTAVO' },     // 8
-  
-  // Backs (9-15)
-  { top: '48%', left: '45%', label: 'MEDIO SCRUM' }, // 9
-  { top: '56%', left: '65%', label: 'APERTURA' },    // 10
-  { top: '70%', left: '16%', label: 'WING IZQ.' },   // 11
-  { top: '65%', left: '42%', label: '1ER CENTRO' },  // 12
-  { top: '74%', left: '72%', label: '2DO CENTRO' },  // 13
-  { top: '82%', left: '86%', label: 'WING DER.' },   // 14
-  { top: '90%', left: '50%', label: 'FULLBACK' },    // 15
-];
+import { PITCH_POSITIONS } from '../../constants/pitchPositions';
 
 export default function AdminDragDropBuilder() {
   const [activeFecha, setActiveFecha] = useState(null);
@@ -69,7 +50,7 @@ export default function AdminDragDropBuilder() {
           };
 
           convocados.forEach(c => {
-             let idx = pitchPositions.findIndex(p => p.label === c.posicion_actual);
+             let idx = PITCH_POSITIONS.findIndex(p => p.label === c.posicion_actual);
              if (idx === -1) {
                  idx = parseInt(c.posicion_actual) - 1;
              }
@@ -377,14 +358,14 @@ export default function AdminDragDropBuilder() {
             <div className="absolute inset-x-0 top-[78%] border-t-[2px] border-white/25"></div> {/* 22m */}
 
             {/* Position Circles */}
-            {pitchPositions.map((pos, i) => {
+            {PITCH_POSITIONS.map((pos, i) => {
               const player = planteles[activeCategory][i];
               const isSelected = selectedPosition === i;
               
               return (
                 <div
                   key={i}
-                  className={`absolute -translate-x-1/2 -translate-y-1/2 w-[60px] h-[60px] sm:w-[68px] sm:h-[68px] z-10 transition-all duration-300 ${
+                  className={`absolute -translate-x-1/2 -translate-y-1/2 w-[45px] h-[45px] sm:w-[58px] sm:h-[58px] transition-all duration-300 ${
                      isSelected && !player ? 'scale-125' : ''
                   }`}
                   style={{ top: pos.top, left: pos.left }}
@@ -394,32 +375,35 @@ export default function AdminDragDropBuilder() {
                   onDrop={(e) => handleDrop(e, i)}
                 >
                   {player ? (
-                    <div 
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, player.id)}
-                      onDragEnd={handleDragEnd}
-                      className="w-full h-full bg-accent border-[3px] border-white rounded-full flex flex-col items-center justify-center p-1 cursor-grab active:cursor-grabbing shadow-xl relative group animate-pop-in"
-                    >
+                    <div className="flex flex-col items-center">
                       <div 
-                        className="text-[9px] sm:text-[10px] font-black text-white text-center uppercase px-1 drop-shadow-md"
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, player.id)}
+                        onDragEnd={handleDragEnd}
+                        className="w-10 h-10 sm:w-12 sm:h-12 bg-accent border-[3px] border-white rounded-full flex items-center justify-center cursor-grab active:cursor-grabbing shadow-xl relative group animate-pop-in"
+                      >
+                        <span className="text-[10px] sm:text-xs font-black text-white">{i + 1}</span>
+                        
+                        <button 
+                          onClick={(e) => removeFromPitch(e, activeCategory, i)}
+                          className="absolute -top-1 -right-1 w-6 h-6 bg-red-600 text-white rounded-full flex items-center justify-center text-xs font-black shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-20 border-2 border-white"
+                          title="Quitar jugador"
+                        >
+                          ×
+                        </button>
+                      </div>
+                      
+                      <div 
+                        className="mt-1 text-white font-black text-center uppercase player-name-full"
                         style={{ 
-                          whiteSpace: 'normal', 
-                          textOverflow: 'clip',
-                          overflow: 'visible',
+                          fontSize: '8px',
                           lineHeight: '1',
-                          wordBreak: 'break-word'
+                          maxWidth: '65px',
+                          textShadow: '1px 1px 1px #000, -1px -1px 1px #000, 1px -1px 1px #000, -1px 1px 1px #000, 0 2px 4px rgba(0,0,0,0.8)'
                         }}
                       >
                          {player.nombre}
                       </div>
-                      
-                      <button 
-                        onClick={(e) => removeFromPitch(e, activeCategory, i)}
-                        className="absolute -top-1 -right-1 w-6 h-6 bg-red-600 text-white rounded-full flex items-center justify-center text-xs font-black shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-20 border-2 border-white"
-                        title="Quitar jugador"
-                      >
-                        ×
-                      </button>
                     </div>
                   ) : (
                     <div className={`w-full h-full rounded-full flex flex-col items-center justify-center p-1 backdrop-blur-[1px] transition-all border-2 border-dashed ${
@@ -430,7 +414,7 @@ export default function AdminDragDropBuilder() {
                       <div className={`font-black text-sm sm:text-lg leading-none ${isSelected ? 'text-yellow-400' : 'text-white/40'}`}>
                         {i + 1}
                       </div>
-                      <div className={`text-[7px] sm:text-[8px] font-black uppercase tracking-tighter text-center leading-[1] px-1 ${isSelected ? 'text-yellow-400/80' : 'text-white/20'}`}>
+                      <div className={`text-[6px] sm:text-[7px] font-black uppercase tracking-tighter text-center leading-[1] px-1 ${isSelected ? 'text-yellow-400/80' : 'text-white/20'}`}>
                          {pos.label}
                       </div>
                     </div>
