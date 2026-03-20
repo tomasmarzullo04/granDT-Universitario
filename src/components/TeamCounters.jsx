@@ -1,8 +1,8 @@
 export default function TeamCounters({ counts, activeCategory }) {
   const categories = [
-    { id: 'primera', label: 'Primera', count: counts.primera, target: 5 },
-    { id: 'intermedia', label: 'Intermedia', count: counts.intermedia, target: 5 },
-    { id: 'pre', label: 'Pre-inter', count: counts.pre, target: 5 }
+    { id: 'primera', label: 'Primera', count: counts?.primera || 0, target: 5 },
+    { id: 'intermedia', label: 'Intermedia', count: counts?.intermedia || 0, target: 5 },
+    { id: 'pre', label: 'Pre-inter', count: counts?.pre || 0, target: 5 }
   ];
 
   return (
