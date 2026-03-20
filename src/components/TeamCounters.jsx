@@ -21,7 +21,7 @@ export default function TeamCounters({ counts, activeCategory }) {
                     : 'bg-transparent border-neutral/30 text-primary'
                 }
               `}>
-                <span>{cat.count}</span>
+                <span>{Number(cat.count) || 0}</span>
                 <span className={`text-[8px] md:text-[10px] font-normal border-t px-2 opacity-80 ${isComplete ? 'border-primary' : 'border-neutral/30'}`}>5</span>
               </div>
               <span className="text-[9px] md:text-[11px] uppercase tracking-wider font-black text-neutral">

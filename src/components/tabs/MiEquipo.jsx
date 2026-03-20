@@ -60,10 +60,10 @@ export default function MiEquipo() {
       if (fecha) {
         const players = await getConvocados(fecha.id);
         const normalized = players.map(p => {
-          let cKey = '';
+          let cKey = 'pre'; // Fallback a 'pre'
           const rawCat = (p.categoria || '').toLowerCase();
-          if (rawCat.includes('superior') || rawCat.includes('primera')) cKey = 'primera';
-          else if (rawCat.includes('intermedia')) cKey = 'intermedia';
+          if (rawCat.includes('superior') || rawCat.includes('primera') || rawCat.includes('1ra')) cKey = 'primera';
+          else if (rawCat.includes('intermedia') || rawCat.includes('inter')) cKey = 'intermedia';
           else if (rawCat.includes('pre')) cKey = 'pre';
           return { ...p, categoryKey: cKey };
         });
