@@ -35,7 +35,7 @@ function StatBox({ field, value, onInc, onDec }) {
       </span>
       <button
         onClick={onInc}
-        className="w-6 h-6 rounded-lg bg-white border border-neutral/20 flex items-center justify-center font-black text-sm text-primary hover:bg-primary hover:text-white hover:border-primary transition-all shadow-sm"
+        className="w-6 h-6 rounded-lg bg-white border border-neutral/20 flex items-center justify-center font-black text-sm text-primary hover:bg-primary hover:text-white hover:border-primary hover-shadow transition-all shadow-sm"
       >
         +
       </button>
@@ -45,7 +45,7 @@ function StatBox({ field, value, onInc, onDec }) {
       <button
         onClick={onDec}
         disabled={value <= 0}
-        className="w-6 h-6 rounded-lg bg-white border border-neutral/20 flex items-center justify-center font-black text-sm text-neutral hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition-all shadow-sm disabled:opacity-30 disabled:cursor-not-allowed"
+        className="w-6 h-6 rounded-lg bg-white border border-neutral/20 flex items-center justify-center font-black text-sm text-neutral hover:bg-red-50 hover:text-red-500 hover:border-red-200 hover-shadow transition-all shadow-sm disabled:opacity-30 disabled:cursor-not-allowed"
       >
         −
       </button>
@@ -359,7 +359,7 @@ export default function ResultadosAdmin() {
                     className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-black tracking-wide transition-all ${
                       activeCategory === cat
                         ? 'bg-primary text-white shadow-md'
-                        : 'text-neutral hover:bg-white/70'
+                        : 'text-neutral hover:bg-white/70 hover:text-primary hover-shadow'
                     }`}
                   >
                     {cat}
@@ -474,7 +474,7 @@ export default function ResultadosAdmin() {
               <button
                 onClick={handleSaveCategory}
                 disabled={saving || activePlayers.length === 0 || isFinalizada}
-                className="flex items-center justify-center gap-2 px-6 py-3 bg-white border-2 border-primary text-primary font-black rounded-2xl hover:bg-primary/5 transition-all shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                className="flex items-center justify-center gap-2 px-6 py-3 bg-white border-2 border-primary text-primary font-black rounded-2xl hover:bg-primary/5 hover-shadow transition-all shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {saving
                   ? <Loader2 className="w-5 h-5 animate-spin" />
@@ -487,7 +487,7 @@ export default function ResultadosAdmin() {
               <button
                 onClick={() => setShowConfirm(true)}
                 disabled={totalPlayersAll === 0 || isFinalizada}
-                className="flex-1 flex items-center justify-center gap-2 px-8 py-3 bg-accent text-white font-black rounded-2xl shadow-xl hover:scale-[1.02] transition-all disabled:opacity-40 disabled:hover:scale-100 disabled:cursor-not-allowed"
+                className="flex-1 flex items-center justify-center gap-2 px-8 py-3 bg-accent text-white font-black rounded-2xl shadow-xl hover:scale-[1.02] hover-shadow transition-all disabled:opacity-40 disabled:hover:scale-100 disabled:cursor-not-allowed"
               >
                 <Zap className="w-5 h-5" />
                 {isFinalizada ? '✓ RESULTADOS YA PUBLICADOS' : 'PUBLICAR RESULTADOS FINALES'}

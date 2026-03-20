@@ -46,18 +46,18 @@ export default function RugbyPitch({ players }) {
         return (
           <div 
             key={index}
-            className="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center transition-all group"
+            className="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center transition-all group cursor-pointer hover:z-20 scale-100 hover:scale-110 active:scale-95"
             style={{ top: pos.top, left: pos.left }}
           >
             <div className={`
-              w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center text-xs md:text-sm font-black shadow-md border-2
-              ${player ? 'bg-primary text-white border-white' : 'bg-white/20 border-white/30 text-white/50 border-dashed'}
+              w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center text-xs md:text-sm font-black shadow-md border-2 transition-all duration-300
+              ${player ? 'bg-primary text-white border-white' : 'bg-white/20 border-white/30 text-white/50 border-dashed group-hover:bg-white/40 group-hover:border-white/50 group-hover:text-white'}
             `}>
               {index + 1}
             </div>
             
             <div 
-              className="mt-1 bg-black/60 px-2 py-0.5 rounded text-[10px] md:text-[11px] text-white font-bold text-center backdrop-blur-sm"
+              className="mt-1 bg-black/60 px-2 py-0.5 rounded text-[10px] md:text-[11px] text-white font-bold text-center backdrop-blur-sm group-hover:bg-primary group-hover:shadow-lg transition-all"
               style={{ 
                 whiteSpace: 'normal', 
                 textOverflow: 'clip',

@@ -594,7 +594,7 @@ export default function MiEquipo() {
                             ? 'bg-neutral-light/50 border-neutral/10 opacity-60 grayscale' 
                             : selectedPosition !== null
                               ? 'bg-yellow-50 border-yellow-300 hover:bg-yellow-100 shadow-sm'
-                              : 'bg-white border-neutral/10 hover:border-accent hover:shadow-md'
+                              : 'bg-white border-neutral/10 hover:border-accent hover:shadow-md hover-shadow'
                           }`}
                         >
                           <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 border ${
@@ -649,7 +649,7 @@ export default function MiEquipo() {
                 className={`
                   w-full py-5 rounded-[1.5rem] md:rounded-[2rem] font-black tracking-wider transition-all shadow-2xl flex items-center justify-center gap-3 border-2 
                   ${isValid && activeFecha?.estado !== 'en_juego'
-                    ? 'bg-accent border-accent hover:bg-accent-dark text-white scale-100 hover:scale-[1.02] active:scale-95' 
+                    ? 'bg-accent border-accent hover:bg-accent-dark text-white scale-100 hover:scale-[1.02] active:scale-95 hover-shadow' 
                     : 'bg-neutral-light border-neutral/10 text-neutral/40 cursor-not-allowed'
                   }
                   fixed bottom-20 left-4 right-4 z-[60] w-[calc(100%-2rem)] md:relative md:bottom-0 md:left-0 md:right-0 md:w-full md:mt-10 md:mb-4 md:z-auto

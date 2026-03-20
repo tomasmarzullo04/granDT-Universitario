@@ -14,10 +14,10 @@ export default function PlayerCard({ player, isSelected, isCaptain, onToggle, on
       className={`
         relative w-full text-left overflow-hidden rounded-xl border p-4 transition-all duration-300 ease-in-out group
         ${isSelected 
-          ? 'bg-accent/5 border-accent ring-1 ring-accent shadow-sm' 
-          : 'bg-white border-neutral/30 hover:border-accent hover:bg-neutral-light shadow-sm'
+          ? 'bg-accent/5 border-accent ring-1 ring-accent shadow-md scale-[1.01]' 
+          : 'bg-white border-neutral/30 hover:border-accent hover:bg-neutral-light/30'
         }
-        ${(disabled && !isSelected) ? 'opacity-50 cursor-not-allowed grayscale-[0.5]' : 'cursor-pointer'}
+        ${(disabled && !isSelected) ? 'opacity-50 cursor-not-allowed grayscale-[0.5]' : 'cursor-pointer hover-shadow'}
       `}
     >
       <div className="flex items-center gap-4 relative z-10 w-full">
