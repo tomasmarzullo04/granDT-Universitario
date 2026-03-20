@@ -99,13 +99,29 @@ export default function MiEquipo() {
     });
     return res;
   }, [selectedPlayers]);
+  
+  // -- NEW: Time-based Market Lock Logic --
+  const isMarketClosed = useMemo(() => {
+    const now = new Date();
+    const day = now.getDay(); // 0 = Sun, 5 = Fri, 6 = Sat
+    const hour = now.getHours();
+    const min = now.getMinutes();
+
+    // Viernes 23:59:59 -> Lunes 00:00:00
+    if (day === 6 || day === 0) return true; // Sábado o Domingo
+    if (day === 5 && hour === 23 && min === 59) return true; // Viernes casi medianoche (simplificado)
+    // Para ser exactos: si es viernes y ya pasó la medianoche? No, el día cambia a sábado a las 00:00.
+    return false;
+  }, []);
 
   const isAdmin = profile?.role === 'admin';
-  const isLocked = activeFecha?.estado === 'en_juego' || activeFecha?.estado === 'finalizada';
+  const isLocked = activeFecha?.estado === 'en_juego' || activeFecha?.estado === 'finalizada' || isMarketClosed;
 
-  const isValid = isAdmin 
+  const isComplete = isAdmin 
     ? selectedPlayers.length === 15 
     : (selectedPlayers.length === 15 && counts.primera === 5 && counts.intermedia === 5 && counts.pre === 5);
+
+  const canSave = selectedPlayers.length > 0 && !isLocked;
 
   // D&D Handlers
   const handleDragStart = (e, playerId) => {
@@ -223,10 +239,7 @@ export default function MiEquipo() {
   };
 
   const handleSave = async () => {
-    if (!isValid) {
-      setError('Debes completar el equipo con 5 de Primera, 5 de Intermedia y 5 de Pre para guardar.');
-      return;
-    }
+    if (!canSave) return;
 
     setSaving(true);
     setError(null);
@@ -246,7 +259,7 @@ export default function MiEquipo() {
       if (insertErr) throw insertErr;
 
       setSuccess(true);
-      setTimeout(() => setSuccess(false), 4000);
+      setTimeout(() => setSuccess(false), 5000);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
       setError('Error al guardar. Intentá de nuevo.');
@@ -304,32 +317,46 @@ export default function MiEquipo() {
           <div className="flex items-center gap-2">
              <span className="bg-accent text-white text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest">Matchday</span>
              <p className="text-xs md:text-base font-bold text-neutral truncate">vs {activeFecha.rival}</p>
+             <div className="ml-4 h-5 w-[1px] bg-neutral/10"></div>
+             <p className="text-xs font-black text-primary/60">
+                {selectedPlayers.length} / 15 <span className="hidden sm:inline">JUGADORES</span>
+             </p>
           </div>
         </div>
         
         <div className="flex items-center">
-           {isValid ? (
+           {isComplete ? (
              <div className="flex items-center gap-2 text-white font-black text-[10px] uppercase bg-green-500 px-3 py-1.5 rounded-xl shadow-lg border border-white/20">
                <CheckCircle className="w-3 h-3" />
-               EQUIPO LISTO ✅
+               EQUIPO COMPLETO ✅
              </div>
            ) : (
-             <div className="flex items-center gap-2 text-primary font-black text-[10px] uppercase bg-neutral-light px-3 py-1.5 rounded-xl border border-neutral/20 whitespace-nowrap">
-               <Info className="w-3 h-3 text-accent" />
-               Faltan {15 - selectedPlayers.length} jugadores
+             <div className="flex flex-col items-end gap-1">
+                <div className="flex items-center gap-2 text-primary font-black text-[10px] uppercase bg-neutral-light px-3 py-1.5 rounded-xl border border-neutral/20 whitespace-nowrap">
+                  <Info className="w-3 h-3 text-accent" />
+                  Faltan {15 - selectedPlayers.length} jugadores
+                </div>
+                {!isAdmin && selectedPlayers.length === 15 && !isComplete && (
+                  <p className="text-[8px] font-black text-red-500 uppercase">Deben ser 5-5-5</p>
+                )}
              </div>
            )}
         </div>
       </div>
 
-      {activeFecha?.estado === 'en_juego' && (
+      {isLocked && (
         <div className="bg-yellow-50 border-2 border-yellow-200 p-4 rounded-2xl flex items-center gap-4 animate-pulse-slow shadow-sm">
            <div className="w-12 h-12 bg-yellow-400 rounded-xl flex items-center justify-center shrink-0 shadow-md">
               <Lock className="w-6 h-6 text-white" />
            </div>
            <div>
               <p className="text-sm font-black text-yellow-800 uppercase tracking-tight">⛔ Mercado cerrado - Fecha en disputa</p>
-              <p className="text-xs font-bold text-yellow-700/80">El partido ya comenzó. No podés realizar cambios en tu alineación.</p>
+              <p className="text-xs font-bold text-yellow-700/80">
+                {isMarketClosed 
+                  ? "El mercado cierra los viernes a las 23:59. Podrás editar tu equipo nuevamente el Lunes."
+                  : "La fecha ya comenzó. No podés realizar cambios en tu alineación."
+                }
+              </p>
            </div>
         </div>
       )}
@@ -344,7 +371,10 @@ export default function MiEquipo() {
       {success && (
         <div className="bg-white border-2 border-green-500 text-green-600 p-5 rounded-3xl flex items-center gap-4 animate-fade-in shadow-xl font-black text-sm">
           <CheckCircle className="w-6 h-6 flex-shrink-0" />
-          ¡Equipo confirmado y guardado para la fecha!
+          <div>
+            <p>¡Progreso guardado correctamente!</p>
+            <p className="text-[10px] opacity-70 uppercase tracking-widest mt-1">No olvides completar tus 15 antes del viernes 23:59</p>
+          </div>
         </div>
       )}
 
@@ -714,10 +744,10 @@ export default function MiEquipo() {
               <div className="sticky bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md p-4 -mx-4 border-t border-neutral/10 sm:relative sm:bg-transparent sm:border-none sm:p-0 sm:m-0 z-40">
                 <button
                   onClick={handleSave}
-                  disabled={saving || !isValid || isLocked}
+                  disabled={saving || !canSave || isLocked}
                   className={`
                     w-full py-4 px-6 rounded-2xl font-black tracking-widest transition-all flex items-center justify-center gap-3 border-2 
-                    ${isValid && selectedPlayers.length === 15 && !isLocked
+                    ${canSave && !isLocked
                       ? 'bg-accent border-accent text-white shadow-[0_0_20px_rgba(19,170,212,0.4)] scale-100 hover:scale-[1.02] active:scale-95' 
                       : 'bg-neutral-light border-neutral/10 text-neutral/40 cursor-not-allowed'
                     }
@@ -727,7 +757,9 @@ export default function MiEquipo() {
                   {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
                   {isLocked 
                     ? 'MERCADO CERRADO' 
-                    : (selectedPlayers.length === 15 ? '¡CONFIRMAR Y GUARDAR EQUIPO!' : `GUARDAR EQUIPO (${selectedPlayers.length}/15)`)}
+                    : isComplete
+                      ? '¡FINALIZAR Y GUARDAR EQUIPO!'
+                      : (selectedPlayers.length === 0 ? 'ARMÁ TU EQUIPO' : `GUARDAR PROGRESO (${selectedPlayers.length}/15)`)}
                 </button>
               </div>
             </div>
