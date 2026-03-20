@@ -393,6 +393,7 @@ export default function AdminDragDropBuilder() {
                   onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('scale-110'); }}
                   onDragLeave={(e) => { e.currentTarget.classList.remove('scale-110'); }}
                   onDrop={(e) => handleDrop(e, i)}
+                  onDragEnter={(e) => e.preventDefault()}
                 >
                   {player ? (
                     <div className={`flex flex-col ${
