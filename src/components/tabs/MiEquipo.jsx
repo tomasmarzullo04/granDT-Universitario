@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { getActiveFecha, getConvocados } from '../../lib/api';
-import { Save, Loader2, AlertCircle, CheckCircle, Search, Trophy, Info, Users, BarChart2 } from 'lucide-react';
+import { Save, Loader2, AlertCircle, CheckCircle, Search, Trophy, Info, Users, BarChart2, Lock } from 'lucide-react';
 import RugbyPitch from '../RugbyPitch';
 import TeamCounters from '../TeamCounters';
 import ResumenFecha from '../ResumenFecha';
@@ -157,13 +157,11 @@ export default function MiEquipo() {
     if (player.posicion && player.posicion !== 'Jugador' && player.posicion !== targetLabel) {
       setError(`¡Atención! No podés poner a ${player.nombre} en esta posición porque en esta fecha jugará de ${player.posicion}.`);
       setSelectedPosition(null);
-      // Removed window.scrollTo to keep user in place
       return;
     }
 
     // Rule: One player can only be in one slot
     const alreadyInSlotIdx = pitchSlots.findIndex(p => p && p.id === player.id);
-    
     const newSlots = [...pitchSlots];
     
     // If moving from another slot, clear it
@@ -251,11 +249,6 @@ export default function MiEquipo() {
     }
   };
 
-  const filteredList = convocados.filter(p => 
-    p.nombre.toLowerCase().includes(search.toLowerCase()) && 
-    !selectedPlayers.find(s => s.id === p.id)
-  );
-
   if (loading) return (
     <div className="flex flex-col items-center justify-center p-20 animate-pulse">
       <Loader2 className="w-12 h-12 animate-spin text-primary mb-4" />
@@ -273,7 +266,6 @@ export default function MiEquipo() {
     );
   }
 
-  // ── If the fecha is finalizada, show the match summary instead of the builder ──
   if (activeFecha.estado === 'finalizada') {
     return (
       <div className="space-y-6 animate-fade-in">
@@ -309,17 +301,22 @@ export default function MiEquipo() {
         </div>
         
         <div className="flex flex-col sm:flex-row items-center gap-4">
-           {!isValid && (
-             <div className="flex items-center gap-2 text-primary font-black text-xs uppercase bg-neutral-light px-4 py-2 rounded-xl">
+           {isValid ? (
+             <div className="flex items-center gap-2 text-white font-black text-xs uppercase bg-green-500 px-4 py-2 rounded-xl shadow-lg animate-bounce-subtle">
+               <CheckCircle className="w-4 h-4" />
+               EQUIPO LISTO ✅
+             </div>
+           ) : (
+             <div className="flex items-center gap-2 text-primary font-black text-xs uppercase bg-neutral-light px-4 py-2 rounded-xl border border-neutral/20">
                <Info className="w-4 h-4 text-accent" />
                Faltan {15 - selectedPlayers.length} jugadores
              </div>
            )}
            <button
              onClick={handleSave}
-             disabled={saving || !isValid}
+             disabled={saving || !isValid || activeFecha?.estado === 'en_juego'}
              className={`w-full sm:w-auto px-10 py-4 rounded-2xl font-black transition-all shadow-xl flex items-center justify-center gap-2 ${
-               isValid 
+               isValid && activeFecha?.estado !== 'en_juego'
                ? 'bg-accent hover:bg-accent-dark text-white scale-100 hover:scale-[1.03]' 
                : 'bg-neutral-light text-neutral opacity-50 cursor-not-allowed hidden sm:flex'
              }`}
@@ -327,15 +324,20 @@ export default function MiEquipo() {
              {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5 text-white/50" />}
              ¡GUARDAR MI EQUIPO!
            </button>
-           
-           {/* Mobile Save Floating Button Concept via the same button but shown */}
-           {!isValid && (
-             <button disabled className="sm:hidden w-full bg-neutral-light text-neutral p-4 rounded-2xl font-black opacity-50">
-               COMPLETÁ EL 5-5-5
-             </button>
-           )}
         </div>
       </div>
+
+      {activeFecha?.estado === 'en_juego' && (
+        <div className="bg-yellow-50 border-2 border-yellow-200 p-4 rounded-2xl flex items-center gap-4 animate-pulse-slow">
+           <div className="w-12 h-12 bg-yellow-400 rounded-xl flex items-center justify-center shrink-0 shadow-sm">
+              <Lock className="w-6 h-6 text-white" />
+           </div>
+           <div>
+              <p className="text-sm font-black text-yellow-800 uppercase tracking-tight">Fecha Bloqueada</p>
+              <p className="text-xs font-bold text-yellow-700/80">El partido ya comenzó. No se permiten más cambios en tu equipo.</p>
+           </div>
+        </div>
+      )}
 
       {error && (
         <div className="bg-red-50 border-2 border-red-200 text-red-600 p-5 rounded-3xl flex items-center gap-4 animate-shake shadow-md font-black text-sm">
@@ -423,7 +425,6 @@ export default function MiEquipo() {
           <TeamCounters counts={counts} activeCategory={poolCategory} budget={{ total: budgetTotal, remaining: remainingBalance, spent }} />
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            {/* Pitch Selection View (Interactive) */}
             <div className="lg:col-span-7 bg-white rounded-[2rem] border border-neutral/20 shadow-2xl p-6 relative overflow-hidden flex flex-col items-center">
               <div className="absolute inset-0 bg-neutral-light/10 pointer-events-none"></div>
               
@@ -437,7 +438,6 @@ export default function MiEquipo() {
                  </div>
               </div>
 
-              {/* LOCALIZED WARNING MESSAGE */}
               {error && error.includes('Atención') && (
                 <div className="relative z-20 w-full mb-6 bg-red-50 border-2 border-red-200 text-red-600 p-4 rounded-2xl flex items-center gap-3 animate-shake shadow-md font-bold text-xs">
                   <AlertCircle className="w-5 h-5 shrink-0" />
@@ -446,11 +446,7 @@ export default function MiEquipo() {
                 </div>
               )}
 
-              {/* INTERACTIVE PITCH */}
-              <div 
-                className="relative w-full aspect-[2/3] max-w-md mx-auto rounded-3xl border-[6px] border-neutral-light/50 overflow-hidden shadow-2xl transition-all duration-500 bg-[#1B4D3E]"
-              >
-                {/* Field Detail Lines */}
+              <div className="relative w-full aspect-[2/3] max-w-md mx-auto rounded-3xl border-[6px] border-neutral-light/50 overflow-hidden shadow-2xl transition-all duration-500 bg-[#1B4D3E]">
                 <div className="absolute inset-x-0 top-0 h-[10%] bg-white/5 border-b border-white/20"></div>
                 <div className="absolute inset-x-0 bottom-0 h-[10%] bg-white/5 border-t border-white/20"></div>
                 <div className="absolute inset-x-0 top-1/2 -mt-[1px] border-t-[3px] border-white/30"></div>
@@ -533,11 +529,9 @@ export default function MiEquipo() {
               </div>
             </div>
 
-            {/* Selection Pool (Convocados) */}
             <div className="lg:col-span-5 flex flex-col gap-4 h-[700px] lg:h-auto">
               <div className="bg-white rounded-3xl border border-neutral/20 shadow-xl overflow-hidden flex flex-col flex-1">
                 <div className="p-5 border-b border-neutral/20 bg-primary/5 space-y-4">
-                  {/* Category Filter Tabs */}
                   <div className="flex bg-neutral-light p-1 rounded-xl border border-neutral/20">
                      {[
                        { id: 'primera', label: 'Primera' },
@@ -578,7 +572,6 @@ export default function MiEquipo() {
                     )
                     .map(player => {
                       const isSelected = selectedPlayers.find(s => s.id === player.id);
-                      // Get initials for avatar
                       const initials = player.nombre?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || '?';
                       
                       return (
@@ -601,7 +594,6 @@ export default function MiEquipo() {
                               : 'bg-white border-neutral/10 hover:border-accent hover:shadow-md'
                           }`}
                         >
-                          {/* Small Avatar/Initials */}
                           <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 border ${
                             isSelected ? 'bg-neutral/20 text-neutral' : 'bg-primary/10 text-primary border-primary/20'
                           }`}>
@@ -617,7 +609,6 @@ export default function MiEquipo() {
                             </span>
                           </div>
                           
-                          {/* Selection Indicator */}
                           <div className="shrink-0 flex items-center justify-center">
                             {isSelected ? (
                               <CheckCircle className="w-3.5 h-3.5 text-green-500" />
@@ -632,15 +623,9 @@ export default function MiEquipo() {
                         </div>
                       );
                     })}
-                  {convocados.filter(p => p.categoryKey === poolCategory).length === 0 && (
-                    <div className="py-8 text-center bg-white/50 rounded-2xl border border-dashed border-neutral/20">
-                      <p className="text-[10px] font-black text-neutral uppercase tracking-widest px-4">No hay jugadores convocados para esta categoría</p>
-                    </div>
-                  )}
                 </div>
               </div>
               
-              {/* Rules Card */}
               <div className="bg-primary p-6 rounded-3xl shadow-xl text-white relative overflow-hidden group">
                  <div className="absolute -right-4 -bottom-4 opacity-10">
                     <Trophy className="w-24 h-24" />
@@ -655,12 +640,11 @@ export default function MiEquipo() {
                  </ul>
               </div>
 
-              {/* Botón de Guardado Secundario (UX mejorada) */}
               <button
                 onClick={handleSave}
-                disabled={saving || !isValid}
+                disabled={saving || !isValid || activeFecha?.estado === 'en_juego'}
                 className={`w-full py-5 rounded-[1.5rem] font-black tracking-wider transition-all shadow-2xl flex items-center justify-center gap-3 border-2 mb-4 ${
-                  isValid 
+                  isValid && activeFecha?.estado !== 'en_juego'
                   ? 'bg-accent border-accent hover:bg-accent-dark text-white scale-100 hover:scale-[1.02] active:scale-95' 
                   : 'bg-neutral-light border-neutral/10 text-neutral/40 cursor-not-allowed'
                 }`}
@@ -668,7 +652,6 @@ export default function MiEquipo() {
                 {saving ? <Loader2 className="w-6 h-6 animate-spin" /> : <Save className="w-6 h-6 text-white/50" />}
                 ¡CONFIRMAR Y GUARDAR EQUIPO!
               </button>
-
             </div>
           </div>
       </div>

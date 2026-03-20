@@ -32,17 +32,38 @@ export function calcularPuntosJugador(s) {
 // ==========================================
 
 export async function getActiveFecha() {
-  const { data, error } = await supabase
+  // 1. Intentar traer la abierta (para armar equipo)
+  let { data: abierta } = await supabase
     .from('fechas')
     .select('*')
     .eq('estado', 'abierta')
+    .order('numero_fecha', { ascending: true })
+    .limit(1)
     .single();
 
-  if (error && error.code !== 'PGRST116') {
-    console.error('Error fetching active fecha:', error);
-    return null;
-  }
-  return data;
+  if (abierta) return abierta;
+
+  // 2. Intentar la que está 'en_juego' (bloqueada)
+  let { data: enJuego } = await supabase
+    .from('fechas')
+    .select('*')
+    .eq('estado', 'en_juego')
+    .order('numero_fecha', { ascending: true })
+    .limit(1)
+    .single();
+
+  if (enJuego) return enJuego;
+
+  // 3. Por último, la más reciente finalizada
+  let { data: finalizada } = await supabase
+    .from('fechas')
+    .select('*')
+    .eq('estado', 'finalizada')
+    .order('numero_fecha', { ascending: false })
+    .limit(1)
+    .single();
+
+  return finalizada || null;
 }
 
 export async function getAllFechas() {
@@ -234,8 +255,7 @@ export async function publicarResultadosFecha(fechaId, allStatsArray) {
     if (!usuariosMap[row.usuario_id]) usuariosMap[row.usuario_id] = [];
     usuariosMap[row.usuario_id].push(row.jugador_id);
   });
-
-  // 5. Calcular puntos por usuario y preparar upsert en ranking_usuarios
+  // 5. Calcular puntos por usuario
   const rankingInserts = Object.entries(usuariosMap).map(([usuario_id, jugadorIds]) => {
     const puntosTotal = jugadorIds.reduce((sum, jId) => {
       const st = (statsData || []).find(s => s.jugador_id === jId);
@@ -251,23 +271,19 @@ export async function publicarResultadosFecha(fechaId, allStatsArray) {
 
   // 6. Upsert en ranking_usuarios
   if (rankingInserts.length > 0) {
-    // Primero borramos los registros de esta fecha para esta lista de usuarios
-    const { error: delRankErr } = await supabase
+    // Borramos los registros de esta fecha para asegurar que no haya duplicados
+    await supabase
       .from('ranking_usuarios')
       .delete()
       .eq('fecha_id', fechaId);
 
-    if (delRankErr) {
-      // Si la tabla no existe aún, lo logueamos pero no bloqueamos
-      console.warn('No se pudo limpiar ranking_usuarios (puede no existir aún):', delRankErr.message);
-    } else {
-      const { error: insRankErr } = await supabase
-        .from('ranking_usuarios')
-        .insert(rankingInserts);
+    const { error: insRankErr } = await supabase
+      .from('ranking_usuarios')
+      .insert(rankingInserts);
 
-      if (insRankErr) {
-        console.warn('No se pudo insertar en ranking_usuarios:', insRankErr.message);
-      }
+    if (insRankErr) {
+      console.error('Error insertando en ranking_usuarios:', insRankErr.message);
+      throw insRankErr;
     }
   }
 
@@ -304,52 +320,31 @@ export async function getAllProfiles() {
  * hace fallback a cálculo on-the-fly desde equipos_usuarios + estadisticas_partido.
  */
 export async function getRankingCompleto() {
-  // Intentar con ranking_usuarios primero (rápido)
-  const { data: rankingData, error: rankErr } = await supabase
+  // 1. Obtener puntos acumulados por usuario de ranking_usuarios
+  const { data: rankingData, error: rErr } = await supabase
     .from('ranking_usuarios')
     .select('usuario_id, puntos_fecha');
 
-  // Obtener todos los perfiles de players
-  const { data: profiles, error: profErr } = await supabase
+  if (rErr) return [];
+
+  // Agrupar puntos por usuario_id
+  const totalPuntosMap = (rankingData || []).reduce((acc, curr) => {
+    acc[curr.usuario_id] = (acc[curr.usuario_id] || 0) + curr.puntos_fecha;
+    return acc;
+  }, {});
+
+  // 2. Obtener perfiles para nombres
+  const { data: profiles, error: pErr } = await supabase
     .from('profiles')
-    .select('id, email, full_name, team_name, presupuesto_inicial')
+    .select('id, email, full_name, team_name')
     .eq('role', 'player');
 
-  if (profErr) {
-    console.error('Error fetching profiles:', profErr);
-    return [];
-  }
+  if (pErr) return [];
 
-  if (!rankErr && rankingData && rankingData.length > 0) {
-    // Sumar puntos por usuario desde ranking_usuarios
-    const puntosMap = {};
-    rankingData.forEach(row => {
-      puntosMap[row.usuario_id] = (puntosMap[row.usuario_id] || 0) + (row.puntos_fecha || 0);
-    });
-
-    return (profiles || []).map(p => ({
-      ...p,
-      puntos: puntosMap[p.id] || 0,
-    }));
-  }
-
-  // Fallback: cálculo on-the-fly
-  const { data: equipos } = await supabase
-    .from('equipos_usuarios')
-    .select('usuario_id, jugador_id, fecha_id');
-
-  const { data: statsAll } = await supabase
-    .from('estadisticas_partido')
-    .select('*');
-
-  return (profiles || []).map(p => {
-    const misJugadores = (equipos || []).filter(e => e.usuario_id === p.id);
-    const puntos = misJugadores.reduce((sum, e) => {
-      const st = (statsAll || []).find(s => s.jugador_id === e.jugador_id && s.fecha_id === e.fecha_id);
-      return sum + calcularPuntosJugador(st);
-    }, 0);
-    return { ...p, puntos };
-  });
+  return profiles.map(p => ({
+    ...p,
+    puntos_totales: totalPuntosMap[p.id] || 0
+  })).sort((a, b) => b.puntos_totales - a.puntos_totales);
 }
 
 // ==========================================
