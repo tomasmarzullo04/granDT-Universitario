@@ -473,10 +473,10 @@ export default function MiEquipo() {
                  <h4 className="font-black text-primary text-sm uppercase tracking-[0.2em]">
                     {profile?.team_name ? `DIAGRAMA: ${profile.team_name.toUpperCase()}` : 'TU PIZARRA INTERACTIVA'}
                  </h4>
-                 <div className="flex items-center gap-2">
-                    <span className={`w-3 h-3 rounded-full ${isValid ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'bg-neutral-light opacity-50'}`}></span>
-                    <span className="text-[10px] font-black text-neutral uppercase">Estado: {isValid ? 'LISTO' : 'EN PROCESO'}</span>
-                 </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`w-3 h-3 rounded-full ${isComplete ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'bg-neutral-light opacity-50'}`}></span>
+                    <span className="text-[10px] font-black text-neutral uppercase">Estado: {isComplete ? 'COMPLETO' : 'EN PROCESO'}</span>
+                  </div>
               </div>
 
               {error && error.includes('Atención') && (
