@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { getActiveFecha } from '../../lib/api';
+import { getActiveFecha, updatePlayerPrice } from '../../lib/api';
 import { Save, Loader2, AlertCircle, Search, Users, CheckCircle } from 'lucide-react';
 
 const pitchPositions = [
@@ -187,6 +187,22 @@ export default function AdminDragDropBuilder() {
       next[catOrig][idxOrig] = null;
       return next;
     });
+  };
+
+  const handlePriceChange = async (playerId, newPrice) => {
+    try {
+      const price = parseInt(newPrice);
+      if (isNaN(price)) return;
+      
+      // Update local state first for immediate feedback
+      setJugadores(prev => prev.map(p => p.id === playerId ? { ...p, precio: price } : p));
+      
+      // Update database
+      await updatePlayerPrice(playerId, price);
+    } catch (err) {
+      console.error('Error updating price:', err);
+      setError('Error al actualizar el precio del jugador.');
+    }
   };
 
   const handleSave = async () => {
@@ -465,11 +481,22 @@ export default function AdminDragDropBuilder() {
                       </div>
                     </div>
                     
-                    {status && (
-                      <div className="flex items-center gap-1.5 bg-primary/10 text-primary font-black text-[9px] px-3 py-1.5 rounded-full ml-3 border border-primary/20 shrink-0">
-                        <CheckCircle className="w-3 h-3" /> {status.toUpperCase()}
+                    <div className="flex flex-col items-end gap-2 ml-3 shrink-0">
+                      <div className="flex items-center gap-1 bg-neutral-light px-2 py-1 rounded-lg border border-neutral/20">
+                        <span className="text-[10px] font-black text-primary/40">$</span>
+                        <input
+                          type="number"
+                          defaultValue={player.precio || 5000000}
+                          onBlur={(e) => handlePriceChange(player.id, e.target.value)}
+                          className="w-20 bg-transparent text-[11px] font-black text-primary focus:outline-none"
+                        />
                       </div>
-                    )}
+                      {status && (
+                        <div className="flex items-center gap-1.5 bg-primary/10 text-primary font-black text-[9px] px-3 py-1.5 rounded-full border border-primary/20 shrink-0">
+                          <CheckCircle className="w-3 h-3" /> {status.toUpperCase()}
+                        </div>
+                      )}
+                    </div>
 
                     {!status && selectedPosition !== null && (
                       <div className="w-8 h-8 rounded-xl bg-yellow-400 text-white flex items-center justify-center font-black animate-pulse">

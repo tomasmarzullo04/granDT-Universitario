@@ -101,6 +101,10 @@ export default function MiEquipo() {
     init();
   }, []);
 
+  const budgetTotal = profile?.presupuesto_inicial || 100000000;
+  const spent = useMemo(() => selectedPlayers.reduce((acc, p) => acc + (p.precio || 5000000), 0), [selectedPlayers]);
+  const remainingBalance = budgetTotal - spent;
+
   const counts = useMemo(() => {
     const res = { primera: 0, intermedia: 0, pre: 0 };
     selectedPlayers.forEach(p => {
@@ -111,7 +115,7 @@ export default function MiEquipo() {
     return res;
   }, [selectedPlayers]);
 
-  const isValid = selectedPlayers.length === 15 && counts.primera === 5 && counts.intermedia === 5 && counts.pre === 5;
+  const isValid = selectedPlayers.length === 15 && counts.primera === 5 && counts.intermedia === 5 && counts.pre === 5 && remainingBalance >= 0;
 
   // D&D Handlers
   const handleDragStart = (e, playerId) => {
@@ -169,6 +173,12 @@ export default function MiEquipo() {
 
     // Check category limit before adding if not already in the team
     if (alreadyInSlotIdx === -1) {
+      // VALIDACIÓN DE PRESUPUESTO
+      if (player.precio > remainingBalance) {
+        setError(`¡Presupuesto insuficiente! El precio de ${player.nombre} es $${player.precio.toLocaleString()} y tu saldo es $${remainingBalance.toLocaleString()}.`);
+        return;
+      }
+
       const cat = player.categoryKey;
       if (cat === 'primera' && counts.primera >= 5) {
         setError('¡Límite alcanzado! Ya elegiste 5 de Primera.'); return;
@@ -410,7 +420,7 @@ export default function MiEquipo() {
              </div>
           </div>
 
-          <TeamCounters counts={counts} activeCategory={poolCategory} />
+          <TeamCounters counts={counts} activeCategory={poolCategory} budget={{ total: budgetTotal, remaining: remainingBalance, spent }} />
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* Pitch Selection View (Interactive) */}
@@ -603,7 +613,7 @@ export default function MiEquipo() {
                               {player.nombre}
                             </p>
                             <span className={`text-[7px] font-bold uppercase tracking-tighter truncate ${isSelected ? 'text-neutral/70' : 'text-accent'}`}>
-                              {player.posicion || 'JUGADOR'}
+                              {player.posicion || 'JUGADOR'} • ${ (player.precio || 5000000).toLocaleString() }
                             </span>
                           </div>
                           

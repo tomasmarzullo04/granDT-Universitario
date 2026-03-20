@@ -70,7 +70,8 @@ export async function getConvocados(fechaId) {
       posicion_actual,
       jugadores (
         id,
-        nombre
+        nombre,
+        precio
       )
     `)
     .eq('fecha_id', fechaId);
@@ -311,7 +312,7 @@ export async function getRankingCompleto() {
   // Obtener todos los perfiles de players
   const { data: profiles, error: profErr } = await supabase
     .from('profiles')
-    .select('id, email, full_name, team_name')
+    .select('id, email, full_name, team_name, presupuesto_inicial')
     .eq('role', 'player');
 
   if (profErr) {
@@ -449,3 +450,20 @@ export async function getPlayersStatistics() {
     };
   });
 }
+
+/**
+ * Actualiza el precio de un jugador.
+ */
+export async function updatePlayerPrice(playerId, newPrice) {
+  const { data, error } = await supabase
+    .from('jugadores')
+    .update({ precio: newPrice })
+    .eq('id', playerId);
+
+  if (error) {
+    console.error('Error updating player price:', error);
+    throw error;
+  }
+  return data;
+}
+
