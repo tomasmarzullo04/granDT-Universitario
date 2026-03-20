@@ -10,12 +10,12 @@ export const PITCH_POSITIONS = [
   { top: '33%', left: '24%', label: 'TERCERA 6' },
   { top: '33%', left: '76%', label: 'TERCERA 7' },
   { top: '36%', left: '50%', label: 'OCTAVO' },
-  // Backs - The Diagonal (Narrowed for spacing)
+  // Backs - The Diagonal
   { top: '48%', left: '48%', label: 'MEDIO SCRUM' },
   { top: '58%', left: '58%', label: 'APERTURA' },
-  { top: '78%', left: '10%', label: 'WING IZQ.' },
+  { top: '88%', left: '10%', label: 'WING IZQ.' }, // Dropped to bottom base
   { top: '68%', left: '68%', label: '1ER CENTRO' },
   { top: '78%', left: '74%', label: '2DO CENTRO' },
-  { top: '78%', left: '92%', label: 'WING DER.' }, 
-  { top: '92%', left: '50%', label: 'FULLBACK' },
+  { top: '88%', left: '92%', label: 'WING DER.' }, // Dropped to bottom base
+  { top: '94%', left: '50%', label: 'FULLBACK' },
 ];
