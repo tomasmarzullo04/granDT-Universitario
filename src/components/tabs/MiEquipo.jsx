@@ -23,6 +23,7 @@ export default function MiEquipo() {
   const [refCategory, setRefCategory] = useState('Primera');
   const [poolCategory, setPoolCategory] = useState('primera');
   const [isSelectorOpen, setIsSelectorOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [activeSlotIndex, setActiveSlotIndex] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [activePlayerMenu, setActivePlayerMenu] = useState(null);
@@ -58,10 +59,14 @@ export default function MiEquipo() {
       setActiveFecha(fecha);
       if (fecha) {
         const players = await getConvocados(fecha.id);
-        const normalized = players.map(p => ({
-          ...p,
-          categoryKey: p.categoria === 'Pre-intermedia' ? 'pre' : p.categoria?.toLowerCase() || ''
-        }));
+        const normalized = players.map(p => {
+          let cKey = '';
+          const rawCat = (p.categoria || '').toLowerCase();
+          if (rawCat.includes('superior') || rawCat.includes('primera')) cKey = 'primera';
+          else if (rawCat.includes('intermedia')) cKey = 'intermedia';
+          else if (rawCat.includes('pre')) cKey = 'pre';
+          return { ...p, categoryKey: cKey };
+        });
         setConvocados(normalized);
 
         const { data: { user } } = await supabase.auth.getUser();
@@ -125,6 +130,10 @@ export default function MiEquipo() {
 
   // D&D Handlers
   const handleDragStart = (e, playerId) => {
+    if (!isEditing || isLocked) {
+      e.preventDefault();
+      return;
+    }
     e.dataTransfer.setData('playerId', String(playerId));
     e.currentTarget.classList.add('opacity-40');
     setIsDragging(true);
@@ -151,7 +160,7 @@ export default function MiEquipo() {
     e.currentTarget.classList.remove('scale-125', 'border-yellow-400', 'border-solid', 'bg-yellow-400/20', 'z-50');
     e.currentTarget.classList.add('border-dashed', 'border-white/20');
     
-    if (isLocked) return;
+    if (!isEditing || isLocked) return;
 
     const playerId = e.dataTransfer.getData('playerId');
     const player = convocados.find(p => String(p.id) === playerId);
@@ -219,7 +228,7 @@ export default function MiEquipo() {
   };
 
   const handlePositionClick = (index) => {
-    if (isLocked) return;
+    if (!isEditing || isLocked) return;
 
     // Si ya hay un jugador seleccionado (Selección Cruzada: Jugador -> Puesto)
     if (activePlayerMenu) {
@@ -259,6 +268,7 @@ export default function MiEquipo() {
       if (insertErr) throw insertErr;
 
       setSuccess(true);
+      setIsEditing(false); // Salir de modo edición tras guardar
       setTimeout(() => setSuccess(false), 5000);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
@@ -308,9 +318,13 @@ export default function MiEquipo() {
 
   return (
     <div className="space-y-8 animate-fade-in">
-      {/* Header & Status Indicator */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-4 md:p-8 rounded-3xl border border-neutral/20 shadow-xl overflow-hidden">
-        <div className="space-y-0.5">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-4 md:p-8 rounded-3xl border border-neutral/20 shadow-xl overflow-hidden relative">
+            {!isEditing && !isLocked && selectedPlayers.length > 0 && (
+                <div className="absolute top-0 right-0 bg-primary/5 px-4 py-1 rounded-bl-xl border-l border-b border-primary/10 text-[9px] font-black text-primary/40 uppercase tracking-widest">
+                  Modo Lectura
+                </div>
+            )}
+            <div className="space-y-0.5">
           <h2 className="text-2xl md:text-4xl font-black text-primary tracking-tighter leading-none">
             {profile?.team_name || 'Mi Dream Team'}
           </h2>
@@ -740,27 +754,52 @@ export default function MiEquipo() {
                     <li>- Respetá las posiciones oficiales de la convocatoria.</li>
                  </ul>
               </div>
-              {/* Sticky container for Save Button on Mobile */}
-              <div className="sticky bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md p-4 -mx-4 border-t border-neutral/10 sm:relative sm:bg-transparent sm:border-none sm:p-0 sm:m-0 z-40">
-                <button
-                  onClick={handleSave}
-                  disabled={saving || !canSave || isLocked}
-                  className={`
-                    w-full py-4 px-6 rounded-2xl font-black tracking-widest transition-all flex items-center justify-center gap-3 border-2 
-                    ${canSave && !isLocked
-                      ? 'bg-accent border-accent text-white shadow-[0_0_20px_rgba(19,170,212,0.4)] scale-100 hover:scale-[1.02] active:scale-95' 
-                      : 'bg-neutral-light border-neutral/10 text-neutral/40 cursor-not-allowed'
-                    }
-                    ${saving ? 'opacity-70' : ''}
-                  `}
-                >
-                  {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-                  {isLocked 
-                    ? 'MERCADO CERRADO' 
-                    : isComplete
-                      ? '¡FINALIZAR Y GUARDAR EQUIPO!'
-                      : (selectedPlayers.length === 0 ? 'ARMÁ TU EQUIPO' : `GUARDAR PROGRESO (${selectedPlayers.length}/15)`)}
-                </button>
+              {/* Footer Actions */}
+              <div className="sticky bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md p-4 -mx-4 border-t border-neutral/10 sm:relative sm:bg-transparent sm:border-none sm:p-0 sm:m-0 z-40 flex flex-col sm:flex-row gap-3">
+                
+                {!isEditing && !isLocked && (
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="flex-1 py-4 px-6 rounded-2xl font-black tracking-widest transition-all flex items-center justify-center gap-3 border-2 bg-primary border-primary text-white shadow-xl hover:scale-[1.02] active:scale-95"
+                  >
+                    <Users className="w-5 h-5" />
+                    EDITAR MI EQUIPO
+                  </button>
+                )}
+
+                {(isEditing || isLocked || selectedPlayers.length === 0) && (
+                  <button
+                    onClick={handleSave}
+                    disabled={saving || !canSave || isLocked || !isEditing}
+                    className={`
+                      flex-1 py-4 px-6 rounded-2xl font-black tracking-widest transition-all flex items-center justify-center gap-3 border-2 
+                      ${canSave && !isLocked && isEditing
+                        ? 'bg-accent border-accent text-white shadow-[0_0_20px_rgba(19,170,212,0.4)] scale-100 hover:scale-[1.02] active:scale-95' 
+                        : 'bg-neutral-light border-neutral/10 text-neutral/40 cursor-not-allowed'
+                      }
+                      ${saving ? 'opacity-70' : ''}
+                    `}
+                  >
+                    {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                    {isLocked 
+                      ? 'MERCADO CERRADO' 
+                      : (isComplete
+                        ? '¡FINALIZAR Y GUARDAR EQUIPO!'
+                        : (selectedPlayers.length === 0 ? 'ARMÁ TU EQUIPO' : `GUARDAR PROGRESO (${selectedPlayers.length}/15)`))}
+                  </button>
+                )}
+
+                {isEditing && (
+                  <button
+                    onClick={() => {
+                        setIsEditing(false);
+                        window.location.reload(); // Recargar para revertir cambios no guardados
+                    }}
+                    className="py-4 px-6 rounded-2xl font-black tracking-widest transition-all bg-white border-2 border-neutral/10 text-neutral hover:bg-neutral-light"
+                  >
+                    CANCELAR
+                  </button>
+                )}
               </div>
             </div>
           </div>
