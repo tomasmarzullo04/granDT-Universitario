@@ -150,12 +150,26 @@ export default function ResultadosAdmin() {
           getEstadisticasPartido(fechaId),
         ]);
 
+        console.log('DEBUG: Carga de datos para Fecha ID:', fechaId);
+        console.log('DEBUG: Convocados crudos:', convocadosData);
+
         // Group players by category
         const grouped = { Primera: [], Intermedia: [], 'Pre-intermedia': [] };
         convocadosData.forEach(p => {
-          if (grouped[p.categoria]) grouped[p.categoria].push(p);
+          // Normalización para evitar fallos por espacios o mayúsculas
+          const cat = p.categoria ? p.categoria.trim() : 'Sin Categoría';
+          if (grouped[cat]) {
+            grouped[cat].push(p);
+          } else if (cat.toLowerCase() === 'primera') {
+            grouped.Primera.push(p);
+          } else if (cat.toLowerCase() === 'intermedia') {
+            grouped.Intermedia.push(p);
+          } else if (cat.toLowerCase() === 'pre-intermedia' || cat.toLowerCase() === 'pre') {
+            grouped['Pre-intermedia'].push(p);
+          }
         });
         setPlayersByCategory(grouped);
+        console.log('DEBUG: Convocados agrupados:', grouped);
 
         // Initialize stats map for ALL convocados
         const initStats = {};
@@ -277,7 +291,7 @@ export default function ResultadosAdmin() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-neutral/10 pb-6">
           <div>
             <h2 className="text-2xl font-black text-primary flex items-center gap-2">
-              <TrendingUp className="w-6 h-6 text-accent" /> Carga de Estadísticas
+              <TrendingUp className="w-6 h-6 text-accent" /> CARGA DE ESTADÍSTICAS (ACTUALIZADO)
             </h2>
             <p className="text-xs font-black text-neutral uppercase tracking-widest mt-1">
               {isFinalizada
