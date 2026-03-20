@@ -38,6 +38,8 @@ export default function MiEquipo() {
   const [search, setSearch] = useState('');
   const [refCategory, setRefCategory] = useState('Primera');
   const [poolCategory, setPoolCategory] = useState('primera');
+  const [isSelectorOpen, setIsSelectorOpen] = useState(false);
+  const [activeSlotIndex, setActiveSlotIndex] = useState(null);
 
   // Helper to get selected players from slots
   const selectedPlayers = useMemo(() => pitchSlots.filter(Boolean), [pitchSlots]);
@@ -211,7 +213,9 @@ export default function MiEquipo() {
     if (pitchSlots[index]) {
       removeFromSlot({ stopPropagation: () => {} }, index);
     } else {
-      setSelectedPosition(index);
+      setActiveSlotIndex(index);
+      setIsSelectorOpen(true);
+      //setSelectedPosition(index); // Ya no es necesario el selector lateral si usamos el modal
     }
   };
 
@@ -657,6 +661,111 @@ export default function MiEquipo() {
             </div>
           </div>
       </div>
+
+      {/* TACTICAL SELECTOR (Modal / Bottom Sheet) */}
+      {isSelectorOpen && activeSlotIndex !== null && (
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in">
+          <div className="absolute inset-0 bg-primary/40 backdrop-blur-md" onClick={() => setIsSelectorOpen(false)}></div>
+          
+          <div className="relative w-full max-w-sm bg-white rounded-t-[2.5rem] sm:rounded-[2.5rem] shadow-2xl overflow-hidden animate-slide-up sm:animate-pop-in border border-neutral/10">
+            {/* Header */}
+            <div className="bg-primary p-6 text-white relative">
+              <div className="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-4 sm:hidden"></div>
+              <h3 className="text-xl font-black uppercase tracking-tight text-center">
+                Elegir {pitchPositions[activeSlotIndex].label}
+              </h3>
+              <p className="text-[10px] text-white/60 font-black uppercase tracking-[0.2em] text-center mt-1">
+                Designados por el Staff
+              </p>
+              <button 
+                onClick={() => setIsSelectorOpen(false)}
+                className="absolute top-4 right-4 w-8 h-8 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-colors"
+                aria-label="Cerrar"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Candidates List */}
+            <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto bg-neutral-light/10">
+              {convocados
+                .filter(p => p.posicion === pitchPositions[activeSlotIndex].label)
+                .sort((a,b) => {
+                  const order = { 'primera': 1, 'intermedia': 2, 'pre': 3 };
+                  return order[a.categoryKey] - order[b.categoryKey];
+                })
+                .map(player => {
+                  const alreadySelected = selectedPlayers.find(s => s.id === player.id);
+                  const canAfford = player.precio <= remainingBalance;
+                  // Si ya tenemos 5 de esa categoría, deshabilitar (a menos que ya esté en el equipo)
+                  const catLimitReached = counts[player.categoryKey] >= 5 && !alreadySelected;
+                  const isDisabled = (alreadySelected && !pitchSlots[activeSlotIndex]?.id === player.id) || !canAfford || catLimitReached;
+
+                  return (
+                    <button
+                      key={player.id}
+                      disabled={isDisabled}
+                      onClick={() => {
+                        assignToSlot(player, activeSlotIndex);
+                        setIsSelectorOpen(false);
+                      }}
+                      className={`
+                        w-full flex items-center gap-4 p-4 rounded-3xl border-2 transition-all group relative overflow-hidden
+                        ${alreadySelected 
+                          ? 'bg-neutral-light border-neutral/10 opacity-60 grayscale' 
+                          : isDisabled
+                            ? 'bg-neutral-light/50 border-neutral/10 opacity-40 cursor-not-allowed'
+                            : 'bg-white border-neutral/10 hover:border-accent hover:shadow-xl hover:scale-[1.02] active:scale-95'
+                        }
+                      `}
+                    >
+                      <div className={`
+                        w-12 h-12 rounded-2xl flex items-center justify-center font-black text-sm shrink-0 border-2
+                        ${alreadySelected ? 'bg-neutral/20 text-neutral' : 'bg-primary/5 text-primary border-primary/10 group-hover:bg-accent group-hover:text-white group-hover:border-white transition-all'}
+                      `}>
+                         {player.categoryKey === 'primera' ? '1ra' : player.categoryKey === 'intermedia' ? 'Int' : 'Pre'}
+                      </div>
+
+                      <div className="flex-1 text-left">
+                        <p className="font-black text-primary text-base leading-tight uppercase transform group-hover:translate-x-1 transition-transform whitespace-normal break-words">
+                          {player.nombre}
+                        </p>
+                        <p className="text-[10px] font-bold text-neutral opacity-60 uppercase tracking-widest mt-0.5">
+                           ${(player.precio || 5000000).toLocaleString()} • {player.posicion}
+                        </p>
+                      </div>
+
+                      <div className="shrink-0">
+                        {alreadySelected ? (
+                          <CheckCircle className="w-5 h-5 text-green-500" />
+                        ) : !canAfford ? (
+                          <div className="bg-red-50 text-red-500 text-[8px] font-black px-2 py-1 rounded-md uppercase border border-red-100">Sin Saldo</div>
+                        ) : catLimitReached ? (
+                          <div className="bg-yellow-50 text-yellow-600 text-[8px] font-black px-2 py-1 rounded-md uppercase border border-yellow-100 italic">Cat. 5/5</div>
+                        ) : (
+                          <div className="bg-accent/10 text-accent text-[8px] font-black px-3 py-1.5 rounded-xl uppercase border border-accent/20 group-hover:bg-accent group-hover:text-white transition-all">Elegir</div>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+
+              {convocados.filter(p => p.posicion === pitchPositions[activeSlotIndex].label).length === 0 && (
+                <div className="py-12 text-center bg-neutral-light/20 rounded-3xl border-2 border-dashed border-neutral/20">
+                   <p className="text-xs font-black text-neutral uppercase tracking-widest leading-loose">
+                     No hay jugadores oficiales<br/>designados para este puesto aún.
+                   </p>
+                </div>
+              )}
+            </div>
+
+            {/* Footer Summary */}
+            <div className="bg-neutral-light/50 p-4 text-center">
+               <p className="text-[9px] font-black text-neutral uppercase tracking-[0.3em]">REGLA 5-5-5 ACTIVA: {counts.primera}/5 · {counts.intermedia}/5 · {counts.pre}/5</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
