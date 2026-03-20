@@ -2,9 +2,10 @@ import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { getActiveFecha, getConvocados } from '../../lib/api';
-import { Save, Loader2, AlertCircle, CheckCircle, Search, Trophy, Info, Users } from 'lucide-react';
+import { Save, Loader2, AlertCircle, CheckCircle, Search, Trophy, Info, Users, BarChart2 } from 'lucide-react';
 import RugbyPitch from '../RugbyPitch';
 import TeamCounters from '../TeamCounters';
+import ResumenFecha from '../ResumenFecha';
 
 const pitchPositions = [
   { top: '15%', left: '25%', label: 'PILAR 1' },
@@ -258,6 +259,27 @@ export default function MiEquipo() {
         <Trophy className="w-20 h-20 text-yellow-500 mx-auto mb-6 opacity-20" />
         <h2 className="text-3xl font-black text-primary mb-3">Convocatoria Cerrada</h2>
         <p className="text-neutral font-medium">Estamos a la espera de que el Staff oficial anuncie los planteles para la próxima fecha.</p>
+      </div>
+    );
+  }
+
+  // ── If the fecha is finalizada, show the match summary instead of the builder ──
+  if (activeFecha.estado === 'finalizada') {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex items-center gap-3 bg-white rounded-2xl border border-neutral/20 shadow-sm px-6 py-4">
+          <div className="w-10 h-10 bg-accent/10 rounded-xl flex items-center justify-center shrink-0">
+            <BarChart2 className="w-5 h-5 text-accent" />
+          </div>
+          <div>
+            <h2 className="font-black text-primary text-lg leading-tight">Fecha {activeFecha.numero_fecha} — vs {activeFecha.rival}</h2>
+            <p className="text-xs font-bold text-neutral uppercase tracking-widest">Resultados publicados</p>
+          </div>
+          <span className="ml-auto text-[10px] font-black uppercase tracking-widest bg-green-100 text-green-700 px-3 py-1.5 rounded-xl border border-green-200">
+            FINALIZADA
+          </span>
+        </div>
+        <ResumenFecha activeFecha={activeFecha} />
       </div>
     );
   }
