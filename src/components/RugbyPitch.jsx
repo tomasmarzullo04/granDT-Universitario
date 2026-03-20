@@ -3,23 +3,23 @@ import React from 'react';
 // Generates a proper absolute position for each of the 15 players on a vertical pitch
 // Coordinates are in percentages % (x, y) starting top-left
 const pitchPositions = [
-  // Forwards
-  { top: '15%', left: '25%' }, // 1 Pilar 1
-  { top: '15%', left: '50%' }, // 2 Hooker
-  { top: '15%', left: '75%' }, // 3 Pilar 3
-  { top: '24%', left: '38%' }, // 4 Segunda 4
-  { top: '24%', left: '62%' }, // 5 Segunda 5
-  { top: '35%', left: '25%' }, // 6 Tercera 6
-  { top: '35%', left: '75%' }, // 7 Tercera 7
-  { top: '38%', left: '50%' }, // 8 Octavo
-  // Backs
-  { top: '48%', left: '45%' }, // 9 Medio Scrum
-  { top: '56%', left: '65%' }, // 10 Apertura
-  { top: '70%', left: '16%' }, // 11 Wing Izq
-  { top: '65%', left: '42%' }, // 12 1er Centro
-  { top: '74%', left: '72%' }, // 13 2do Centro
-  { top: '82%', left: '86%' }, // 14 Wing Der
-  { top: '90%', left: '50%' }, // 15 Fullback
+  // Forwards (Spread out more)
+  { top: '10%', left: '22%' }, // 1 Pilar 1
+  { top: '10%', left: '50%' }, // 2 Hooker
+  { top: '10%', left: '78%' }, // 3 Pilar 3
+  { top: '22%', left: '35%' }, // 4 Segunda 4
+  { top: '22%', left: '65%' }, // 5 Segunda 5
+  { top: '34%', left: '20%' }, // 6 Tercera 6
+  { top: '34%', left: '80%' }, // 7 Tercera 7
+  { top: '42%', left: '50%' }, // 8 Octavo
+  // Backs (Spread out more)
+  { top: '54%', left: '42%' }, // 9 Medio Scrum
+  { top: '62%', left: '68%' }, // 10 Apertura
+  { top: '74%', left: '12%' }, // 11 Wing Izq
+  { top: '70%', left: '40%' }, // 12 1er Centro
+  { top: '78%', left: '70%' }, // 13 2do Centro
+  { top: '84%', left: '88%' }, // 14 Wing Der
+  { top: '94%', left: '50%' }, // 15 Fullback
 ];
 
 export default function RugbyPitch({ players }) {
@@ -50,21 +50,23 @@ export default function RugbyPitch({ players }) {
             style={{ top: pos.top, left: pos.left }}
           >
             <div className={`
-              w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center text-xs md:text-sm font-black shadow-md border-2 transition-all duration-300
+              w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center text-[10px] md:text-sm font-black shadow-md border-2 transition-all duration-300
               ${player ? 'bg-primary text-white border-white' : 'bg-white/20 border-white/30 text-white/50 border-dashed group-hover:bg-white/40 group-hover:border-white/50 group-hover:text-white'}
             `}>
               {index + 1}
             </div>
             
             <div 
-              className="mt-1 bg-white/95 border border-neutral/20 px-2 py-0.5 rounded text-[10px] md:text-[11px] text-slate-900 font-bold text-center backdrop-blur-sm shadow-sm group-hover:bg-primary group-hover:text-white group-hover:border-primary transition-all player-name-full"
+              className="mt-0.5 text-white font-black text-center transition-all player-name-full"
               style={{ 
-                lineHeight: '1.2',
-                maxWidth: '75px'
+                lineHeight: '1.1',
+                maxWidth: '65px',
+                fontSize: '9px',
+                textShadow: '0 1px 3px rgba(0,0,0,0.9), 0 0 2px rgba(0,0,0,0.5)'
               }}
             >
               {(() => {
-                if (!player) return 'Vacío';
+                if (!player) return <span className="opacity-40 text-[7px] uppercase tracking-tighter">Vacío</span>;
                 const p = Array.isArray(player) ? player[0] : player;
                 return p?.nombre || p?.name || 'Jugador';
               })()}
