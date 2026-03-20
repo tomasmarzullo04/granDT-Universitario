@@ -312,18 +312,6 @@ export default function MiEquipo() {
                Faltan {15 - selectedPlayers.length} jugadores
              </div>
            )}
-           <button
-             onClick={handleSave}
-             disabled={saving || !isValid || activeFecha?.estado === 'en_juego'}
-             className={`w-full sm:w-auto px-10 py-4 rounded-2xl font-black transition-all shadow-xl flex items-center justify-center gap-2 ${
-               isValid && activeFecha?.estado !== 'en_juego'
-               ? 'bg-accent hover:bg-accent-dark text-white scale-100 hover:scale-[1.03]' 
-               : 'bg-neutral-light text-neutral opacity-50 cursor-not-allowed hidden sm:flex'
-             }`}
-           >
-             {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5 text-white/50" />}
-             ¡GUARDAR MI EQUIPO!
-           </button>
         </div>
       </div>
 
@@ -424,6 +412,22 @@ export default function MiEquipo() {
 
           <TeamCounters counts={counts} activeCategory={poolCategory} budget={{ total: budgetTotal, remaining: remainingBalance, spent }} />
 
+          {/* Botón de Guardado Reposicionado (Misión Quirúrgica) */}
+          <div className="flex justify-center pb-2">
+            <button
+              onClick={handleSave}
+              disabled={saving || !isValid || activeFecha?.estado === 'en_juego'}
+              className={`w-full max-w-md py-4 rounded-2xl font-black transition-all shadow-2xl flex items-center justify-center gap-3 border-2 ${
+                isValid && activeFecha?.estado !== 'en_juego'
+                ? 'bg-accent border-accent hover:bg-accent-dark text-white scale-100 hover:scale-[1.03] active:scale-95' 
+                : 'bg-neutral-light border-neutral/10 text-neutral opacity-50 cursor-not-allowed'
+              }`}
+            >
+              {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5 text-white/50" />}
+              ¡GUARDAR MI EQUIPO!
+            </button>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             <div className="lg:col-span-7 bg-white rounded-[2rem] border border-neutral/20 shadow-2xl p-6 relative overflow-hidden flex flex-col items-center">
               <div className="absolute inset-0 bg-neutral-light/10 pointer-events-none"></div>
@@ -476,8 +480,8 @@ export default function MiEquipo() {
                           onDragEnd={handleDragEnd}
                           className="w-full h-full bg-primary border-[3px] border-white rounded-full flex flex-col items-center justify-center p-1 cursor-grab active:cursor-grabbing shadow-xl relative group animate-pop-in"
                         >
-                          <div className="text-[8px] sm:text-[9px] font-black text-white text-center leading-tight uppercase line-clamp-2 px-1">
-                             {player.nombre?.split(' ').length > 1 ? player.nombre?.split(' ').slice(1).join(' ') : player.nombre}
+                          <div className="text-[7px] sm:text-[8px] font-black text-white text-center leading-none uppercase whitespace-normal px-1">
+                             {player.nombre}
                           </div>
                           
                           <button 
@@ -601,7 +605,7 @@ export default function MiEquipo() {
                           </div>
 
                           <div className="min-w-0 flex-1 flex flex-col leading-tight">
-                            <p className={`font-black uppercase text-[9px] truncate ${isSelected ? 'text-neutral' : 'text-primary'}`}>
+                            <p className={`font-black uppercase text-[9px] whitespace-normal ${isSelected ? 'text-neutral' : 'text-primary'}`}>
                               {player.nombre}
                             </p>
                             <span className={`text-[7px] font-bold uppercase tracking-tighter truncate ${isSelected ? 'text-neutral/70' : 'text-accent'}`}>
