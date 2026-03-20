@@ -400,8 +400,17 @@ export default function AdminDragDropBuilder() {
                       onDragEnd={handleDragEnd}
                       className="w-full h-full bg-accent border-[3px] border-white rounded-full flex flex-col items-center justify-center p-1 cursor-grab active:cursor-grabbing shadow-xl relative group animate-pop-in"
                     >
-                      <div className="text-[9px] sm:text-[10px] font-black text-white text-center leading-tight uppercase line-clamp-2 px-1 drop-shadow-md">
-                         {player.nombre?.split(' ').length > 1 ? player.nombre?.split(' ').slice(1).join(' ') : player.nombre}
+                      <div 
+                        className="text-[9px] sm:text-[10px] font-black text-white text-center uppercase px-1 drop-shadow-md"
+                        style={{ 
+                          whiteSpace: 'normal', 
+                          textOverflow: 'clip',
+                          overflow: 'visible',
+                          lineHeight: '1',
+                          wordBreak: 'break-word'
+                        }}
+                      >
+                         {player.nombre}
                       </div>
                       
                       <button 

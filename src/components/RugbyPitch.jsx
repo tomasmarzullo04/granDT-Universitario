@@ -56,7 +56,16 @@ export default function RugbyPitch({ players }) {
               {index + 1}
             </div>
             
-            <div className="mt-1 bg-black/60 px-2 py-0.5 rounded text-[10px] md:text-xs text-white font-bold text-center backdrop-blur-sm whitespace-normal leading-tight">
+            <div 
+              className="mt-1 bg-black/60 px-2 py-0.5 rounded text-[10px] md:text-[11px] text-white font-bold text-center backdrop-blur-sm"
+              style={{ 
+                whiteSpace: 'normal', 
+                textOverflow: 'clip',
+                overflow: 'visible',
+                lineHeight: '1',
+                maxWidth: '85px'
+              }}
+            >
               {(() => {
                 if (!player) return 'Vacío';
                 const p = Array.isArray(player) ? player[0] : player;

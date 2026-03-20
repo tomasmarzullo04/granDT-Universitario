@@ -155,7 +155,7 @@ export default function ResumenFecha({ activeFecha }) {
 
                       {/* Name & position */}
                       <div className="flex-1 min-w-0">
-                        <p className="font-black text-sm text-primary truncate">{nombre}</p>
+                        <p className="font-black text-sm text-primary whitespace-normal leading-tight">{nombre}</p>
                         <p className="text-[9px] font-bold text-neutral uppercase tracking-widest">{posicion_oficial || 'Jugador'}</p>
                       </div>
 

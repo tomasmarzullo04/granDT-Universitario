@@ -466,7 +466,16 @@ export default function MiEquipo() {
                           onDragEnd={handleDragEnd}
                           className="w-full h-full bg-primary border-[3px] border-white rounded-full flex flex-col items-center justify-center p-1 cursor-grab active:cursor-grabbing shadow-xl relative group animate-pop-in"
                         >
-                          <div className="text-[7px] sm:text-[8px] font-black text-white text-center leading-none uppercase whitespace-normal px-1">
+                          <div 
+                            className="text-[7px] sm:text-[8.5px] font-black text-white text-center uppercase px-1"
+                            style={{ 
+                              whiteSpace: 'normal', 
+                              textOverflow: 'clip',
+                              overflow: 'visible',
+                              lineHeight: '1',
+                              wordBreak: 'break-word'
+                            }}
+                          >
                              {player.nombre}
                           </div>
                           
