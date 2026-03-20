@@ -3,23 +3,25 @@ import React from 'react';
 // Generates a proper absolute position for each of the 15 players on a vertical pitch
 // Coordinates are in percentages % (x, y) starting top-left
 const pitchPositions = [
-  // Forwards (Spread out more)
-  { top: '10%', left: '22%' }, // 1 Pilar 1
+  // Forwards (The Pack) - Row 1
+  { top: '10%', left: '26%' }, // 1 Pilar 1
   { top: '10%', left: '50%' }, // 2 Hooker
-  { top: '10%', left: '78%' }, // 3 Pilar 3
-  { top: '22%', left: '35%' }, // 4 Segunda 4
-  { top: '22%', left: '65%' }, // 5 Segunda 5
-  { top: '34%', left: '20%' }, // 6 Tercera 6
-  { top: '34%', left: '80%' }, // 7 Tercera 7
-  { top: '42%', left: '50%' }, // 8 Octavo
-  // Backs (Spread out more)
-  { top: '54%', left: '42%' }, // 9 Medio Scrum
-  { top: '62%', left: '68%' }, // 10 Apertura
-  { top: '74%', left: '12%' }, // 11 Wing Izq
-  { top: '70%', left: '40%' }, // 12 1er Centro
-  { top: '78%', left: '70%' }, // 13 2do Centro
-  { top: '84%', left: '88%' }, // 14 Wing Der
-  { top: '94%', left: '50%' }, // 15 Fullback
+  { top: '10%', left: '74%' }, // 3 Pilar 3
+  // Forwards - Row 2
+  { top: '19%', left: '38%' }, // 4 Segunda 4
+  { top: '19%', left: '62%' }, // 5 Segunda 5
+  // Forwards - Row 3
+  { top: '28%', left: '20%' }, // 6 Tercera 6
+  { top: '28%', left: '80%' }, // 7 Tercera 7
+  { top: '32%', left: '50%' }, // 8 Octavo
+  // Backs - The Diagonal
+  { top: '44%', left: '46%' }, // 9 Medio Scrum
+  { top: '54%', left: '58%' }, // 10 Apertura
+  { top: '75%', left: '12%' }, // 11 Wing Izq
+  { top: '64%', left: '70%' }, // 12 1er Centro
+  { top: '74%', left: '82%' }, // 13 2do Centro
+  { top: '75%', left: '92%' }, // 14 Wing Der
+  { top: '92%', left: '50%' }, // 15 Fullback
 ];
 
 export default function RugbyPitch({ players }) {
@@ -59,14 +61,14 @@ export default function RugbyPitch({ players }) {
             <div 
               className="mt-0.5 text-white font-black text-center transition-all player-name-full"
               style={{ 
-                lineHeight: '1.1',
+                lineHeight: '1',
                 maxWidth: '65px',
-                fontSize: '9px',
-                textShadow: '0 1px 3px rgba(0,0,0,0.9), 0 0 2px rgba(0,0,0,0.5)'
+                fontSize: '8px',
+                textShadow: '1px 1px 1px #000, -1px -1px 1px #000, 1px -1px 1px #000, -1px 1px 1px #000, 0 2px 4px rgba(0,0,0,0.8)'
               }}
             >
               {(() => {
-                if (!player) return <span className="opacity-40 text-[7px] uppercase tracking-tighter">Vacío</span>;
+                if (!player) return <span className="text-white/40 text-[7px] uppercase tracking-tighter">Vacío</span>;
                 const p = Array.isArray(player) ? player[0] : player;
                 return p?.nombre || p?.name || 'Jugador';
               })()}
