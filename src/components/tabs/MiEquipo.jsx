@@ -687,68 +687,72 @@ export default function MiEquipo() {
             </div>
 
             {/* Candidates List */}
-            <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto bg-neutral-light/10">
-              {convocados
-                .filter(p => p.posicion === pitchPositions[activeSlotIndex].label)
-                .sort((a,b) => {
-                  const order = { 'primera': 1, 'intermedia': 2, 'pre': 3 };
-                  return order[a.categoryKey] - order[b.categoryKey];
-                })
-                .map(player => {
-                  const alreadySelected = selectedPlayers.find(s => s.id === player.id);
-                  const canAfford = player.precio <= remainingBalance;
-                  // Si ya tenemos 5 de esa categoría, deshabilitar (a menos que ya esté en el equipo)
-                  const catLimitReached = counts[player.categoryKey] >= 5 && !alreadySelected;
-                  const isDisabled = (alreadySelected && !pitchSlots[activeSlotIndex]?.id === player.id) || !canAfford || catLimitReached;
+            <div className="p-0 space-y-0 max-h-[70vh] overflow-y-auto bg-neutral-light/5">
+              <div className="px-4 py-6">
+                {convocados
+                  .filter(p => p.posicion === pitchPositions[activeSlotIndex].label)
+                  .sort((a,b) => {
+                    const order = { 'primera': 1, 'intermedia': 2, 'pre': 3 };
+                    return order[a.categoryKey] - order[b.categoryKey];
+                  })
+                  .map(player => {
+                    const alreadySelected = selectedPlayers.find(s => s.id === player.id);
+                    const canAfford = player.precio <= remainingBalance;
+                    // Si ya tenemos 5 de esa categoría, deshabilitar (a menos que ya esté en el equipo)
+                    const catLimitReached = counts[player.categoryKey] >= 5 && !alreadySelected;
+                    const isDisabled = (alreadySelected && !pitchSlots[activeSlotIndex]?.id === player.id) || !canAfford || catLimitReached;
 
-                  return (
-                    <button
-                      key={player.id}
-                      disabled={isDisabled}
-                      onClick={() => {
-                        assignToSlot(player, activeSlotIndex);
-                        setIsSelectorOpen(false);
-                      }}
-                      className={`
-                        w-full flex items-center gap-4 p-4 rounded-3xl border-2 transition-all group relative overflow-hidden
-                        ${alreadySelected 
-                          ? 'bg-neutral-light border-neutral/10 opacity-60 grayscale' 
-                          : isDisabled
-                            ? 'bg-neutral-light/50 border-neutral/10 opacity-40 cursor-not-allowed'
-                            : 'bg-white border-neutral/10 hover:border-accent hover:shadow-xl hover:scale-[1.02] active:scale-95'
-                        }
-                      `}
-                    >
-                      <div className={`
-                        w-12 h-12 rounded-2xl flex items-center justify-center font-black text-sm shrink-0 border-2
-                        ${alreadySelected ? 'bg-neutral/20 text-neutral' : 'bg-primary/5 text-primary border-primary/10 group-hover:bg-accent group-hover:text-white group-hover:border-white transition-all'}
-                      `}>
-                         {player.categoryKey === 'primera' ? '1ra' : player.categoryKey === 'intermedia' ? 'Int' : 'Pre'}
-                      </div>
+                    return (
+                      <button
+                        key={player.id}
+                        disabled={isDisabled}
+                        onClick={() => {
+                          assignToSlot(player, activeSlotIndex);
+                          setIsSelectorOpen(false);
+                        }}
+                        className={`
+                          w-full flex items-center gap-3 p-3.5 rounded-2xl border transition-all mb-3 relative overflow-hidden group
+                          ${alreadySelected 
+                            ? 'bg-neutral-light border-neutral/10 opacity-60 grayscale' 
+                            : catLimitReached
+                              ? 'bg-neutral-light/30 border-neutral/10 opacity-60'
+                              : isDisabled
+                                ? 'bg-neutral-light/50 border-neutral/10 opacity-40 cursor-not-allowed'
+                                : 'bg-white border-neutral/10 shadow-sm hover:border-accent hover:shadow-md active:scale-95'
+                          }
+                        `}
+                      >
+                        <div className={`
+                          w-10 h-10 rounded-xl flex items-center justify-center font-black text-[10px] shrink-0 border
+                          ${alreadySelected ? 'bg-neutral/20 text-neutral' : 'bg-primary/5 text-primary border-primary/5 group-hover:bg-accent group-hover:text-white transition-all'}
+                        `}>
+                           {player.categoryKey === 'primera' ? '1ra' : player.categoryKey === 'intermedia' ? 'Int' : 'Pre'}
+                        </div>
 
-                      <div className="flex-1 text-left">
-                        <p className="font-black text-primary text-base leading-tight uppercase transform group-hover:translate-x-1 transition-transform whitespace-normal break-words">
-                          {player.nombre}
-                        </p>
-                        <p className="text-[10px] font-bold text-neutral opacity-60 uppercase tracking-widest mt-0.5">
-                           ${(player.precio || 5000000).toLocaleString()} • {player.posicion}
-                        </p>
-                      </div>
+                        <div className="flex-1 text-left min-w-0 pr-1">
+                          <p className="font-black text-primary text-sm leading-tight uppercase player-name-full group-hover:translate-x-0.5 transition-transform">
+                            {player.nombre}
+                          </p>
+                          <p className="text-[9px] font-bold text-neutral opacity-50 uppercase tracking-widest mt-0.5">
+                             ${(player.precio || 5000000).toLocaleString()} • {player.posicion}
+                          </p>
+                        </div>
 
-                      <div className="shrink-0">
-                        {alreadySelected ? (
-                          <CheckCircle className="w-5 h-5 text-green-500" />
-                        ) : !canAfford ? (
-                          <div className="bg-red-50 text-red-500 text-[8px] font-black px-2 py-1 rounded-md uppercase border border-red-100">Sin Saldo</div>
-                        ) : catLimitReached ? (
-                          <div className="bg-yellow-50 text-yellow-600 text-[8px] font-black px-2 py-1 rounded-md uppercase border border-yellow-100 italic">Cat. 5/5</div>
-                        ) : (
-                          <div className="bg-accent/10 text-accent text-[8px] font-black px-3 py-1.5 rounded-xl uppercase border border-accent/20 group-hover:bg-accent group-hover:text-white transition-all">Elegir</div>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
+                        <div className="shrink-0 flex items-center">
+                          {alreadySelected ? (
+                            <CheckCircle className="w-5 h-5 text-green-500" />
+                          ) : !canAfford ? (
+                            <div className="bg-red-50 text-red-500 text-[8px] font-black px-2 py-1 rounded-md uppercase border border-red-100">Sin Saldo</div>
+                          ) : catLimitReached ? (
+                            <div className="bg-yellow-50 text-yellow-600 text-[8px] font-black px-2.5 py-1.5 rounded-lg uppercase border border-yellow-200 shadow-sm">Cupo lleno</div>
+                          ) : (
+                            <div className="bg-accent/5 text-accent text-[8px] font-black px-3 py-1.5 rounded-lg uppercase border border-accent/20 group-hover:bg-accent group-hover:text-white transition-all">Elegir</div>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+              </div>
 
               {convocados.filter(p => p.posicion === pitchPositions[activeSlotIndex].label).length === 0 && (
                 <div className="py-12 text-center bg-neutral-light/20 rounded-3xl border-2 border-dashed border-neutral/20">
