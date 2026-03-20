@@ -16,6 +16,8 @@ export default function AdminDragDropBuilder() {
 
   const [activeCategory, setActiveCategory] = useState('Primera'); // 'Primera', 'Intermedia', 'Pre-intermedia'
   const [search, setSearch] = useState('');
+  const [isDragging, setIsDragging] = useState(false);
+  const [activePlayerMenu, setActivePlayerMenu] = useState(null);
 
   const [planteles, setPlanteles] = useState({
     Primera: Array(15).fill(null),
@@ -71,10 +73,12 @@ export default function AdminDragDropBuilder() {
   const handleDragStart = (e, playerId) => {
     e.dataTransfer.setData('playerId', playerId);
     e.currentTarget.classList.add('opacity-50');
+    setIsDragging(true);
   };
 
   const handleDragEnd = (e) => {
     e.currentTarget.classList.remove('opacity-50');
+    setIsDragging(false);
   };
 
   const handleDragOver = (e) => {
@@ -139,26 +143,57 @@ export default function AdminDragDropBuilder() {
       removeFromPitch({ stopPropagation: () => {} }, activeCategory, index);
     } else {
       setSelectedPosition(selectedPosition === index ? null : index);
+      setActivePlayerMenu(null);
     }
   };
 
   const handlePlayerClick = (player, isUsed) => {
-    if (isUsed || selectedPosition === null) return;
+    if (isUsed) return;
     
+    // If a position on the pitch is already selected, assign directly
+    if (selectedPosition !== null) {
+      assignToSlot(player, selectedPosition);
+      setSelectedPosition(null);
+      return;
+    }
+
+    // Otherwise, show the quick assign menu
+    setActivePlayerMenu(activePlayerMenu?.id === player.id ? null : player);
+  };
+
+  const assignToSlot = (player, targetIndex) => {
     setPlanteles(prev => {
-      const next = { ...prev, [activeCategory]: [...prev[activeCategory]] };
+      const newPlanteles = { 
+        Primera: [...prev.Primera], 
+        Intermedia: [...prev.Intermedia], 
+        'Pre-intermedia': [...prev['Pre-intermedia']] 
+      };
       
-      // Remove dropped player from everywhere
+      const existingPlayerInTarget = newPlanteles[activeCategory][targetIndex];
+      
+      // Remove player from everywhere he might be
+      let sourceCat = null;
+      let sourceIdx = null;
       ['Primera', 'Intermedia', 'Pre-intermedia'].forEach(cat => {
-         const idx = prev[cat].findIndex(p => p && p.id === player.id);
-         if(idx !== -1) { next[cat] = [...prev[cat]]; next[cat][idx] = null; }
+        const idx = newPlanteles[cat].findIndex(p => p && p.id === player.id);
+        if(idx !== -1) {
+           sourceCat = cat;
+           sourceIdx = idx;
+           newPlanteles[cat][idx] = null;
+        }
       });
 
-      // Put in target
-      next[activeCategory][selectedPosition] = player;
-      return next;
+      // Put him in target
+      newPlanteles[activeCategory][targetIndex] = player;
+
+      // Swap if necessary
+      if (existingPlayerInTarget && sourceCat === activeCategory && sourceIdx !== null) {
+          newPlanteles[activeCategory][sourceIdx] = existingPlayerInTarget;
+      }
+
+      return newPlanteles;
     });
-    setSelectedPosition(null);
+    setActivePlayerMenu(null);
   };
 
   const removeFromPitch = (e, catOrig, idxOrig) => {
@@ -391,8 +426,8 @@ export default function AdminDragDropBuilder() {
                         style={{ 
                           fontSize: '7px',
                           lineHeight: '0.9',
-                          maxWidth: '55px',
-                          textShadow: '1px 1px 1px #000, -1px -1px 1px #000, 1px -1px 1px #000, -1px 1px 1px #000, 0 2px 4px rgba(0,0,0,0.8)',
+                          maxWidth: '65px',
+                          textShadow: '0 1px 2px rgba(0,0,0,1), 0 0 10px rgba(0,0,0,0.5)',
                           width: 'max-content'
                         }}
                       >
@@ -403,7 +438,9 @@ export default function AdminDragDropBuilder() {
                     <div className={`w-full h-full rounded-full flex flex-col items-center justify-center p-1 backdrop-blur-[1px] transition-all border-2 border-dashed ${
                         isSelected 
                         ? 'bg-yellow-400/30 border-yellow-400 scale-110 shadow-[0_0_15px_rgba(250,204,21,0.5)]' 
-                        : 'bg-white/5 border-white/20 hover:bg-white/10 hover:border-white/40'
+                        : isDragging
+                          ? 'bg-accent/20 border-accent/50 animate-pulse-subtle border-solid'
+                          : 'bg-white/5 border-white/20 hover:bg-white/10 hover:border-white/40'
                     }`}>
                       <div className={`font-black text-sm sm:text-lg leading-none ${isSelected ? 'text-yellow-400' : 'text-white/40'}`}>
                         {i + 1}
@@ -443,42 +480,75 @@ export default function AdminDragDropBuilder() {
              {filteredJugadores.map(player => {
                 const status = getPlayerStatus(player.id);
                 const isUsed = !!status;
+                const isMenuOpen = activePlayerMenu?.id === player.id;
 
                 return (
-                  <div
-                    key={player.id}
-                    draggable={!isUsed}
-                    onClick={() => handlePlayerClick(player, isUsed)}
-                    onDragStart={(e) => handleDragStart(e, player.id)}
-                    onDragEnd={handleDragEnd}
-                    className={`p-4 rounded-2xl border-2 flex justify-between items-center transition-all group ${
-                      isUsed 
-                        ? 'opacity-40 grayscale border-neutral/10 bg-neutral-light/50 cursor-not-allowed scale-[0.98]' 
-                        : selectedPosition !== null
-                          ? 'bg-yellow-50 border-yellow-300 hover:bg-yellow-100 hover:scale-[1.02] cursor-pointer shadow-md'
-                          : 'bg-white border-neutral/10 hover:border-primary/30 hover:scale-[1.02] cursor-grab active:cursor-grabbing shadow-sm hover:shadow-lg'
-                    }`}
-                  >
-                    <div className="flex-1 min-w-0">
-                      <p className={`font-black text-sm truncate ${isUsed ? 'text-neutral' : 'text-primary'}`}>{player.nombre}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                         <span className="text-[9px] text-neutral font-black uppercase tracking-widest bg-neutral-light px-2 py-0.5 rounded">
-                           {player.posicion || 'JUGADOR'}
-                         </span>
+                  <div key={player.id} className="relative group">
+                    <div
+                      draggable={!isUsed}
+                      onClick={() => handlePlayerClick(player, isUsed)}
+                      onDragStart={(e) => handleDragStart(e, player.id)}
+                      onDragEnd={handleDragEnd}
+                      className={`p-4 rounded-2xl border-2 flex justify-between items-center transition-all ${
+                        isUsed 
+                          ? 'opacity-40 grayscale border-neutral/10 bg-neutral-light/50 cursor-not-allowed scale-[0.98]' 
+                          : selectedPosition !== null || isMenuOpen
+                            ? 'bg-yellow-50 border-yellow-300 hover:bg-yellow-100 hover:scale-[1.02] cursor-pointer shadow-md'
+                            : 'bg-white border-neutral/10 hover:border-primary/30 hover:scale-[1.02] cursor-grab active:cursor-grabbing shadow-sm hover:shadow-lg'
+                      }`}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className={`font-black text-sm truncate ${isUsed ? 'text-neutral' : 'text-primary'}`}>{player.nombre}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                           <span className="text-[9px] text-neutral font-black uppercase tracking-widest bg-neutral-light px-2 py-0.5 rounded">
+                             {player.posicion || 'JUGADOR'}
+                           </span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-col items-end gap-2 ml-3 shrink-0">
+                        {status && (
+                          <div className="flex items-center gap-1.5 bg-primary/10 text-primary font-black text-[9px] px-3 py-1.5 rounded-full border border-primary/20 shrink-0">
+                            <CheckCircle className="w-3 h-3" /> {status.toUpperCase()}
+                          </div>
+                        )}
+                        {!status && (selectedPosition !== null || isMenuOpen) && (
+                          <div className="w-8 h-8 rounded-xl bg-yellow-400 text-white flex items-center justify-center font-black animate-pulse">
+                            +
+                          </div>
+                        )}
                       </div>
                     </div>
-                    
-                    <div className="flex flex-col items-end gap-2 ml-3 shrink-0">
-                      {status && (
-                        <div className="flex items-center gap-1.5 bg-primary/10 text-primary font-black text-[9px] px-3 py-1.5 rounded-full border border-primary/20 shrink-0">
-                          <CheckCircle className="w-3 h-3" /> {status.toUpperCase()}
-                        </div>
-                      )}
-                    </div>
 
-                    {!status && selectedPosition !== null && (
-                      <div className="w-8 h-8 rounded-xl bg-yellow-400 text-white flex items-center justify-center font-black animate-pulse">
-                        +
+                    {/* Quick Assign Pop-over Menu */}
+                    {isMenuOpen && (
+                      <div className="absolute left-0 right-0 top-full mt-2 bg-white border-2 border-primary rounded-2xl shadow-2xl z-50 p-2 animate-pop-in overflow-hidden max-h-[300px] flex flex-col">
+                        <div className="p-2 border-b border-neutral/10 flex justify-between items-center bg-neutral-light/30">
+                           <span className="text-[10px] font-black text-primary/60 uppercase tracking-widest">Asignar a:</span>
+                           <button onClick={(e) => { e.stopPropagation(); setActivePlayerMenu(null); }} className="text-neutral hover:text-red-500 font-bold">Cerrar</button>
+                        </div>
+                        <div className="overflow-y-auto grid grid-cols-2 gap-1 p-1">
+                          {PITCH_POSITIONS.map((pos, idx) => {
+                             const occupied = planteles[activeCategory][idx];
+                             return (
+                               <button
+                                 key={idx}
+                                 onClick={(e) => { e.stopPropagation(); assignToSlot(player, idx); }}
+                                 className={`p-2 rounded-lg text-left transition-all flex items-center gap-2 group/item ${
+                                   occupied 
+                                     ? 'bg-neutral-light opacity-50 cursor-not-allowed' 
+                                     : 'hover:bg-primary hover:text-white'
+                                 }`}
+                               >
+                                 <span className={`w-5 h-5 rounded flex items-center justify-center text-[10px] font-black border ${occupied ? 'border-neutral/30' : 'bg-primary/10 border-primary/20 group-hover/item:bg-white group-hover/item:text-primary'}`}>{idx + 1}</span>
+                                 <div className="flex flex-col">
+                                   <span className="text-[10px] font-bold truncate leading-none">{pos.label}</span>
+                                   {occupied && <span className="text-[8px] opacity-70 italic truncate">Ocupado</span>}
+                                 </div>
+                               </button>
+                             )
+                          })}
+                        </div>
                       </div>
                     )}
                   </div>

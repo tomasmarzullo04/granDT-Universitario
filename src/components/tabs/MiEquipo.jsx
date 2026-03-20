@@ -24,6 +24,8 @@ export default function MiEquipo() {
   const [poolCategory, setPoolCategory] = useState('primera');
   const [isSelectorOpen, setIsSelectorOpen] = useState(false);
   const [activeSlotIndex, setActiveSlotIndex] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [activePlayerMenu, setActivePlayerMenu] = useState(null);
 
   // Helper to get selected players from slots
   const selectedPlayers = useMemo(() => pitchSlots.filter(Boolean), [pitchSlots]);
@@ -99,16 +101,20 @@ export default function MiEquipo() {
   }, [selectedPlayers]);
 
   const isAdmin = profile?.role === 'admin';
-  const isValid = selectedPlayers.length === 15 && counts.primera === 5 && counts.intermedia === 5 && counts.pre === 5;
+  const isValid = isAdmin 
+    ? selectedPlayers.length === 15 
+    : (selectedPlayers.length === 15 && counts.primera === 5 && counts.intermedia === 5 && counts.pre === 5);
 
   // D&D Handlers
   const handleDragStart = (e, playerId) => {
     e.dataTransfer.setData('playerId', String(playerId));
     e.currentTarget.classList.add('opacity-40');
+    setIsDragging(true);
   };
 
   const handleDragEnd = (e) => {
     e.currentTarget.classList.remove('opacity-40');
+    setIsDragging(false);
   };
 
   const handleDragOver = (e) => {
@@ -141,6 +147,7 @@ export default function MiEquipo() {
     if (player.posicion && player.posicion !== 'Jugador' && player.posicion !== targetLabel) {
       setError(`¡Atención! No podés poner a ${player.nombre} en esta posición porque en esta fecha jugará de ${player.posicion}.`);
       setSelectedPosition(null);
+      setActivePlayerMenu(null);
       return;
     }
 
@@ -153,8 +160,8 @@ export default function MiEquipo() {
       newSlots[alreadyInSlotIdx] = null;
     }
 
-    // Check category limit before adding if not already in the team
-    if (alreadyInSlotIdx === -1) {
+    // Check category limit before adding if not already in the team (Skipped for Admin)
+    if (alreadyInSlotIdx === -1 && !isAdmin) {
       const cat = player.categoryKey;
       if (cat === 'primera' && counts.primera >= 5) {
         setError('¡Límite alcanzado! Ya elegiste 5 de Primera.'); return;
@@ -176,6 +183,7 @@ export default function MiEquipo() {
     newSlots[index] = player;
     setPitchSlots(newSlots);
     setError(null);
+    setActivePlayerMenu(null);
   };
 
   const removeFromSlot = (e, index) => {
@@ -186,12 +194,12 @@ export default function MiEquipo() {
   };
 
   const handlePositionClick = (index) => {
+    setActivePlayerMenu(null);
     if (pitchSlots[index]) {
       removeFromSlot({ stopPropagation: () => {} }, index);
     } else {
       setActiveSlotIndex(index);
       setIsSelectorOpen(true);
-      //setSelectedPosition(index); // Ya no es necesario el selector lateral si usamos el modal
     }
   };
 
@@ -473,8 +481,8 @@ export default function MiEquipo() {
                             style={{ 
                               fontSize: '7px',
                               lineHeight: '0.9',
-                              maxWidth: '55px',
-                              textShadow: '1px 1px 1px #000, -1px -1px 1px #000, 1px -1px 1px #000, -1px 1px 1px #000, 0 2px 4px rgba(0,0,0,0.8)',
+                              maxWidth: '65px',
+                              textShadow: '0 1px 2px rgba(0,0,0,1), 0 0 10px rgba(0,0,0,0.5)',
                               width: 'max-content'
                             }}
                           >
@@ -485,7 +493,9 @@ export default function MiEquipo() {
                         <div className={`w-full h-full rounded-full flex flex-col items-center justify-center p-1 backdrop-blur-[1px] transition-all border-2 border-dashed ${
                             isSelected 
                             ? 'bg-yellow-400/30 border-yellow-400 scale-110 shadow-[0_0_15px_rgba(250,204,21,0.5)]' 
-                            : 'bg-white/5 border-white/20 hover:bg-white/10 hover:border-white/40'
+                            : isDragging
+                              ? 'bg-accent/20 border-accent/50 animate-pulse-subtle border-solid'
+                              : 'bg-white/5 border-white/20 hover:bg-white/10 hover:border-white/40'
                         }`}>
                           <div className={`font-black text-sm sm:text-lg leading-none ${isSelected ? 'text-yellow-400' : 'text-white/40'}`}>
                             {i + 1}
@@ -565,55 +575,94 @@ export default function MiEquipo() {
                       p.nombre.toLowerCase().includes(search.toLowerCase())
                     )
                     .map(player => {
-                      const isSelected = selectedPlayers.find(s => s.id === player.id);
+                      const isMenuOpen = activePlayerMenu?.id === player.id;
+                      const isSelected = !!selectedPlayers.find(s => s.id === player.id);
                       const initials = player.nombre?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || '?';
                       
                       return (
-                        <div
-                          key={player.id}
-                          draggable={!isSelected}
-                          onDragStart={(e) => handleDragStart(e, player.id)}
-                          onDragEnd={handleDragEnd}
-                          onClick={() => {
-                            if (!isSelected && selectedPosition !== null) {
-                               assignToSlot(player, selectedPosition);
-                               setSelectedPosition(null);
-                            }
-                          }}
-                          className={`relative group flex items-center gap-2 p-1.5 rounded-lg border-2 transition-all cursor-pointer ${
-                            isSelected 
-                            ? 'bg-neutral-light/50 border-neutral/10 opacity-60 grayscale' 
-                            : selectedPosition !== null
-                              ? 'bg-yellow-50 border-yellow-300 hover:bg-yellow-100 shadow-sm'
-                              : 'bg-white border-neutral/10 hover:border-accent hover:shadow-md hover-shadow'
-                          }`}
-                        >
-                          <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 border ${
-                            isSelected ? 'bg-neutral/20 text-neutral' : 'bg-primary/10 text-primary border-primary/20'
-                          }`}>
-                            <span className="text-[8px] font-black">{initials}</span>
+                        <div key={player.id} className="relative">
+                          <div
+                            draggable={!isSelected}
+                            onDragStart={(e) => handleDragStart(e, player.id)}
+                            onDragEnd={handleDragEnd}
+                            onClick={() => {
+                              if (!isSelected) {
+                                  setActivePlayerMenu(isMenuOpen ? null : player);
+                              }
+                            }}
+                            className={`relative group flex items-center gap-2 p-1.5 rounded-lg border-2 transition-all cursor-pointer ${
+                              isSelected 
+                              ? 'bg-neutral-light/50 border-neutral/10 opacity-60 grayscale' 
+                              : isMenuOpen
+                                ? 'bg-yellow-50 border-yellow-300 shadow-md scale-[1.02]'
+                                : 'bg-white border-neutral/10 hover:border-accent hover:shadow-md hover-shadow'
+                            }`}
+                          >
+                            <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 border ${
+                              isSelected ? 'bg-neutral/20 text-neutral' : 'bg-primary/10 text-primary border-primary/20'
+                            }`}>
+                              <span className="text-[8px] font-black">{initials}</span>
+                            </div>
+
+                            <div className="min-w-0 flex-1 flex flex-col leading-tight">
+                              <p className={`font-black uppercase text-[9px] whitespace-normal ${isSelected ? 'text-neutral' : 'text-primary'}`}>
+                                {player.nombre}
+                              </p>
+                              <span className={`text-[7px] font-bold uppercase tracking-tighter truncate ${isSelected ? 'text-neutral/70' : 'text-accent'}`}>
+                                {player.posicion || 'JUGADOR'}
+                              </span>
+                            </div>
+                            
+                            <div className="shrink-0 flex items-center justify-center">
+                              {isSelected ? (
+                                <CheckCircle className="w-3.5 h-3.5 text-green-500" />
+                              ) : (
+                                <div className={`w-5 h-5 rounded-md flex items-center justify-center transition-all ${
+                                   isMenuOpen ? 'bg-yellow-400 text-white animate-pulse' : 'bg-neutral-light text-primary group-hover:bg-accent group-hover:text-white'
+                                }`}>
+                                  <span className="text-xs font-black">+</span>
+                                </div>
+                              )}
+                            </div>
                           </div>
 
-                          <div className="min-w-0 flex-1 flex flex-col leading-tight">
-                            <p className={`font-black uppercase text-[9px] whitespace-normal ${isSelected ? 'text-neutral' : 'text-primary'}`}>
-                              {player.nombre}
-                            </p>
-                            <span className={`text-[7px] font-bold uppercase tracking-tighter truncate ${isSelected ? 'text-neutral/70' : 'text-accent'}`}>
-                              {player.posicion || 'JUGADOR'}
-                            </span>
-                          </div>
-                          
-                          <div className="shrink-0 flex items-center justify-center">
-                            {isSelected ? (
-                              <CheckCircle className="w-3.5 h-3.5 text-green-500" />
-                            ) : (
-                              <div className={`w-5 h-5 rounded-md flex items-center justify-center transition-all ${
-                                 selectedPosition !== null ? 'bg-yellow-400 text-white animate-pulse' : 'bg-neutral-light text-primary group-hover:bg-accent group-hover:text-white'
-                              }`}>
-                                <span className="text-xs font-black">+</span>
+                          {/* Quick Assign Pop-over for Mi Equipo */}
+                          {isMenuOpen && (
+                            <div className="absolute left-0 right-0 bottom-full mb-2 bg-white border-2 border-primary rounded-2xl shadow-2xl z-[60] p-2 animate-pop-in overflow-hidden max-h-[300px] flex flex-col">
+                              <div className="p-2 border-b border-neutral/10 flex justify-between items-center bg-neutral-light/30">
+                                <span className="text-[9px] font-black text-primary/60 uppercase tracking-widest">Asignar a:</span>
+                                <button onClick={(e) => { e.stopPropagation(); setActivePlayerMenu(null); }} className="text-neutral hover:text-red-500 font-bold px-2">×</button>
                               </div>
-                            )}
-                          </div>
+                              <div className="overflow-y-auto grid grid-cols-2 gap-1 p-1 custom-scrollbar">
+                                {PITCH_POSITIONS.map((pos, idx) => {
+                                  // Solo permitimos asignar si el puesto está vacío o si es la posición oficial del jugador
+                                  const occupied = pitchSlots[idx];
+                                  const isOfficialPos = player.posicion === pos.label;
+                                  const isRestricted = player.posicion && player.posicion !== 'Jugador' && !isOfficialPos;
+
+                                  return (
+                                    <button
+                                      key={idx}
+                                      disabled={isRestricted}
+                                      onClick={(e) => { e.stopPropagation(); assignToSlot(player, idx); }}
+                                      className={`p-2 rounded-lg text-left transition-all flex items-center gap-2 group/item ${
+                                        occupied || isRestricted
+                                          ? 'bg-neutral-light opacity-50 cursor-not-allowed' 
+                                          : 'hover:bg-primary hover:text-white'
+                                      }`}
+                                    >
+                                      <span className={`w-5 h-5 rounded flex items-center justify-center text-[9px] font-black border ${occupied ? 'border-neutral/30' : 'bg-primary/10 border-primary/20 group-hover/item:bg-white group-hover/item:text-primary'}`}>{idx + 1}</span>
+                                      <div className="flex flex-col min-w-0">
+                                        <span className={`text-[9px] font-bold truncate leading-none ${isOfficialPos ? 'text-accent group-hover/item:text-white' : ''}`}>{pos.label}</span>
+                                        {occupied && <span className="text-[7px] opacity-70 italic">Ocupado</span>}
+                                        {isOfficialPos && !occupied && <span className="text-[7px] text-accent group-hover/item:text-white/80 font-black">SU PUESTO</span>}
+                                      </div>
+                                    </button>
+                                  )
+                                })}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       );
                     })}
