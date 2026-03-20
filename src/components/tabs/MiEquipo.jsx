@@ -448,7 +448,11 @@ export default function MiEquipo() {
                       onDrop={(e) => handleDrop(e, i)}
                     >
                       {player ? (
-                        <div className="flex flex-col items-center">
+                        <div className={`flex flex-col ${
+                          parseFloat(pos.left) > 80 ? 'items-end' : 
+                          parseFloat(pos.left) < 20 ? 'items-start' : 
+                          'items-center'
+                        }`}>
                           <div 
                             draggable
                             onDragStart={(e) => handleDragStart(e, player.id)}
@@ -466,12 +470,17 @@ export default function MiEquipo() {
                           </div>
                           
                           <div 
-                            className="mt-1 text-white font-black text-center uppercase player-name-full"
+                            className={`mt-1 text-white font-black uppercase player-name-full ${
+                              parseFloat(pos.left) > 80 ? 'text-right' : 
+                              parseFloat(pos.left) < 20 ? 'text-left' : 
+                              'text-center'
+                            }`}
                             style={{ 
                               fontSize: '8px',
                               lineHeight: '1',
-                              maxWidth: '65px',
-                              textShadow: '1px 1px 1px #000, -1px -1px 1px #000, 1px -1px 1px #000, -1px 1px 1px #000, 0 2px 4px rgba(0,0,0,0.8)'
+                              maxWidth: '80px',
+                              textShadow: '1px 1px 1px #000, -1px -1px 1px #000, 1px -1px 1px #000, -1px 1px 1px #000, 0 2px 4px rgba(0,0,0,0.8)',
+                              width: 'max-content'
                             }}
                           >
                              {player.nombre}
