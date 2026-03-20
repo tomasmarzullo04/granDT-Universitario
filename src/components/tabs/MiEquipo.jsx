@@ -654,6 +654,21 @@ export default function MiEquipo() {
                     <li>- Respetá el 5-5-5: ¡Igualdad de categorías!</li>
                  </ul>
               </div>
+
+              {/* Botón de Guardado Secundario (UX mejorada) */}
+              <button
+                onClick={handleSave}
+                disabled={saving || !isValid}
+                className={`w-full py-5 rounded-[1.5rem] font-black tracking-wider transition-all shadow-2xl flex items-center justify-center gap-3 border-2 mb-4 ${
+                  isValid 
+                  ? 'bg-accent border-accent hover:bg-accent-dark text-white scale-100 hover:scale-[1.02] active:scale-95' 
+                  : 'bg-neutral-light border-neutral/10 text-neutral/40 cursor-not-allowed'
+                }`}
+              >
+                {saving ? <Loader2 className="w-6 h-6 animate-spin" /> : <Save className="w-6 h-6 text-white/50" />}
+                ¡CONFIRMAR Y GUARDAR EQUIPO!
+              </button>
+
             </div>
           </div>
       </div>
