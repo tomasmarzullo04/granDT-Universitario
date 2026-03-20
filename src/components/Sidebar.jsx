@@ -1,15 +1,24 @@
 import { useState } from 'react';
 import { X, Trophy, BookOpen, Instagram, LogOut, Code, ChevronDown, ChevronUp, ShieldAlert, Zap, Users, CalendarDays } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 export default function Sidebar({ isOpen, onClose }) {
   const { user, role, signOut } = useAuth();
   const [showRules, setShowRules] = useState(false);
+  const navigate = useNavigate();
+  const [, setSearchParams] = useSearchParams();
 
   // Animación para el panel lateral
   const slideClass = isOpen ? 'translate-x-0' : 'translate-x-full';
   
   if (!user) return null;
+
+  const handleTabClick = (tabId) => {
+    setSearchParams({ tab: tabId });
+    onClose();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   return (
     <>
@@ -53,13 +62,8 @@ export default function Sidebar({ isOpen, onClose }) {
               ].map(item => (
                 <button
                   key={item.id}
-                  onClick={() => {
-                    // Logic to change tab if needed, or just close and let dashboard handle it if we have a way.
-                    // Since Sidebar is in Layout, it doesn't know about Dashboard's setActiveTab.
-                    // But for now, we'll just close and the user can use the Bottom Bar.
-                    onClose();
-                  }}
-                  className="flex items-center gap-3 p-3 bg-white border border-neutral/10 rounded-xl hover:border-accent transition-all group"
+                  onClick={() => handleTabClick(item.id)}
+                  className="flex items-center gap-3 p-3 bg-white border border-neutral/10 rounded-xl hover:border-accent transition-all group active:scale-95"
                 >
                   <item.icon className="w-5 h-5 text-accent" />
                   <span className="font-black text-primary text-sm uppercase tracking-tight">{item.label}</span>

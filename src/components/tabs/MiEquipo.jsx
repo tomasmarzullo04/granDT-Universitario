@@ -647,16 +647,16 @@ export default function MiEquipo() {
                 onClick={handleSave}
                 disabled={saving || !isValid || activeFecha?.estado === 'en_juego'}
                 className={`
-                  w-full py-5 rounded-[1.5rem] md:rounded-[2rem] font-black tracking-wider transition-all shadow-2xl flex items-center justify-center gap-3 border-2 
-                  ${isValid && activeFecha?.estado !== 'en_juego'
-                    ? 'bg-accent border-accent hover:bg-accent-dark text-white scale-100 hover:scale-[1.02] active:scale-95 hover-shadow' 
+                  w-full py-4 px-6 rounded-2xl font-black tracking-widest transition-all flex items-center justify-center gap-3 border-2 mt-8 mb-10
+                  ${isValid && selectedPlayers.length === 15 && activeFecha?.estado !== 'en_juego'
+                    ? 'bg-accent border-accent text-white shadow-[0_0_20px_rgba(19,170,212,0.4)] scale-100 hover:scale-[1.02] active:scale-95' 
                     : 'bg-neutral-light border-neutral/10 text-neutral/40 cursor-not-allowed'
                   }
-                  fixed bottom-20 left-4 right-4 z-[60] w-[calc(100%-2rem)] md:relative md:bottom-0 md:left-0 md:right-0 md:w-full md:mt-10 md:mb-4 md:z-auto
+                  ${saving ? 'opacity-70' : ''}
                 `}
               >
-                {saving ? <Loader2 className="w-6 h-6 animate-spin" /> : <Save className="w-6 h-6 text-white/50 opacity-50" />}
-                GUARDAR MI EQUIPO
+                {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                {selectedPlayers.length === 15 ? '¡CONFIRMAR Y GUARDAR EQUIPO!' : `GUARDAR EQUIPO (${selectedPlayers.length}/15)`}
               </button>
             </div>
           </div>

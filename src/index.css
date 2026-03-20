@@ -40,4 +40,12 @@
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
   }
+
+  /* REFUERZO DE VISIBILIDAD: Nombres completos sin truncamiento */
+  .player-name-full {
+    white-space: normal !important;
+    word-break: break-word !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+  }
 }
