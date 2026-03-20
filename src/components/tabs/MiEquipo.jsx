@@ -438,7 +438,7 @@ export default function MiEquipo() {
                   return (
                     <div
                       key={i}
-                      className={`absolute -translate-x-1/2 -translate-y-1/2 w-[44px] h-[44px] sm:w-[54px] sm:h-[54px] transition-all duration-300 ${
+                      className={`absolute -translate-x-1/2 -translate-y-1/2 w-[34px] h-[34px] sm:w-[54px] sm:h-[54px] transition-all duration-300 ${
                          isSelected && !player ? 'scale-125' : ''
                       }`}
                       style={{ top: pos.top, left: pos.left }}
@@ -457,9 +457,9 @@ export default function MiEquipo() {
                             draggable
                             onDragStart={(e) => handleDragStart(e, player.id)}
                             onDragEnd={handleDragEnd}
-                            className="w-10 h-10 sm:w-12 sm:h-12 bg-primary border-[3px] border-white rounded-full flex items-center justify-center cursor-grab active:cursor-grabbing shadow-xl relative group animate-pop-in"
+                            className="w-8 h-8 sm:w-12 sm:h-12 bg-primary border-2 sm:border-[3px] border-white rounded-full flex items-center justify-center cursor-grab active:cursor-grabbing shadow-xl relative group animate-pop-in"
                           >
-                            <span className="text-[10px] sm:text-xs font-black text-white">{i + 1}</span>
+                            <span className="text-[9px] sm:text-xs font-black text-white">{i + 1}</span>
                             
                             <button 
                               onClick={(e) => removeFromSlot(e, i)}
@@ -476,9 +476,9 @@ export default function MiEquipo() {
                               'text-center'
                             }`}
                             style={{ 
-                              fontSize: '8px',
-                              lineHeight: '1',
-                              maxWidth: '80px',
+                              fontSize: '7px',
+                              lineHeight: '0.9',
+                              maxWidth: '55px',
                               textShadow: '1px 1px 1px #000, -1px -1px 1px #000, 1px -1px 1px #000, -1px 1px 1px #000, 0 2px 4px rgba(0,0,0,0.8)',
                               width: 'max-content'
                             }}
