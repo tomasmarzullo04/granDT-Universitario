@@ -214,7 +214,7 @@ export default function AdminDragDropBuilder() {
               fecha_id: activeFecha.id,
               jugador_id: player.id,
               categoria: cat,
-              posicion_actual: pitchPositions[index].label
+              posicion_actual: PITCH_POSITIONS[index].label
             });
           }
         });

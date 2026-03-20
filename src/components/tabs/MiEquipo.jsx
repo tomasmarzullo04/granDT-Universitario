@@ -37,7 +37,7 @@ export default function MiEquipo() {
       if (p) {
         const catKey = Object.keys(teams).find(k => k.toLowerCase() === p.categoria?.toLowerCase());
         if (catKey) {
-          let idx = pitchPositions.findIndex(pos => pos.label.toUpperCase() === p.posicion?.toUpperCase());
+          let idx = PITCH_POSITIONS.findIndex(pos => pos.label.toUpperCase() === p.posicion?.toUpperCase());
           if (idx === -1) {
               idx = (parseInt(p.posicion) || 0) - 1;
           }
@@ -139,7 +139,7 @@ export default function MiEquipo() {
 
   const assignToSlot = (player, index) => {
     // NUEVA REGLA: El jugador solo puede ir en su posición oficial de la convocatoria
-    const targetLabel = pitchPositions[index].label;
+    const targetLabel = PITCH_POSITIONS[index].label;
     if (player.posicion && player.posicion !== 'Jugador' && player.posicion !== targetLabel) {
       setError(`¡Atención! No podés poner a ${player.nombre} en esta posición porque en esta fecha jugará de ${player.posicion}.`);
       setSelectedPosition(null);
