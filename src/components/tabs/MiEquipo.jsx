@@ -424,7 +424,10 @@ export default function MiEquipo() {
                 </div>
               )}
 
-              <div className="relative w-full aspect-[2/3] max-w-md mx-auto rounded-3xl border-[6px] border-neutral-light/50 overflow-hidden shadow-2xl transition-all duration-500 bg-[#1B4D3E]">
+              <div 
+                className="relative w-full max-w-md mx-auto rounded-3xl border-[6px] border-neutral-light/50 overflow-hidden shadow-2xl transition-all duration-500 bg-[#1B4D3E]"
+                style={{ aspectRatio: '2/3.2' }}
+              >
                 <div className="absolute inset-x-0 top-0 h-[10%] bg-white/5 border-b border-white/20"></div>
                 <div className="absolute inset-x-0 bottom-0 h-[10%] bg-white/5 border-t border-white/20"></div>
                 <div className="absolute inset-x-0 top-1/2 -mt-[1px] border-t-[3px] border-white/30"></div>

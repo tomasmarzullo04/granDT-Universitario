@@ -344,10 +344,10 @@ export default function AdminDragDropBuilder() {
              <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-neutral/20"></div>
           </div>
 
-          <div 
-            className="flex-1 relative w-full h-full max-w-lg mx-auto rounded-3xl border-[6px] border-neutral-light/50 overflow-hidden shadow-2xl transition-colors duration-500"
-            style={{ backgroundColor: '#1B4D3E' }} /* Verde Bosque Rugbier */
-          >
+            <div 
+              className="flex-1 relative w-full h-full max-w-lg mx-auto rounded-3xl border-[6px] border-neutral-light/50 overflow-hidden shadow-2xl transition-colors duration-500"
+              style={{ backgroundColor: '#1B4D3E', aspectRatio: '2/3.2' }} /* Verde Bosque Rugbier */
+            >
             {/* Field Detail Lines */}
             <div className="absolute inset-x-0 top-0 h-[10%] bg-white/5 border-b border-white/20"></div> {/* In-goal Top */}
             <div className="absolute inset-x-0 bottom-0 h-[10%] bg-white/5 border-t border-white/20"></div> {/* In-goal Bottom */}
