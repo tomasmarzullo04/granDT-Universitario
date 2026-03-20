@@ -57,7 +57,7 @@ export default function RugbyPitch({ players }) {
             </div>
             
             <div 
-              className="mt-1 bg-black/60 px-2 py-0.5 rounded text-[10px] md:text-[11px] text-white font-bold text-center backdrop-blur-sm group-hover:bg-primary group-hover:shadow-lg transition-all player-name-full"
+              className="mt-1 bg-white/95 border border-neutral/20 px-2 py-0.5 rounded text-[10px] md:text-[11px] text-slate-900 font-bold text-center backdrop-blur-sm shadow-sm group-hover:bg-primary group-hover:text-white group-hover:border-primary transition-all player-name-full"
               style={{ 
                 lineHeight: '1.2',
                 maxWidth: '75px'

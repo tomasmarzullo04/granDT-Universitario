@@ -711,7 +711,7 @@ export default function MiEquipo() {
                           setIsSelectorOpen(false);
                         }}
                         className={`
-                          w-full flex items-center gap-3 p-3.5 rounded-2xl border transition-all mb-3 relative overflow-hidden group
+                          w-full flex items-center gap-3 p-3.5 rounded-2xl border transition-all mb-4 relative overflow-hidden group
                           ${alreadySelected 
                             ? 'bg-neutral-light border-neutral/10 opacity-60 grayscale' 
                             : catLimitReached
@@ -730,7 +730,7 @@ export default function MiEquipo() {
                         </div>
 
                         <div className="flex-1 text-left min-w-0 pr-1">
-                          <p className="font-black text-primary text-sm leading-tight uppercase player-name-full group-hover:translate-x-0.5 transition-transform">
+                          <p className="font-black text-slate-900 text-sm leading-tight uppercase player-name-full group-hover:translate-x-0.5 transition-transform">
                             {player.nombre}
                           </p>
                           <p className="text-[9px] font-bold text-neutral opacity-50 uppercase tracking-widest mt-0.5">
