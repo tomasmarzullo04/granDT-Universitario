@@ -60,11 +60,14 @@ export default function MiEquipo() {
       if (fecha) {
         const players = await getConvocados(fecha.id);
         const normalized = players.map(p => {
-          let cKey = 'pre'; // Fallback a 'pre'
+          let cKey = 'pre'; // Fallback
           const rawCat = (p.categoria || '').toLowerCase();
-          if (rawCat.includes('superior') || rawCat.includes('primera') || rawCat.includes('1ra')) cKey = 'primera';
+          
+          // CRITICAL: Check for 'pre' first because 'intermedia' matches 'pre-intermedia'
+          if (rawCat.includes('pre')) cKey = 'pre';
+          else if (rawCat.includes('superior') || rawCat.includes('primera') || rawCat.includes('1ra')) cKey = 'primera';
           else if (rawCat.includes('intermedia') || rawCat.includes('inter')) cKey = 'intermedia';
-          else if (rawCat.includes('pre')) cKey = 'pre';
+          
           return { ...p, categoryKey: cKey };
         });
         setConvocados(normalized);
@@ -98,9 +101,10 @@ export default function MiEquipo() {
   const counts = useMemo(() => {
     const res = { primera: 0, intermedia: 0, pre: 0 };
     selectedPlayers.forEach(p => {
-      if (p.categoryKey === 'primera') res.primera++;
-      else if (p.categoryKey === 'intermedia') res.intermedia++;
-      else if (p.categoryKey === 'pre') res.pre++;
+      const key = p.categoryKey;
+      if (res.hasOwnProperty(key)) {
+        res[key]++;
+      }
     });
     return res;
   }, [selectedPlayers]);
