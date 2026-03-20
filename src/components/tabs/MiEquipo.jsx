@@ -199,12 +199,20 @@ export default function MiEquipo() {
   };
 
   const handlePositionClick = (index) => {
-    setActivePlayerMenu(null);
+    // Si ya hay un jugador seleccionado (Selección Cruzada: Jugador -> Puesto)
+    if (activePlayerMenu) {
+      assignToSlot(activePlayerMenu, index);
+      setActivePlayerMenu(null);
+      setSelectedPosition(null);
+      return;
+    }
+
     if (pitchSlots[index]) {
       removeFromSlot({ stopPropagation: () => {} }, index);
     } else {
       setActiveSlotIndex(index);
       setIsSelectorOpen(true);
+      setSelectedPosition(selectedPosition === index ? null : index);
     }
   };
 
@@ -592,13 +600,14 @@ export default function MiEquipo() {
                             onDragEnd={handleDragEnd}
                             onClick={() => {
                               if (!isSelected) {
+                                  // Si ya hay un slot en cancha seleccionado (Selección Cruzada: Puesto -> Jugador)
                                   if (selectedPosition !== null) {
-                                     // Si ya hay un slot seleccionado, asignar directamente
                                      assignToSlot(player, selectedPosition);
                                      setSelectedPosition(null);
+                                     setActivePlayerMenu(null);
                                   } else {
-                                     // Si no, abrir el menú pop-over
-                                     setActivePlayerMenu(isMenuOpen ? null : player);
+                                     // De lo contrario, abrir menú rápido / resaltar
+                                     setActivePlayerMenu(activePlayerMenu?.id === player.id ? null : player);
                                   }
                               }
                             }}

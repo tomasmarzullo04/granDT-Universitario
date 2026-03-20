@@ -139,6 +139,14 @@ export default function AdminDragDropBuilder() {
   };
 
   const handlePositionClick = (index) => {
+    // Si hay un jugador seleccionado esperando ser asignado (Selección Cruzada: Jugador -> Puesto)
+    if (activePlayerMenu) {
+      assignToSlot(activePlayerMenu, index);
+      setActivePlayerMenu(null);
+      setSelectedPosition(null);
+      return;
+    }
+
     if (planteles[activeCategory][index]) {
       removeFromPitch({ stopPropagation: () => {} }, activeCategory, index);
     } else {
@@ -150,14 +158,15 @@ export default function AdminDragDropBuilder() {
   const handlePlayerClick = (player, isUsed) => {
     if (isUsed) return;
     
-    // If a position on the pitch is already selected, assign directly
+    // Si ya hay un slot en la cancha seleccionado (Selección Cruzada: Puesto -> Jugador)
     if (selectedPosition !== null) {
       assignToSlot(player, selectedPosition);
       setSelectedPosition(null);
+      setActivePlayerMenu(null);
       return;
     }
 
-    // Otherwise, show the quick assign menu
+    // De lo contrario, abrir el menú rápido / resaltar el jugador
     setActivePlayerMenu(activePlayerMenu?.id === player.id ? null : player);
   };
 
