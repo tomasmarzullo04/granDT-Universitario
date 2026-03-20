@@ -7,7 +7,7 @@ export const SCORING = {
   DROP: 3,
   AMARILLA: -3,
   ROJA: -10,
-  PRESENCIA: 2,
+  PRESENCIA: 0,
 };
 
 /**
