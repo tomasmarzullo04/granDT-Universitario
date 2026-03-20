@@ -343,8 +343,8 @@ export async function getRankingCompleto() {
 
   return profiles.map(p => ({
     ...p,
-    puntos_totales: totalPuntosMap[p.id] || 0
-  })).sort((a, b) => b.puntos_totales - a.puntos_totales);
+    puntos: totalPuntosMap[p.id] || 0
+  })).sort((a, b) => b.puntos - a.puntos);
 }
 
 // ==========================================

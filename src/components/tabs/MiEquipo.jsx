@@ -101,6 +101,8 @@ export default function MiEquipo() {
   }, [selectedPlayers]);
 
   const isAdmin = profile?.role === 'admin';
+  const isLocked = activeFecha?.estado === 'en_juego' || activeFecha?.estado === 'finalizada';
+
   const isValid = isAdmin 
     ? selectedPlayers.length === 15 
     : (selectedPlayers.length === 15 && counts.primera === 5 && counts.intermedia === 5 && counts.pre === 5);
@@ -133,6 +135,8 @@ export default function MiEquipo() {
     e.currentTarget.classList.remove('scale-125', 'border-yellow-400', 'border-solid', 'bg-yellow-400/20', 'z-50');
     e.currentTarget.classList.add('border-dashed', 'border-white/20');
     
+    if (isLocked) return;
+
     const playerId = e.dataTransfer.getData('playerId');
     const player = convocados.find(p => String(p.id) === playerId);
     if (player) {
@@ -199,6 +203,8 @@ export default function MiEquipo() {
   };
 
   const handlePositionClick = (index) => {
+    if (isLocked) return;
+
     // Si ya hay un jugador seleccionado (Selección Cruzada: Jugador -> Puesto)
     if (activePlayerMenu) {
       assignToSlot(activePlayerMenu, index);
@@ -317,13 +323,13 @@ export default function MiEquipo() {
       </div>
 
       {activeFecha?.estado === 'en_juego' && (
-        <div className="bg-yellow-50 border-2 border-yellow-200 p-4 rounded-2xl flex items-center gap-4 animate-pulse-slow">
-           <div className="w-12 h-12 bg-yellow-400 rounded-xl flex items-center justify-center shrink-0 shadow-sm">
+        <div className="bg-yellow-50 border-2 border-yellow-200 p-4 rounded-2xl flex items-center gap-4 animate-pulse-slow shadow-sm">
+           <div className="w-12 h-12 bg-yellow-400 rounded-xl flex items-center justify-center shrink-0 shadow-md">
               <Lock className="w-6 h-6 text-white" />
            </div>
            <div>
-              <p className="text-sm font-black text-yellow-800 uppercase tracking-tight">Fecha Bloqueada</p>
-              <p className="text-xs font-bold text-yellow-700/80">El partido ya comenzó. No se permiten más cambios en tu equipo.</p>
+              <p className="text-sm font-black text-yellow-800 uppercase tracking-tight">⛔ Mercado cerrado - Fecha en disputa</p>
+              <p className="text-xs font-bold text-yellow-700/80">El partido ya comenzó. No podés realizar cambios en tu alineación.</p>
            </div>
         </div>
       )}
@@ -704,22 +710,26 @@ export default function MiEquipo() {
                     <li>- Respetá las posiciones oficiales de la convocatoria.</li>
                  </ul>
               </div>
-
-              <button
-                onClick={handleSave}
-                disabled={saving || !isValid || activeFecha?.estado === 'en_juego'}
-                className={`
-                  w-full py-4 px-6 rounded-2xl font-black tracking-widest transition-all flex items-center justify-center gap-3 border-2 mt-8 mb-10
-                  ${isValid && selectedPlayers.length === 15 && activeFecha?.estado !== 'en_juego'
-                    ? 'bg-accent border-accent text-white shadow-[0_0_20px_rgba(19,170,212,0.4)] scale-100 hover:scale-[1.02] active:scale-95' 
-                    : 'bg-neutral-light border-neutral/10 text-neutral/40 cursor-not-allowed'
-                  }
-                  ${saving ? 'opacity-70' : ''}
-                `}
-              >
-                {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-                {selectedPlayers.length === 15 ? '¡CONFIRMAR Y GUARDAR EQUIPO!' : `GUARDAR EQUIPO (${selectedPlayers.length}/15)`}
-              </button>
+              {/* Sticky container for Save Button on Mobile */}
+              <div className="sticky bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md p-4 -mx-4 border-t border-neutral/10 sm:relative sm:bg-transparent sm:border-none sm:p-0 sm:m-0 z-40">
+                <button
+                  onClick={handleSave}
+                  disabled={saving || !isValid || isLocked}
+                  className={`
+                    w-full py-4 px-6 rounded-2xl font-black tracking-widest transition-all flex items-center justify-center gap-3 border-2 
+                    ${isValid && selectedPlayers.length === 15 && !isLocked
+                      ? 'bg-accent border-accent text-white shadow-[0_0_20px_rgba(19,170,212,0.4)] scale-100 hover:scale-[1.02] active:scale-95' 
+                      : 'bg-neutral-light border-neutral/10 text-neutral/40 cursor-not-allowed'
+                    }
+                    ${saving ? 'opacity-70' : ''}
+                  `}
+                >
+                  {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                  {isLocked 
+                    ? 'MERCADO CERRADO' 
+                    : (selectedPlayers.length === 15 ? '¡CONFIRMAR Y GUARDAR EQUIPO!' : `GUARDAR EQUIPO (${selectedPlayers.length}/15)`)}
+                </button>
+              </div>
             </div>
           </div>
       </div>

@@ -1,21 +1,22 @@
 export const PITCH_POSITIONS = [
   // Forwards (The Pack) - Row 1
-  { top: '6%', left: '28%', label: 'PILAR 1' },
+  { top: '6%', left: '26%', label: 'PILAR 1' },
   { top: '6%', left: '50%', label: 'HOOKER' },
-  { top: '6%', left: '72%', label: 'PILAR 3' },
+  { top: '6%', left: '74%', label: 'PILAR 3' },
   // Forwards - Row 2
-  { top: '18%', left: '42%', label: 'SEGUNDA 4' },
-  { top: '18%', left: '58%', label: 'SEGUNDA 5' },
+  { top: '16%', left: '40%', label: 'SEGUNDA 4' },
+  { top: '16%', left: '60%', label: 'SEGUNDA 5' },
   // Forwards - Row 3
-  { top: '30%', left: '25%', label: 'TERCERA 6' },
-  { top: '30%', left: '75%', label: 'TERCERA 7' },
-  { top: '33%', left: '50%', label: 'OCTAVO' },
-  // Backs - The Diagonal
-  { top: '48%', left: '48%', label: 'MEDIO SCRUM' },
-  { top: '58%', left: '59%', label: 'APERTURA' },
-  { top: '86%', left: '8%', label: 'WING IZQ.' },
-  { top: '68%', left: '70%', label: '1ER CENTRO' },
-  { top: '78%', left: '81%', label: '2DO CENTRO' },
-  { top: '86%', left: '92%', label: 'WING DER.' }, 
-  { top: '92%', left: '50%', label: 'FULLBACK' },
+  { top: '26%', left: '28%', label: 'TERCERA 6' },
+  { top: '28%', left: '50%', label: 'OCTAVO' },
+  { top: '26%', left: '72%', label: 'TERCERA 7' },
+  // Backs - The Diagonal / Pivot
+  { top: '42%', left: '42%', label: 'MEDIO SCRUM' },
+  { top: '52%', left: '62%', label: 'APERTURA' },
+  // Wings - Mirrored
+  { top: '75%', left: '10%', label: 'WING IZQ.' },
+  { top: '64%', left: '40%', label: '1ER CENTRO' },
+  { top: '72%', left: '60%', label: '2DO CENTRO' },
+  { top: '75%', left: '90%', label: 'WING DER.' }, 
+  { top: '88%', left: '50%', label: 'FULLBACK' },
 ];
