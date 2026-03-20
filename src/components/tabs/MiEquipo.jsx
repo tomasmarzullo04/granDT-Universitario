@@ -412,21 +412,7 @@ export default function MiEquipo() {
 
           <TeamCounters counts={counts} activeCategory={poolCategory} budget={{ total: budgetTotal, remaining: remainingBalance, spent }} />
 
-          {/* Botón de Guardado Reposicionado (Misión Quirúrgica) */}
-          <div className="flex justify-center pb-2">
-            <button
-              onClick={handleSave}
-              disabled={saving || !isValid || activeFecha?.estado === 'en_juego'}
-              className={`w-full max-w-md py-4 rounded-2xl font-black transition-all shadow-2xl flex items-center justify-center gap-3 border-2 ${
-                isValid && activeFecha?.estado !== 'en_juego'
-                ? 'bg-accent border-accent hover:bg-accent-dark text-white scale-100 hover:scale-[1.03] active:scale-95' 
-                : 'bg-neutral-light border-neutral/10 text-neutral opacity-50 cursor-not-allowed'
-              }`}
-            >
-              {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5 text-white/50" />}
-              ¡GUARDAR MI EQUIPO!
-            </button>
-          </div>
+
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             <div className="lg:col-span-7 bg-white rounded-[2rem] border border-neutral/20 shadow-2xl p-6 relative overflow-hidden flex flex-col items-center">
@@ -647,14 +633,14 @@ export default function MiEquipo() {
               <button
                 onClick={handleSave}
                 disabled={saving || !isValid || activeFecha?.estado === 'en_juego'}
-                className={`w-full py-5 rounded-[1.5rem] font-black tracking-wider transition-all shadow-2xl flex items-center justify-center gap-3 border-2 mb-4 ${
+                className={`w-full mt-10 py-5 rounded-[1.5rem] font-black tracking-wider transition-all shadow-2xl flex items-center justify-center gap-3 border-2 mb-4 ${
                   isValid && activeFecha?.estado !== 'en_juego'
                   ? 'bg-accent border-accent hover:bg-accent-dark text-white scale-100 hover:scale-[1.02] active:scale-95' 
                   : 'bg-neutral-light border-neutral/10 text-neutral/40 cursor-not-allowed'
                 }`}
               >
-                {saving ? <Loader2 className="w-6 h-6 animate-spin" /> : <Save className="w-6 h-6 text-white/50" />}
-                ¡CONFIRMAR Y GUARDAR EQUIPO!
+                {saving ? <Loader2 className="w-6 h-6 animate-spin" /> : <Save className="w-6 h-6 text-white/50 opacity-50" />}
+                GUARDAR MI EQUIPO
               </button>
             </div>
           </div>
