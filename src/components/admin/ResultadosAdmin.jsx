@@ -23,6 +23,12 @@ const STAT_FIELDS = [
   { key: 'drops',       label: 'Drop',   pts: SCORING.DROP,       color: 'text-violet-600', bg: 'bg-violet-50', border: 'border-violet-200' },
   { key: 'amarillas',   label: 'Ama.',   pts: SCORING.AMARILLA,   color: 'text-yellow-600', bg: 'bg-yellow-50', border: 'border-yellow-200' },
   { key: 'rojas',       label: 'Roja',   pts: SCORING.ROJA,       color: 'text-red-600',    bg: 'bg-red-50',    border: 'border-red-200' },
+  { key: 'penales_hechos', label: 'Pen. H.', pts: SCORING.PENALES_HECHOS, color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-200' },
+  { key: 'knock_ons',   label: 'Knock',  pts: SCORING.KNOCK_ON,   color: 'text-amber-600',  bg: 'bg-amber-50',  border: 'border-amber-200' },
+  { key: 'lines_robados', label: 'Line R.', pts: SCORING.LINES_ROBADOS, color: 'text-teal-600', bg: 'bg-teal-50', border: 'border-teal-200' },
+  { key: 'asistencias', label: 'Asist.', pts: SCORING.ASISTENCIA, color: 'text-cyan-600', bg: 'bg-cyan-50', border: 'border-cyan-200' },
+  { key: 'cortes_limpios', label: 'Corte', pts: SCORING.CORTE_LIMPIO, color: 'text-fuchsia-600', bg: 'bg-fuchsia-50', border: 'border-fuchsia-200' },
+  { key: 'tackles',     label: 'Tackle', pts: SCORING.TACKLE,     color: 'text-lime-600',   bg: 'bg-lime-50',   border: 'border-lime-200' },
 ];
 
 // ─── StatBox Component ──────────────────────────────────────────────────────
@@ -182,6 +188,12 @@ export default function ResultadosAdmin() {
             drops:        pre?.drops        ?? 0,   // handle NULL from DB
             amarillas:    pre?.amarillas    ?? 0,
             rojas:        pre?.rojas        ?? 0,
+            penales_hechos: pre?.penales_hechos ?? 0,
+            knock_ons:    pre?.knock_ons    ?? 0,
+            lines_robados:pre?.lines_robados?? 0,
+            asistencias:  pre?.asistencias  ?? 0,
+            cortes_limpios:pre?.cortes_limpios?? 0,
+            tackles:      pre?.tackles      ?? 0,
           };
         });
         setStats(initStats);
@@ -219,6 +231,12 @@ export default function ResultadosAdmin() {
       drops:        stats[p.id]?.drops        || 0,
       amarillas:    stats[p.id]?.amarillas    || 0,
       rojas:        stats[p.id]?.rojas        || 0,
+      penales_hechos: stats[p.id]?.penales_hechos || 0,
+      knock_ons:    stats[p.id]?.knock_ons    || 0,
+      lines_robados:stats[p.id]?.lines_robados|| 0,
+      asistencias:  stats[p.id]?.asistencias  || 0,
+      cortes_limpios:stats[p.id]?.cortes_limpios|| 0,
+      tackles:      stats[p.id]?.tackles      || 0,
     }));
   };
 
@@ -388,7 +406,7 @@ export default function ResultadosAdmin() {
               <div className="bg-white rounded-2xl overflow-hidden border border-neutral/20 shadow-sm">
                 {/* Table head */}
                 <div className="grid bg-primary/5 border-b border-neutral/20 px-4 py-3"
-                  style={{ gridTemplateColumns: '1fr repeat(6, auto) 80px' }}>
+                  style={{ gridTemplateColumns: '1fr repeat(12, auto) 80px' }}>
                   <div className="text-[10px] font-black text-neutral uppercase tracking-widest">
                     Jugador
                   </div>
@@ -417,7 +435,7 @@ export default function ResultadosAdmin() {
                         className={`grid items-center px-4 py-3 hover:bg-neutral-light/20 transition-colors ${
                           idx % 2 === 0 ? 'bg-white' : 'bg-neutral-light/10'
                         }`}
-                        style={{ gridTemplateColumns: '1fr repeat(6, auto) 80px' }}
+                        style={{ gridTemplateColumns: '1fr repeat(12, auto) 80px' }}
                       >
                         {/* Player info */}
                         <div className="flex items-center gap-3 min-w-0">

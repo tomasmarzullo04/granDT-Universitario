@@ -191,9 +191,41 @@ export default function ResumenFecha({ activeFecha }) {
                             {stats.rojas}🔴
                           </span>
                         )}
+                        {stats.penales_hechos > 0 && (
+                          <span className="text-[9px] font-black bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">
+                            {stats.penales_hechos}PH
+                          </span>
+                        )}
+                        {stats.knock_ons > 0 && (
+                          <span className="text-[9px] font-black bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
+                            {stats.knock_ons}KO
+                          </span>
+                        )}
+                        {stats.lines_robados > 0 && (
+                          <span className="text-[9px] font-black bg-teal-100 text-teal-700 px-2 py-0.5 rounded-full">
+                            {stats.lines_robados}LR
+                          </span>
+                        )}
+                        {stats.asistencias > 0 && (
+                          <span className="text-[9px] font-black bg-cyan-100 text-cyan-700 px-2 py-0.5 rounded-full">
+                            {stats.asistencias}A
+                          </span>
+                        )}
+                        {stats.cortes_limpios > 0 && (
+                          <span className="text-[9px] font-black bg-fuchsia-100 text-fuchsia-700 px-2 py-0.5 rounded-full">
+                            {stats.cortes_limpios}CL
+                          </span>
+                        )}
+                        {stats.tackles > 0 && (
+                          <span className="text-[9px] font-black bg-lime-100 text-lime-700 px-2 py-0.5 rounded-full">
+                            {stats.tackles}TK
+                          </span>
+                        )}
                         {/* If no stats at all, show presence */}
                         {stats.tries === 0 && stats.conversiones === 0 && stats.penales === 0 &&
-                         stats.drops === 0 && stats.amarillas === 0 && stats.rojas === 0 && (
+                         stats.drops === 0 && stats.amarillas === 0 && stats.rojas === 0 &&
+                         stats.penales_hechos === 0 && stats.knock_ons === 0 && stats.lines_robados === 0 &&
+                         stats.asistencias === 0 && stats.cortes_limpios === 0 && stats.tackles === 0 && (
                           <span className="text-[9px] font-bold text-neutral/50 px-2">presencia</span>
                         )}
                       </div>

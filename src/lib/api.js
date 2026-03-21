@@ -3,11 +3,17 @@ import { supabase } from './supabase';
 export const SCORING = {
   TRY: 5,
   CONVERSION: 2,
-  PENAL: 3,
+  PENAL: 2,
   DROP: 3,
   AMARILLA: -3,
   ROJA: -10,
   PRESENCIA: 0,
+  PENALES_HECHOS: -2,
+  KNOCK_ON: -1,
+  LINES_ROBADOS: 2,
+  ASISTENCIA: 2,
+  CORTE_LIMPIO: 1,
+  TACKLE: 1,
 };
 
 /**
@@ -23,6 +29,12 @@ export function calcularPuntosJugador(s) {
     ((s.drops || 0) * SCORING.DROP) +
     ((s.amarillas || 0) * SCORING.AMARILLA) +
     ((s.rojas || 0) * SCORING.ROJA) +
+    ((s.penales_hechos || 0) * SCORING.PENALES_HECHOS) +
+    ((s.knock_ons || 0) * SCORING.KNOCK_ON) +
+    ((s.lines_robados || 0) * SCORING.LINES_ROBADOS) +
+    ((s.asistencias || 0) * SCORING.ASISTENCIA) +
+    ((s.cortes_limpios || 0) * SCORING.CORTE_LIMPIO) +
+    ((s.tackles || 0) * SCORING.TACKLE) +
     SCORING.PRESENCIA
   );
 }
@@ -406,6 +418,12 @@ export async function getResumenFecha(fechaId, userId) {
         drops: stats?.drops || 0,
         amarillas: stats?.amarillas || 0,
         rojas: stats?.rojas || 0,
+        penales_hechos: stats?.penales_hechos || 0,
+        knock_ons: stats?.knock_ons || 0,
+        lines_robados: stats?.lines_robados || 0,
+        asistencias: stats?.asistencias || 0,
+        cortes_limpios: stats?.cortes_limpios || 0,
+        tackles: stats?.tackles || 0,
       },
       puntos: calcularPuntosJugador(stats),
     };
