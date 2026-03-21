@@ -17,25 +17,25 @@ const CATEGORIES = ['Primera', 'Intermedia', 'Pre-intermedia'];
 const CAT_KEY = { 'Primera': 'primera', 'Intermedia': 'intermedia', 'Pre-intermedia': 'pre' };
 
 const STAT_FIELDS = [
-  { key: 'tries',       label: 'Try',    pts: SCORING.TRY,        color: 'text-green-600',  bg: 'bg-green-50',  border: 'border-green-200' },
-  { key: 'conversiones',label: 'Conv',   pts: SCORING.CONVERSION, color: 'text-blue-600',   bg: 'bg-blue-50',   border: 'border-blue-200' },
-  { key: 'penales',     label: 'Penal',  pts: SCORING.PENAL,      color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-200' },
-  { key: 'drops',       label: 'Drop',   pts: SCORING.DROP,       color: 'text-violet-600', bg: 'bg-violet-50', border: 'border-violet-200' },
-  { key: 'amarillas',   label: 'Ama.',   pts: SCORING.AMARILLA,   color: 'text-yellow-600', bg: 'bg-yellow-50', border: 'border-yellow-200' },
-  { key: 'rojas',       label: 'Roja',   pts: SCORING.ROJA,       color: 'text-red-600',    bg: 'bg-red-50',    border: 'border-red-200' },
-  { key: 'penales_hechos', label: 'Pen. H.', pts: SCORING.PENALES_HECHOS, color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-200' },
-  { key: 'knock_ons',   label: 'Knock',  pts: SCORING.KNOCK_ON,   color: 'text-amber-600',  bg: 'bg-amber-50',  border: 'border-amber-200' },
-  { key: 'lines_robados', label: 'Line R.', pts: SCORING.LINES_ROBADOS, color: 'text-teal-600', bg: 'bg-teal-50', border: 'border-teal-200' },
-  { key: 'asistencias', label: 'Asist.', pts: SCORING.ASISTENCIA, color: 'text-cyan-600', bg: 'bg-cyan-50', border: 'border-cyan-200' },
-  { key: 'cortes_limpios', label: 'Corte', pts: SCORING.CORTE_LIMPIO, color: 'text-fuchsia-600', bg: 'bg-fuchsia-50', border: 'border-fuchsia-200' },
-  { key: 'tackles',     label: 'Tackle', pts: SCORING.TACKLE,     color: 'text-lime-600',   bg: 'bg-lime-50',   border: 'border-lime-200' },
+  { key: 'tries',       label: 'Try',    desc: 'Try', pts: SCORING.TRY,        color: 'text-green-600',  bg: 'bg-green-50',  border: 'border-green-200' },
+  { key: 'conversiones',label: 'Conv',   desc: 'Conversión', pts: SCORING.CONVERSION, color: 'text-blue-600',   bg: 'bg-blue-50',   border: 'border-blue-200' },
+  { key: 'penales',     label: 'Penal',  desc: 'Penal convertido', pts: SCORING.PENAL,      color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-200' },
+  { key: 'drops',       label: 'Drop',   desc: 'Drop goal', pts: SCORING.DROP,       color: 'text-violet-600', bg: 'bg-violet-50', border: 'border-violet-200' },
+  { key: 'amarillas',   label: 'Ama.',   desc: 'Tarjeta Amarilla', pts: SCORING.AMARILLA,   color: 'text-yellow-600', bg: 'bg-yellow-50', border: 'border-yellow-200' },
+  { key: 'rojas',       label: 'Roja',   desc: 'Tarjeta Roja', pts: SCORING.ROJA,       color: 'text-red-600',    bg: 'bg-red-50',    border: 'border-red-200' },
+  { key: 'penales_hechos', label: 'Pen. H.', desc: 'Penales hechos (foul)', pts: SCORING.PENALES_HECHOS, color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-200' },
+  { key: 'knock_ons',   label: 'Knock',  desc: 'Knock On', pts: SCORING.KNOCK_ON,   color: 'text-amber-600',  bg: 'bg-amber-50',  border: 'border-amber-200' },
+  { key: 'lines_robados', label: 'Line R.', desc: 'Lines robados', pts: SCORING.LINES_ROBADOS, color: 'text-teal-600', bg: 'bg-teal-50', border: 'border-teal-200' },
+  { key: 'asistencias', label: 'Asist.', desc: 'Asistencia', pts: SCORING.ASISTENCIA, color: 'text-cyan-600', bg: 'bg-cyan-50', border: 'border-cyan-200' },
+  { key: 'cortes_limpios', label: 'Corte', desc: 'Cortes limpios (más de 10 mts)', pts: SCORING.CORTE_LIMPIO, color: 'text-fuchsia-600', bg: 'bg-fuchsia-50', border: 'border-fuchsia-200' },
+  { key: 'tackles',     label: 'Tackle', desc: 'Tackle', pts: SCORING.TACKLE,     color: 'text-lime-600',   bg: 'bg-lime-50',   border: 'border-lime-200' },
 ];
 
 // ─── StatBox Component ──────────────────────────────────────────────────────
 function StatBox({ field, value, onInc, onDec }) {
   return (
-    <div className={`flex flex-col items-center gap-1 px-2 py-2 rounded-xl border ${field.bg} ${field.border} min-w-[52px]`}>
-      <span className={`text-[9px] font-black uppercase tracking-widest ${field.color}`}>{field.label}</span>
+    <div title={field.desc} className={`flex flex-col items-center gap-1 px-2 py-2 rounded-xl border ${field.bg} ${field.border} min-w-[52px]`}>
+      <span className={`text-[9px] font-black uppercase tracking-widest cursor-help ${field.color}`}>{field.label}</span>
       <span className="text-[8px] font-bold text-neutral opacity-60">
         {field.pts > 0 ? `+${field.pts}` : field.pts}
       </span>
@@ -411,7 +411,7 @@ export default function ResultadosAdmin() {
                     Jugador
                   </div>
                   {STAT_FIELDS.map(f => (
-                    <div key={f.key} className={`text-[10px] font-black uppercase tracking-widest text-center px-2 ${f.color}`}>
+                    <div key={f.key} title={f.desc} className={`text-[10px] font-black uppercase tracking-widest text-center px-2 cursor-help ${f.color}`}>
                       {f.label}
                       <br />
                       <span className="text-[8px] opacity-60">{f.pts > 0 ? `+${f.pts}` : f.pts} pts</span>
