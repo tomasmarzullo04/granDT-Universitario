@@ -6,7 +6,7 @@ export const SCORING = {
   PENAL: 2,
   DROP: 3,
   AMARILLA: -3,
-  ROJA: -10,
+  ROJA: -7,
   PRESENCIA: 0,
   PENALES_HECHOS: -2,
   KNOCK_ON: -1,

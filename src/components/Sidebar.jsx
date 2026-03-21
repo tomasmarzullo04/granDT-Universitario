@@ -140,7 +140,7 @@ export default function Sidebar({ isOpen, onClose }) {
                       <li className="flex justify-between border-b mx-1 border-neutral/10 pb-1"><span>Knock On</span><span className="text-red-500">-1 pt</span></li>
                       <li className="flex justify-between border-b mx-1 border-neutral/10 pb-1"><span>Penal hecho</span><span className="text-red-500">-2 pts</span></li>
                       <li className="flex justify-between border-b mx-1 border-neutral/10 pb-1"><span>Amarilla</span><span className="text-red-500">-3 pts</span></li>
-                      <li className="flex justify-between mx-1"><span>Roja</span><span className="text-red-600">-10 pts</span></li>
+                      <li className="flex justify-between mx-1"><span>Roja</span><span className="text-red-600">-7 pts</span></li>
                     </ul>
                   </div>
                 </div>
