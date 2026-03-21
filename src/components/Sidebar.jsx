@@ -108,7 +108,7 @@ export default function Sidebar({ isOpen, onClose }) {
               
               {showRules && (
                 <div className="p-4 border-t border-neutral/20 bg-white space-y-4">
-                  <div>
+                  <div className="mb-4">
                     <h4 className="flex items-center gap-1.5 text-accent font-bold text-sm mb-1">
                       <ShieldAlert className="w-4 h-4" /> Regla 5-5-5
                     </h4>
@@ -116,16 +116,31 @@ export default function Sidebar({ isOpen, onClose }) {
                       Selección estricta de 15 jugadores equitativos: 5 de Primera, 5 de Intermedia y 5 de Pre-intermedia.
                     </p>
                   </div>
+                  <div className="mb-4">
+                    <h4 className="flex items-center gap-1.5 text-accent font-bold text-sm mb-1">
+                      <CalendarDays className="w-4 h-4" /> Cierre de Equipos
+                    </h4>
+                    <p className="text-xs text-neutral leading-relaxed">
+                      El equipo se podrá configurar o modificar hasta el viernes de cada fecha a las 23:59 hs.
+                    </p>
+                  </div>
                   <div>
                     <h4 className="flex items-center gap-1.5 text-accent font-bold text-sm mb-2">
                       <Zap className="w-4 h-4" /> Puntuación
                     </h4>
                     <ul className="text-xs text-gray-700 space-y-1.5 font-medium">
-                      <li className="flex justify-between border-b mx-1 border-neutral/10 pb-1"><span>Presencia</span><span className="text-primary">+2 pts</span></li>
                       <li className="flex justify-between border-b mx-1 border-neutral/10 pb-1"><span>Try</span><span className="text-primary">+5 pts</span></li>
-                      <li className="flex justify-between border-b mx-1 border-neutral/10 pb-1"><span>Conversión/Penal</span><span className="text-primary">+3 pts</span></li>
+                      <li className="flex justify-between border-b mx-1 border-neutral/10 pb-1"><span>Drop</span><span className="text-primary">+3 pts</span></li>
+                      <li className="flex justify-between border-b mx-1 border-neutral/10 pb-1"><span>Conversión/Penal</span><span className="text-primary">+2 pts</span></li>
+                      <li className="flex justify-between border-b mx-1 border-neutral/10 pb-1"><span>Line robado</span><span className="text-primary">+2 pts</span></li>
+                      <li className="flex justify-between border-b mx-1 border-neutral/10 pb-1"><span>Asistencia</span><span className="text-primary">+2 pts</span></li>
+                      <li className="flex justify-between border-b mx-1 border-neutral/10 pb-1"><span>Corte limpio</span><span className="text-primary">+1 pts</span></li>
+                      <li className="flex justify-between border-b mx-1 border-neutral/10 pb-1"><span>Tackle</span><span className="text-primary">+1 pts</span></li>
+                      <li className="flex justify-between border-b mx-1 border-neutral/10 pb-1"><span>Presencia</span><span className="text-neutral/70">0 pts</span></li>
+                      <li className="flex justify-between border-b mx-1 border-neutral/10 pb-1"><span>Knock On</span><span className="text-red-500">-1 pt</span></li>
+                      <li className="flex justify-between border-b mx-1 border-neutral/10 pb-1"><span>Penal hecho</span><span className="text-red-500">-2 pts</span></li>
                       <li className="flex justify-between border-b mx-1 border-neutral/10 pb-1"><span>Amarilla</span><span className="text-red-500">-3 pts</span></li>
-                      <li className="flex justify-between mx-1"><span>Roja</span><span className="text-red-600">-7 pts</span></li>
+                      <li className="flex justify-between mx-1"><span>Roja</span><span className="text-red-600">-10 pts</span></li>
                     </ul>
                   </div>
                 </div>
