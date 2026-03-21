@@ -492,7 +492,7 @@ export default function MiEquipo() {
               )}
 
               <div 
-                className="relative w-full max-w-md mx-auto rounded-3xl border-[6px] border-neutral-light/50 overflow-hidden shadow-2xl transition-all duration-500 bg-[#1B4D3E]"
+                className={`relative w-full max-w-md mx-auto rounded-3xl border-[6px] border-neutral-light/50 overflow-hidden shadow-2xl transition-all duration-500 bg-[#1B4D3E] ${!isEditing && !isLocked && selectedPlayers.length > 0 ? 'opacity-80 saturate-50 cursor-not-allowed' : ''}`}
                 style={{ aspectRatio: '2/3.2' }}
               >
                 <div className="absolute inset-x-0 top-0 h-[10%] bg-white/5 border-b border-white/20"></div>
@@ -531,12 +531,14 @@ export default function MiEquipo() {
                           >
                             <span className="text-[9px] sm:text-xs font-black text-white">{i + 1}</span>
                             
-                            <button 
-                              onClick={(e) => removeFromSlot(e, i)}
-                              className="absolute -top-1 -right-1 w-5 h-5 bg-red-600 text-white rounded-full flex items-center justify-center text-[10px] font-black shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-20 border-2 border-white"
-                            >
-                              ×
-                            </button>
+                            {isEditing && !isLocked && (
+                                <button 
+                                  onClick={(e) => removeFromSlot(e, i)}
+                                  className="absolute -top-1 -right-1 w-5 h-5 bg-red-600 text-white rounded-full flex items-center justify-center text-[10px] font-black shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-20 border-2 border-white"
+                                >
+                                  ×
+                                </button>
+                            )}
                           </div>
                           
                           <div 
@@ -584,13 +586,14 @@ export default function MiEquipo() {
                       <button 
                         key={p.id}
                         onClick={() => {
+                          if (!isEditing || isLocked) return;
                           const idx = pitchSlots.findIndex(slot => slot && slot.id === p.id);
                           if (idx !== -1) removeFromSlot({ stopPropagation: () => {} }, idx);
                         }}
-                        className="bg-primary text-white text-[9px] font-black px-4 py-2 rounded-xl flex items-center gap-2 hover:bg-red-600 hover:scale-[1.05] transition-all shadow-md group border border-white/20"
+                        className={`text-white text-[9px] font-black px-4 py-2 rounded-xl flex items-center gap-2 transition-all shadow-md group border border-white/20 ${isEditing && !isLocked ? 'bg-primary hover:bg-red-600 hover:scale-[1.05]' : 'bg-primary/70 opacity-80 cursor-default'}`}
                       >
                         {p.nombre.toUpperCase()} 
-                        <span className="text-white/60 group-hover:text-white transition-colors">×</span>
+                        {isEditing && !isLocked && <span className="text-white/60 group-hover:text-white transition-colors">×</span>}
                       </button>
                     ))}
                     {selectedPlayers.length === 0 && (
@@ -653,6 +656,7 @@ export default function MiEquipo() {
                             onDragStart={(e) => handleDragStart(e, player.id)}
                             onDragEnd={handleDragEnd}
                             onClick={() => {
+                              if (!isEditing || isLocked) return;
                               if (!isSelected) {
                                   // Si ya hay un slot en cancha seleccionado (Selección Cruzada: Puesto -> Jugador)
                                   if (selectedPosition !== null) {
@@ -665,12 +669,12 @@ export default function MiEquipo() {
                                   }
                               }
                             }}
-                            className={`relative group flex items-center gap-2 p-1.5 rounded-lg border-2 transition-all cursor-pointer ${
+                            className={`relative group flex items-center gap-2 p-1.5 rounded-lg border-2 transition-all ${!isEditing || isLocked ? 'cursor-default' : 'cursor-pointer'} ${
                               isSelected 
                               ? 'bg-neutral-light/50 border-neutral/10 opacity-60 grayscale' 
                               : isMenuOpen
                                 ? 'bg-yellow-50 border-yellow-300 shadow-md scale-[1.02]'
-                                : 'bg-white border-neutral/10 hover:border-accent hover:shadow-md hover-shadow'
+                                : `bg-white border-neutral/10 ${!isEditing || isLocked ? '' : 'hover:border-accent hover:shadow-md hover-shadow'}`
                             }`}
                           >
                             <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 border ${
@@ -691,13 +695,13 @@ export default function MiEquipo() {
                             <div className="shrink-0 flex items-center justify-center">
                               {isSelected ? (
                                 <CheckCircle className="w-3.5 h-3.5 text-green-500" />
-                              ) : (
+                              ) : isEditing && !isLocked ? (
                                 <div className={`w-5 h-5 rounded-md flex items-center justify-center transition-all ${
                                    isMenuOpen ? 'bg-yellow-400 text-white animate-pulse' : 'bg-neutral-light text-primary group-hover:bg-accent group-hover:text-white'
                                 }`}>
                                   <span className="text-xs font-black">+</span>
                                 </div>
-                              )}
+                              ) : null}
                             </div>
                           </div>
 
@@ -767,7 +771,7 @@ export default function MiEquipo() {
                     className="flex-1 py-4 px-6 rounded-2xl font-black tracking-widest transition-all flex items-center justify-center gap-3 border-2 bg-primary border-primary text-white shadow-xl hover:scale-[1.02] active:scale-95"
                   >
                     <Users className="w-5 h-5" />
-                    EDITAR MI EQUIPO
+                    EDITAR EQUIPO
                   </button>
                 )}
 
@@ -778,7 +782,7 @@ export default function MiEquipo() {
                     className={`
                       flex-1 py-4 px-6 rounded-2xl font-black tracking-widest transition-all flex items-center justify-center gap-3 border-2 
                       ${canSave && !isLocked && isEditing
-                        ? 'bg-accent border-accent text-white shadow-[0_0_20px_rgba(19,170,212,0.4)] scale-100 hover:scale-[1.02] active:scale-95' 
+                        ? 'bg-red-500 border-red-500 text-white shadow-[0_0_20px_rgba(239,68,68,0.4)] scale-100 hover:scale-[1.02] active:scale-95' 
                         : 'bg-neutral-light border-neutral/10 text-neutral/40 cursor-not-allowed'
                       }
                       ${saving ? 'opacity-70' : ''}
@@ -788,8 +792,8 @@ export default function MiEquipo() {
                     {isLocked 
                       ? 'MERCADO CERRADO' 
                       : (isComplete
-                        ? '¡FINALIZAR Y GUARDAR EQUIPO!'
-                        : (selectedPlayers.length === 0 ? 'ARMÁ TU EQUIPO' : `GUARDAR PROGRESO (${selectedPlayers.length}/15)`))}
+                        ? '¡FINALIZAR EDICIÓN Y GUARDAR!'
+                        : (selectedPlayers.length === 0 ? 'GUARDAR EQUIPO' : `FINALIZAR EDICIÓN (${selectedPlayers.length}/15)`))}
                   </button>
                 )}
 
