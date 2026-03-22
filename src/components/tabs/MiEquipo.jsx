@@ -361,7 +361,7 @@ export default function MiEquipo() {
                 </div>
             )}
             <div className="space-y-0.5">
-          <h2 className="text-2xl md:text-4xl font-black text-primary tracking-tighter leading-none">
+          <h2 className="text-3xl md:text-5xl font-bebas text-primary tracking-wide leading-none uppercase">
             {profile?.team_name || 'Mi Dream Team'}
           </h2>
           <div className="flex items-center gap-2">
@@ -376,9 +376,9 @@ export default function MiEquipo() {
         
         <div className="flex items-center">
            {isComplete ? (
-             <div className="flex items-center gap-2 text-white font-black text-[10px] uppercase bg-green-500 px-3 py-1.5 rounded-xl shadow-lg border border-white/20">
-               <CheckCircle className="w-3 h-3" />
-               EQUIPO COMPLETO ✅
+             <div className="flex items-center gap-2 text-white font-black text-[10px] uppercase bg-gradient-to-r from-green-500 to-green-600 px-4 py-2 rounded-xl shadow-[0_0_15px_rgba(34,197,94,0.6)] border border-green-400 animate-pulse-slow transition-all">
+               <CheckCircle className="w-4 h-4" />
+               EQUIPO LISTO ✅
              </div>
            ) : (
              <div className="flex flex-col items-end gap-1">
@@ -432,9 +432,9 @@ export default function MiEquipo() {
       <div className="space-y-4">
          <div className="flex items-center gap-3 px-2">
             <Trophy className="w-5 h-5 text-accent" />
-            <h3 className="text-xl font-black text-primary uppercase tracking-tight">Planteles Oficiales (Staff)</h3>
+            <h3 className="text-2xl font-bebas text-primary uppercase tracking-wide">Identidad & Convocados</h3>
          </div>
-         <p className="text-sm text-neutral font-bold px-2 -mt-2">Consultá quiénes juegan cada partido para elegir tu equipo.</p>
+         <p className="text-sm text-neutral font-bold px-2 -mt-2">Diagrama oficial y jugadores disponibles dictados por el Staff.</p>
          
          <div className="bg-white rounded-3xl border border-neutral/20 shadow-xl overflow-hidden">
             <div className="flex bg-neutral-light/50 p-1 md:p-1.5 gap-1">
@@ -455,26 +455,47 @@ export default function MiEquipo() {
                <div className="bg-neutral-light/30 rounded-2xl p-4">
                   <RugbyPitch players={officialTeams[refCategory]} />
                </div>
-               <div className="space-y-3">
-                  <h4 className="font-black text-primary uppercase text-sm border-b pb-2">Convocados: {refCategory}</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                     {officialTeams[refCategory]?.some(p => p !== null) ? (
-                       officialTeams[refCategory].map((p, idx) => {
-                         if (!p) return null;
-                         return (
-                           <div key={p.id || idx} className="flex items-center gap-3 p-2 bg-white rounded-xl border border-neutral/10 shadow-sm">
-                              <span className="w-6 h-6 bg-primary text-white text-[10px] font-black rounded-md flex items-center justify-center shrink-0">
-                                 {idx + 1}
-                              </span>
-                              <span className="text-xs font-bold text-primary truncate leading-none">{p.nombre || 'Jugador'}</span>
-                           </div>
-                         );
-                       })
-                     ) : (
-                       <div className="col-span-2 py-8 text-center bg-neutral-light/20 rounded-2xl border border-dashed border-neutral/20">
-                          <p className="text-xs font-black text-neutral uppercase tracking-widest">Todavía no hay convocados oficiales para esta fecha</p>
-                       </div>
-                     )}
+               <div className="flex flex-col h-full bg-neutral-light/20 rounded-2xl relative overflow-hidden border border-neutral/10">
+                  {/* Banner Identidad */}
+                  <div className="bg-primary relative h-24 sm:h-28 flex items-center justify-between px-6 overflow-hidden">
+                     <div className="z-10 bg-white p-1.5 md:p-2 rounded-xl shadow-lg border border-white/20 transform -rotate-3 hover:rotate-0 transition-transform">
+                        <img src="/escudo.jpg" alt="Club Universitario" className="w-12 h-12 md:w-16 md:h-16 object-contain" />
+                     </div>
+                     <div className="z-10 flex flex-col items-end">
+                        <span className="text-[10px] md:text-xs font-black text-white/60 uppercase tracking-widest">Plantel Oficial</span>
+                        <h4 className="font-bebas text-accent text-xl md:text-3xl tracking-wide uppercase leading-none">
+                           {refCategory}
+                        </h4>
+                     </div>
+                     {/* Pelota asomándose */}
+                     <img 
+                       src="/rugby_ball.jpg" 
+                       alt="Gilbert" 
+                       className="absolute -right-8 -bottom-10 w-40 md:w-48 opacity-[0.25] transform -rotate-[15deg] mix-blend-multiply pointer-events-none" 
+                     />
+                  </div>
+                  
+                  {/* Lista */}
+                  <div className="p-4 flex-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[260px] overflow-y-auto pr-2 custom-scrollbar">
+                       {officialTeams[refCategory]?.some(p => p !== null) ? (
+                         officialTeams[refCategory].map((p, idx) => {
+                           if (!p) return null;
+                           return (
+                             <div key={p.id || idx} className="flex items-center gap-3 p-2 bg-white rounded-xl border border-neutral/10 shadow-sm hover:scale-[1.025] transition-transform duration-200 group">
+                                <span className="w-6 h-6 bg-primary text-white text-[10px] font-black rounded-md flex items-center justify-center shrink-0 group-hover:bg-accent transition-colors">
+                                   {idx + 1}
+                                </span>
+                                <span className="text-xs font-bold text-primary truncate leading-none">{p.nombre || 'Jugador'}</span>
+                             </div>
+                           );
+                         })
+                       ) : (
+                         <div className="col-span-2 py-10 text-center bg-white/40 rounded-2xl border border-dashed border-neutral/20">
+                            <p className="text-xs font-black text-neutral uppercase tracking-widest">Aún no hay convocados</p>
+                         </div>
+                       )}
+                    </div>
                   </div>
                </div>
             </div>
@@ -488,7 +509,7 @@ export default function MiEquipo() {
           <div className="flex items-center justify-between px-2">
              <div className="flex items-center gap-3">
                 <Users className="w-5 h-5 text-accent" />
-                <h3 className="text-xl font-black text-primary uppercase tracking-tight">Armá tu 15 Ideal</h3>
+                <h3 className="text-2xl font-bebas text-primary uppercase tracking-wide">Armá tu 15 Ideal</h3>
              </div>
              <div className="hidden md:block">
                 <p className="text-[10px] font-black text-neutral uppercase tracking-widest bg-neutral-light px-3 py-1 rounded-full border border-neutral/20">
@@ -524,14 +545,31 @@ export default function MiEquipo() {
               )}
 
               <div 
-                className={`relative w-full max-w-md mx-auto rounded-3xl border-[6px] border-neutral-light/50 overflow-hidden shadow-2xl transition-all duration-500 bg-[#1B4D3E] ${!isEditing && !isLocked && selectedPlayers.length > 0 ? 'opacity-80 saturate-50 cursor-not-allowed' : ''}`}
+                className={`relative w-full max-w-md mx-auto rounded-xl border-2 border-[#12362b] overflow-hidden shadow-[inset_0_0_20px_rgba(0,0,0,0.5)] transition-all duration-500 pitch-grass ${!isEditing && !isLocked && selectedPlayers.length > 0 ? 'opacity-80 saturate-50 cursor-not-allowed' : ''}`}
                 style={{ aspectRatio: '2/3.2' }}
               >
-                <div className="absolute inset-x-0 top-0 h-[10%] bg-white/5 border-b border-white/20"></div>
-                <div className="absolute inset-x-0 bottom-0 h-[10%] bg-white/5 border-t border-white/20"></div>
-                <div className="absolute inset-x-0 top-1/2 -mt-[1px] border-t-[3px] border-white/30"></div>
-                <div className="absolute inset-x-0 top-[22%] border-t-[2px] border-white/25"></div>
-                <div className="absolute inset-x-0 top-[78%] border-t-[2px] border-white/25"></div>
+                {/* Pitch Markings (Chalk Lines) */}
+                <div className="absolute inset-x-2 inset-y-2 border-2 border-white/85 shadow-[0_0_2px_rgba(255,255,255,0.4)] pointer-events-none z-0"></div>
+                <div className="absolute inset-x-2 top-1/2 -mt-[1px] border-t-2 border-white/85 shadow-[0_0_2px_rgba(255,255,255,0.4)] pointer-events-none z-0"></div>
+                
+                {/* 10m lines */}
+                <div className="absolute inset-x-2 top-[40%] border-t-[1.5px] border-dashed border-white/60 pointer-events-none z-0"></div>
+                <div className="absolute inset-x-2 top-[60%] border-t-[1.5px] border-dashed border-white/60 pointer-events-none z-0"></div>
+
+                {/* 22m lines */}
+                <div className="absolute inset-x-2 top-[22%] border-t-2 border-white/85 shadow-[0_0_2px_rgba(255,255,255,0.4)] pointer-events-none z-0"></div>
+                <div className="absolute inset-x-2 top-[78%] border-t-2 border-white/85 shadow-[0_0_2px_rgba(255,255,255,0.4)] pointer-events-none z-0"></div>
+                
+                {/* 5m lines (dashed) */}
+                <div className="absolute inset-x-2 top-[5%] border-t border-dashed border-white/50 pointer-events-none z-0"></div>
+                <div className="absolute inset-x-2 top-[95%] border-t border-dashed border-white/50 pointer-events-none z-0"></div>
+                
+                {/* Numbering */}
+                <span className="absolute top-[22%] left-4 text-white/30 font-bebas text-2xl -translate-y-1/2 pointer-events-none z-0 select-none">22</span>
+                <span className="absolute top-[78%] left-4 text-white/30 font-bebas text-2xl -translate-y-1/2 rotate-180 pointer-events-none z-0 select-none">22</span>
+                <span className="absolute top-[40%] left-4 text-white/20 font-bebas text-xl -translate-y-1/2 pointer-events-none z-0 select-none">10</span>
+                <span className="absolute top-[60%] left-4 text-white/20 font-bebas text-xl -translate-y-1/2 rotate-180 pointer-events-none z-0 select-none">10</span>
+                <span className="absolute top-[50%] left-4 text-white/20 font-bebas text-xl -translate-y-1/2 pointer-events-none z-0 select-none">50</span>
 
                 {PITCH_POSITIONS.map((pos, i) => {
                   const player = pitchSlots[i];
@@ -559,9 +597,9 @@ export default function MiEquipo() {
                             draggable
                             onDragStart={(e) => handleDragStart(e, player.id)}
                             onDragEnd={handleDragEnd}
-                            className="w-8 h-8 sm:w-12 sm:h-12 bg-primary border-2 sm:border-[3px] border-white rounded-full flex items-center justify-center cursor-grab active:cursor-grabbing shadow-xl relative group animate-pop-in"
+                            className={`w-8 h-8 sm:w-12 sm:h-12 bg-primary border-[2.5px] border-white rounded-full flex items-center justify-center cursor-grab active:cursor-grabbing font-bebas tracking-wide sm:text-lg relative group animate-pop-in z-10 transition-shadow ${isEditing && !isLocked ? 'glow-hover shadow-[0_4px_6px_rgba(0,0,0,0.6)]' : 'shadow-[0_4px_6px_rgba(0,0,0,0.6)]'}`}
                           >
-                            <span className="text-[9px] sm:text-xs font-black text-white">{i + 1}</span>
+                            <span className="text-[12px] sm:text-[16px] font-black text-white">{i + 1}</span>
                             
                             {isEditing && !isLocked && (
                                 <button 
@@ -574,17 +612,20 @@ export default function MiEquipo() {
                           </div>
                           
                           <div 
-                            className={`mt-1 text-white font-black uppercase player-name-full ${
+                            className={`mt-1 font-bold uppercase player-name-full tracking-tight ${
                               parseFloat(pos.left) > 80 ? 'text-right' : 
                               parseFloat(pos.left) < 20 ? 'text-left' : 
                               'text-center'
                             }`}
                             style={{ 
-                              fontSize: '7px',
-                              lineHeight: '0.9',
-                              maxWidth: '65px',
-                              textShadow: '0 1px 2px rgba(0,0,0,1), 0 0 10px rgba(0,0,0,0.5)',
-                              width: 'max-content'
+                              color: '#FFFFFF',
+                              fontSize: '9px',
+                              lineHeight: '1.1',
+                              maxWidth: '75px',
+                              textShadow: '0px 1px 3px rgba(0,0,0,0.9), 0px 0px 2px rgba(0,0,0,1), 1px 1px 1px rgba(0,0,0,1)',
+                              width: 'max-content',
+                              position: 'relative',
+                              zIndex: 10
                             }}
                           >
                              {player.nombre}
@@ -706,7 +747,7 @@ export default function MiEquipo() {
                               ? 'bg-neutral-light/50 border-neutral/10 opacity-60 grayscale' 
                               : isMenuOpen
                                 ? 'bg-yellow-50 border-yellow-300 shadow-md scale-[1.02]'
-                                : `bg-white border-neutral/10 ${!isEditing || isLocked ? '' : 'hover:border-accent hover:shadow-md hover-shadow'}`
+                                : `bg-white border-neutral/10 ${!isEditing || isLocked ? '' : 'hover:shadow-md hover-shadow hover:scale-[1.025] transition-transform duration-200'}`
                             }`}
                           >
                             <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 border ${
@@ -901,7 +942,7 @@ export default function MiEquipo() {
                               ? 'bg-neutral-light/30 border-neutral/10 opacity-60'
                               : isDisabled
                                 ? 'bg-neutral-light/50 border-neutral/10 opacity-40 cursor-not-allowed'
-                                : 'bg-white border-neutral/10 shadow-sm hover:border-accent hover:shadow-md active:scale-95'
+                                : 'bg-white border-neutral/10 shadow-sm hover:shadow-md hover:scale-[1.02] transition-transform duration-200 active:scale-95'
                           }
                         `}
                       >

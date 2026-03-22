@@ -15,7 +15,9 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     min-height: 100vh;
+    font-family: 'Inter', sans-serif;
   }
+
 
   /* AFFORDANCE GLOBAL: Cursores interactivos */
   button, 
@@ -47,5 +49,35 @@
     word-break: break-word !important;
     overflow: visible !important;
     text-overflow: clip !important;
+  }
+
+  /* UTILITY CLASES PARA COMPETITION STYLE */
+  .font-bebas {
+    font-family: 'Bebas Neue', 'Oswald', sans-serif;
+  }
+  .font-oswald {
+    font-family: 'Oswald', sans-serif;
+  }
+  
+  /* Gradiente para pasto cortado */
+  .pitch-grass {
+    background: repeating-linear-gradient(
+      0deg,
+      #1B4D3E,
+      #1B4D3E 10%,
+      #18483A 10%,
+      #18483A 20%
+    );
+  }
+
+  /* Línea de tiza rasgada */
+  .chalk-line {
+    background-color: rgba(255, 255, 255, 0.85);
+    box-shadow: 0 0 2px rgba(255, 255, 255, 0.5);
+    border-radius: 2px;
+  }
+
+  .glow-hover:hover {
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.6);
   }
 }

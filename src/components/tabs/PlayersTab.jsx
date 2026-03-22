@@ -92,29 +92,14 @@ export default function PlayersTab() {
       {/* Grid of Players */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredPlayers.map((player) => {
-          const isTopScorer = player.puntos > 0 && player.puntos === maxPoints;
-          
           return (
             <div 
               key={player.id} 
-              className={`
-                bg-white border-2 rounded-3xl p-5 transition-all duration-300 hover:scale-[1.03] hover:shadow-xl relative overflow-hidden group
-                ${isTopScorer ? 'border-yellow-400 bg-yellow-50/10' : 'border-neutral/10 hover:border-primary/20'}
-              `}
+              className="bg-white border border-neutral/10 rounded-3xl p-5 shadow-sm hover:shadow-xl transition-transform duration-200 ease-out hover:scale-[1.025] relative overflow-hidden group"
             >
-              {/* Top Scorer Badge */}
-              {isTopScorer && (
-                <div className="absolute top-0 right-0 bg-yellow-400 text-white pl-4 pr-3 py-1.5 rounded-bl-3xl shadow-sm z-10 flex items-center gap-1.5 animate-bounce-subtle">
-                  <Trophy className="w-4 h-4 fill-white" />
-                  <span className="text-[10px] font-black uppercase tracking-tighter">Goleador</span>
-                </div>
-              )}
               
               <div className="flex items-center gap-4 relative z-10">
-                <div className={`
-                  w-16 h-16 rounded-2xl flex items-center justify-center border-2 shadow-inner overflow-hidden transition-transform duration-500 group-hover:rotate-3
-                  ${isTopScorer ? 'bg-white border-yellow-200' : 'bg-neutral-light border-neutral/10'}
-                `}>
+                <div className="w-16 h-16 rounded-2xl flex items-center justify-center border-2 border-neutral-light/50 bg-neutral-light shadow-inner overflow-hidden transition-transform duration-500 group-hover:rotate-3">
                   {player.foto_url ? (
                     <img src={player.foto_url} alt={player.nombre} className="w-full h-full object-cover" />
                   ) : (
@@ -154,7 +139,7 @@ export default function PlayersTab() {
                 </div>
                 
                 <div className="flex flex-col items-end">
-                  <span className={`text-3xl font-black leading-none ${isTopScorer ? 'text-yellow-600' : 'text-primary'}`}>
+                  <span className="text-3xl font-black leading-none text-primary">
                     {player.puntos}
                   </span>
                 </div>
