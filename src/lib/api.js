@@ -166,8 +166,72 @@ export async function saveEquipoSelection(userId, fechaId, selectedPlayerIds, ca
   return data;
 }
 
+/**
+ * ARCHIVADO HISTÓRICO: Crea un "Snapshot" del equipo de un usuario al cerrar la fecha.
+ * Toma los IDs del equipo y el puntaje de la fecha (si ya se calculó, sino 0)
+ * y los guarda en 'historico_equipos'.
+ */
+export async function archiveTeamSnapshot(userId, numeroFecha, fechaId, playerIds, puntosTotales = 0) {
+  if (!playerIds || playerIds.length === 0) return null;
+
+  // Verificar si ya existe un snapshot para esta fecha y usuario
+  const { data: existing, error: checkErr } = await supabase
+    .from('historico_equipos')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('fecha_id', fechaId)
+    .maybeSingle();
+
+  if (checkErr) {
+    console.error('Error checking existing snapshot:', checkErr);
+    throw checkErr;
+  }
+
+  // Si ya existe, no hacemos nada para no sobreescribir y mantener el primer snapshot
+  if (existing) {
+    return existing;
+  }
+
+  const { data, error } = await supabase
+    .from('historico_equipos')
+    .insert([{
+      user_id: userId,
+      numero_fecha: numeroFecha,
+      fecha_id: fechaId,
+      player_ids: playerIds,
+      puntos_totales: puntosTotales
+    }]);
+
+  if (error) {
+    console.error('Error archiving team snapshot:', error);
+    throw error;
+  }
+
+  return data;
+}
+
+/**
+ * Obtiene el equipo histórico de un usuario para una fecha dada.
+ */
+export async function getHistoricalTeam(userId, fechaId) {
+  const { data, error } = await supabase
+    .from('historico_equipos')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('fecha_id', fechaId)
+    .maybeSingle();
+
+  if (error) {
+    console.error('Error fetching historical team:', error);
+    return null;
+  }
+
+  return data;
+}
+
 // ==========================================
 // ESTADÍSTICAS POR PARTIDO
+
 // ==========================================
 
 export async function getEstadisticasPartido(fechaId) {

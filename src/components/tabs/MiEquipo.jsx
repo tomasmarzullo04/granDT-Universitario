@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { getActiveFecha, getConvocados } from '../../lib/api';
+import { getActiveFecha, getConvocados, archiveTeamSnapshot } from '../../lib/api';
 import { Save, Loader2, AlertCircle, CheckCircle, Search, Trophy, Info, Users, BarChart2, Lock } from 'lucide-react';
 import RugbyPitch from '../RugbyPitch';
 import TeamCounters from '../TeamCounters';
@@ -118,13 +118,45 @@ export default function MiEquipo() {
 
     // Viernes 23:59:59 -> Lunes 00:00:00
     if (day === 6 || day === 0) return true; // Sábado o Domingo
-    if (day === 5 && hour === 23 && min === 59) return true; // Viernes casi medianoche (simplificado)
-    // Para ser exactos: si es viernes y ya pasó la medianoche? No, el día cambia a sábado a las 00:00.
+    if (day === 5 && hour === 23 && min >= 59) return true; // Viernes casi medianoche (simplificado)
     return false;
   }, []);
 
+  const shouldSnapshotAndLock = useMemo(() => {
+     const now = new Date();
+     const day = now.getDay();
+     const hour = now.getHours();
+     const min = now.getMinutes();
+     // Lunes a las 23:59 o Martes/Miércoles/Jueves
+     const esLunesNoche = (day === 1 && hour === 23 && min >= 59);
+     const diasEspera = [2, 3, 4];
+     return esLunesNoche || diasEspera.includes(day);
+  }, []);
+
+  // Trigger Snapshot
+  useEffect(() => {
+    async function triggerSnapshotIfNeeded() {
+      if (shouldSnapshotAndLock && activeFecha && profile && pitchSlots.some(Boolean)) {
+         // Si la fecha sigue abierta o en juego
+         if (activeFecha.estado === 'abierta' || activeFecha.estado === 'en_juego') {
+             try {
+                const playerIds = pitchSlots.map(p => p ? p.id : null).filter(Boolean);
+                if (playerIds.length === 15) {
+                   await archiveTeamSnapshot(profile.id, activeFecha.numero_fecha, activeFecha.id, playerIds, 0);
+                   console.log("Snapshot automático de cierre guardado.");
+                }
+             } catch (err) {
+                console.error("Error al disparar snapshot automático:", err);
+             }
+         }
+      }
+    }
+    triggerSnapshotIfNeeded();
+  }, [shouldSnapshotAndLock, activeFecha, profile, pitchSlots]);
+
+
   const isAdmin = profile?.role === 'admin';
-  const isLocked = activeFecha?.estado === 'en_juego' || activeFecha?.estado === 'finalizada' || isMarketClosed;
+  const isLocked = activeFecha?.estado === 'en_juego' || activeFecha?.estado === 'finalizada' || isMarketClosed || shouldSnapshotAndLock;
 
   const isComplete = isAdmin 
     ? selectedPlayers.length === 15 

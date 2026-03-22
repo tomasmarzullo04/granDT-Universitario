@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Trophy, BookOpen, Instagram, LogOut, Code, ChevronDown, ChevronUp, ShieldAlert, Zap, Users, CalendarDays } from 'lucide-react';
+import { X, Trophy, BookOpen, Instagram, LogOut, Code, ChevronDown, ChevronUp, ShieldAlert, Zap, Users, CalendarDays, History } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
@@ -58,7 +58,8 @@ export default function Sidebar({ isOpen, onClose }) {
                 { label: 'Mi Equipo', icon: Users, id: 'equipo' },
                 { label: 'Jugadores', icon: Users, id: 'jugadores' },
                 { label: 'Ranking', icon: Trophy, id: 'ranking' },
-                { label: 'Fechas & Fixture', icon: CalendarDays, id: 'fechas' }
+                { label: 'Fechas & Fixture', icon: CalendarDays, id: 'fechas' },
+                { label: 'Historial', icon: History, id: 'historial' }
               ].map(item => (
                 <button
                   key={item.id}
