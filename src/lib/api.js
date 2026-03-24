@@ -417,7 +417,10 @@ export async function getRankingCompleto() {
 
   if (pErr) return [];
 
-  return profiles.map(p => ({
+  return profiles.filter(p => {
+    const isTest = (p.team_name?.toLowerCase().includes('test')) || (p.full_name?.toLowerCase().includes('test'));
+    return !isTest;
+  }).map(p => ({
     ...p,
     puntos: totalPuntosMap[p.id] || 0
   })).sort((a, b) => b.puntos - a.puntos);
