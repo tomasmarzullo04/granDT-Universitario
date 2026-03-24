@@ -395,19 +395,10 @@ export default function MiEquipo() {
       </div>
 
       {isLocked && (
-        <div className="bg-yellow-50 border-2 border-yellow-200 p-4 rounded-2xl flex items-center gap-4 animate-pulse-slow shadow-sm">
-           <div className="w-12 h-12 bg-yellow-400 rounded-xl flex items-center justify-center shrink-0 shadow-md">
-              <Lock className="w-6 h-6 text-white" />
-           </div>
-           <div>
-              <p className="text-sm font-black text-yellow-800 uppercase tracking-tight">⛔ Mercado cerrado - Fecha en disputa</p>
-              <p className="text-xs font-bold text-yellow-700/80">
-                {isMarketClosed 
-                  ? "El mercado cierra los viernes a las 23:59. Podrás editar tu equipo nuevamente el Lunes."
-                  : "La fecha ya comenzó. No podés realizar cambios en tu alineación."
-                }
-              </p>
-           </div>
+        <div className="bg-blue-50 border border-blue-100 p-3 rounded-xl flex items-center justify-center shadow-sm animate-fade-in">
+          <p className="text-[11px] md:text-xs font-bold text-blue-800 text-center uppercase tracking-wider">
+            ⏳ PRÓXIMA FECHA EN PREPARACIÓN. El mercado abrirá una vez que el Staff confirme los convocados oficiales.
+          </p>
         </div>
       )}
 
