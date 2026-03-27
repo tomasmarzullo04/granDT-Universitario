@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { getActiveFecha, getConvocados, archiveTeamSnapshot } from '../../lib/api';
+import { getActiveFecha, getConvocados, archiveTeamSnapshot, isWaitingMode } from '../../lib/api';
 import { Save, Loader2, AlertCircle, CheckCircle, Search, Trophy, Info, Users, BarChart2, Lock, Crown } from 'lucide-react';
 import RugbyPitch from '../RugbyPitch';
 import TeamCounters from '../TeamCounters';
@@ -159,7 +159,8 @@ export default function MiEquipo() {
 
 
   const isAdmin = profile?.role === 'admin';
-  const isLocked = activeFecha?.estado === 'en_juego' || activeFecha?.estado === 'finalizada' || isMarketClosed || shouldSnapshotAndLock;
+  const isWaiting = useMemo(() => isWaitingMode(activeFecha), [activeFecha]);
+  const isLocked = activeFecha?.estado === 'en_juego' || activeFecha?.estado === 'finalizada' || isMarketClosed || shouldSnapshotAndLock || isWaiting;
 
   const isComplete = isAdmin 
     ? selectedPlayers.length === 15 
@@ -322,6 +323,38 @@ export default function MiEquipo() {
     }
   };
 
+  if (isWaiting) {
+    return (
+       <div className="flex flex-col items-center justify-center min-h-[70vh] max-w-5xl mx-auto px-4 text-center animate-fade-in relative overflow-hidden bg-white/40 rounded-[3rem] border-2 border-dashed border-neutral/10 shadow-inner">
+          {/* Watermark Logo */}
+          <div className="absolute inset-0 flex items-center justify-center opacity-[0.04] pointer-events-none grayscale select-none scale-150 transition-opacity">
+             <img src="https://nniwyswxojkalelavdnn.supabase.co/storage/v1/object/public/logos/gilbert_ball.png" alt="" className="w-full max-w-xl object-contain grayscale" onError={(e) => e.target.parentElement.style.display = 'none'} />
+          </div>
+
+          <div className="relative z-10 space-y-10 py-20 pb-20">
+             <div className="w-28 h-28 bg-primary/5 rounded-[2.5rem] flex items-center justify-center mx-auto border-2 border-dashed border-primary/20 animate-pulse-slow">
+                <Lock className="w-12 h-12 text-primary/30" />
+             </div>
+             
+             <div className="space-y-6">
+                <h2 className="text-4xl md:text-6xl font-black text-primary tracking-tighter uppercase leading-none px-4">
+                   ⏳ DIAGRAMACIÓN DE EQUIPO<br/><span className="text-accent underline decoration-4 underline-offset-8">INHABILITADA</span>
+                </h2>
+                <p className="text-sm md:text-lg font-bold text-neutral/70 max-w-lg mx-auto uppercase tracking-[0.2em] leading-relaxed px-4">
+                   El Staff está definiendo los planteles para la próxima fecha.<br/>
+                   <span className="block mt-4 text-primary font-black bg-primary/10 py-2 px-4 rounded-full inline-block italic">Habilitación automática al cargar convocados</span>
+                </p>
+             </div>
+
+             <div className="flex flex-col items-center gap-4 pt-10">
+                <div className="h-[2px] w-20 bg-accent/30 rounded-full"></div>
+                <p className="text-[10px] font-black text-neutral/40 uppercase tracking-[0.5em] italic">Gran DT Universitario</p>
+             </div>
+          </div>
+       </div>
+    );
+  }
+
   if (loading) return (
     <div className="flex flex-col items-center justify-center p-20 animate-pulse">
       <Loader2 className="w-12 h-12 animate-spin text-primary mb-4" />
@@ -427,78 +460,80 @@ export default function MiEquipo() {
       )}
 
       {/* REFERENCE BOARDS (Official Teams) */}
-      <div className="space-y-4">
-         <div className="flex items-center gap-3 px-2">
-            <Trophy className="w-5 h-5 text-accent" />
-            <h3 className="text-2xl font-bebas text-primary uppercase tracking-wide">Identidad & Convocados</h3>
-         </div>
-         <p className="text-sm text-neutral font-bold px-2 -mt-2">Diagrama oficial y jugadores disponibles dictados por el Staff.</p>
-         
-         <div className="bg-white rounded-3xl border border-neutral/20 shadow-xl overflow-hidden">
-            <div className="flex bg-neutral-light/50 p-1 md:p-1.5 gap-1">
-               {['Primera', 'Intermedia', 'Pre-intermedia'].map(cat => (
-                 <button
-                   key={cat}
-                   onClick={() => setRefCategory(cat)}
-                   className={`flex-1 py-1.5 md:py-3 text-[9px] md:text-xs font-black uppercase tracking-widest transition-all rounded-xl md:rounded-2xl ${
-                     refCategory === cat ? 'bg-primary text-white shadow-md' : 'text-neutral hover:bg-white'
-                   }`}
-                 >
-                   {cat === 'Pre-intermedia' ? 'Pre' : cat}
-                 </button>
-               ))}
-            </div>
-            
-            <div className="p-3 md:p-8 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 items-center">
-               <div className="bg-neutral-light/30 rounded-2xl p-4">
-                  <RugbyPitch players={officialTeams[refCategory]} />
-               </div>
-               <div className="flex flex-col h-full bg-neutral-light/20 rounded-2xl relative overflow-hidden border border-neutral/10">
-                  {/* Banner Identidad */}
-                  <div className="bg-primary relative h-24 sm:h-28 flex items-center justify-between px-6 overflow-hidden">
-                     <div className="z-10 bg-white p-1.5 md:p-2 rounded-xl shadow-lg border border-white/20 transform -rotate-3 hover:rotate-0 transition-transform">
-                        <img src="/escudo.jpg" alt="Club Universitario" className="w-12 h-12 md:w-16 md:h-16 object-contain" />
-                     </div>
-                     <div className="z-10 flex flex-col items-end">
-                        <span className="text-[10px] md:text-xs font-black text-white/60 uppercase tracking-widest">Plantel Oficial</span>
-                        <h4 className="font-bebas text-accent text-xl md:text-3xl tracking-wide uppercase leading-none">
-                           {refCategory}
-                        </h4>
-                     </div>
-                     {/* Pelota asomándose */}
-                     <img 
-                       src="/rugby_ball.jpg" 
-                       alt="Gilbert" 
-                       className="absolute -right-8 -bottom-10 w-40 md:w-48 opacity-[0.25] transform -rotate-[15deg] mix-blend-multiply pointer-events-none" 
-                     />
-                  </div>
-                  
-                  {/* Lista */}
-                  <div className="p-4 flex-1">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[260px] overflow-y-auto pr-2 custom-scrollbar">
-                       {officialTeams[refCategory]?.some(p => p !== null) ? (
-                         officialTeams[refCategory].map((p, idx) => {
-                           if (!p) return null;
-                           return (
-                             <div key={p.id || idx} className="flex items-center gap-3 p-2 bg-white rounded-xl border border-neutral/10 shadow-sm hover:scale-[1.025] transition-transform duration-200 group">
-                                <span className="w-6 h-6 bg-primary text-white text-[10px] font-black rounded-md flex items-center justify-center shrink-0 group-hover:bg-accent transition-colors">
-                                   {idx + 1}
-                                </span>
-                                <span className="text-xs font-bold text-primary truncate leading-none">{p.nombre || 'Jugador'}</span>
-                             </div>
-                           );
-                         })
-                       ) : (
-                         <div className="col-span-2 py-10 text-center bg-white/40 rounded-2xl border border-dashed border-neutral/20">
-                            <p className="text-xs font-black text-neutral uppercase tracking-widest">Aún no hay convocados</p>
-                         </div>
-                       )}
+      {!isWaiting && (
+        <div className="space-y-4 animate-fade-in">
+           <div className="flex items-center gap-3 px-2">
+              <Trophy className="w-5 h-5 text-accent" />
+              <h3 className="text-2xl font-bebas text-primary uppercase tracking-wide">Identidad & Convocados</h3>
+           </div>
+           <p className="text-sm text-neutral font-bold px-2 -mt-2">Diagrama oficial y jugadores disponibles dictados por el Staff.</p>
+           
+           <div className="bg-white rounded-3xl border border-neutral/20 shadow-xl overflow-hidden">
+              <div className="flex bg-neutral-light/50 p-1 md:p-1.5 gap-1">
+                 {['Primera', 'Intermedia', 'Pre-intermedia'].map(cat => (
+                   <button
+                     key={cat}
+                     onClick={() => setRefCategory(cat)}
+                     className={`flex-1 py-1.5 md:py-3 text-[9px] md:text-xs font-black uppercase tracking-widest transition-all rounded-xl md:rounded-2xl ${
+                       refCategory === cat ? 'bg-primary text-white shadow-md' : 'text-neutral hover:bg-white'
+                     }`}
+                   >
+                     {cat === 'Pre-intermedia' ? 'Pre' : cat}
+                   </button>
+                 ))}
+              </div>
+              
+              <div className="p-3 md:p-8 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 items-center">
+                 <div className="bg-neutral-light/30 rounded-2xl p-4">
+                    <RugbyPitch players={officialTeams[refCategory]} />
+                 </div>
+                 <div className="flex flex-col h-full bg-neutral-light/20 rounded-2xl relative overflow-hidden border border-neutral/10">
+                    {/* Banner Identidad */}
+                    <div className="bg-primary relative h-24 sm:h-28 flex items-center justify-between px-6 overflow-hidden">
+                       <div className="z-10 bg-white p-1.5 md:p-2 rounded-xl shadow-lg border border-white/20 transform -rotate-3 hover:rotate-0 transition-transform">
+                          <img src="/escudo.jpg" alt="Club Universitario" className="w-12 h-12 md:w-16 md:h-16 object-contain" />
+                       </div>
+                       <div className="z-10 flex flex-col items-end">
+                          <span className="text-[10px] md:text-xs font-black text-white/60 uppercase tracking-widest">Plantel Oficial</span>
+                          <h4 className="font-bebas text-accent text-xl md:text-3xl tracking-wide uppercase leading-none">
+                             {refCategory}
+                          </h4>
+                       </div>
+                       {/* Pelota asomándose */}
+                       <img 
+                         src="/rugby_ball.jpg" 
+                         alt="Gilbert" 
+                         className="absolute -right-8 -bottom-10 w-40 md:w-48 opacity-[0.25] transform -rotate-[15deg] mix-blend-multiply pointer-events-none" 
+                       />
                     </div>
-                  </div>
-               </div>
-            </div>
-         </div>
-      </div>
+                    
+                    {/* Lista */}
+                    <div className="p-4 flex-1">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[260px] overflow-y-auto pr-2 custom-scrollbar">
+                         {officialTeams[refCategory]?.some(p => p !== null) ? (
+                           officialTeams[refCategory].map((p, idx) => {
+                             if (!p) return null;
+                             return (
+                               <div key={p.id || idx} className="flex items-center gap-3 p-2 bg-white rounded-xl border border-neutral/10 shadow-sm hover:scale-[1.025] transition-transform duration-200 group">
+                                  <span className="w-6 h-6 bg-primary text-white text-[10px] font-black rounded-md flex items-center justify-center shrink-0 group-hover:bg-accent transition-colors">
+                                     {idx + 1}
+                                  </span>
+                                  <span className="text-xs font-bold text-primary truncate leading-none">{p.nombre || 'Jugador'}</span>
+                               </div>
+                             );
+                           })
+                         ) : (
+                           <div className="col-span-2 py-10 text-center bg-white/40 rounded-2xl border border-dashed border-neutral/20">
+                              <p className="text-xs font-black text-neutral uppercase tracking-widest">Aún no hay convocados</p>
+                           </div>
+                         )}
+                      </div>
+                    </div>
+                 </div>
+              </div>
+           </div>
+        </div>
+      )}
 
       <div className="h-[2px] bg-gradient-to-r from-transparent via-neutral/20 to-transparent my-8"></div>
 
@@ -732,113 +767,127 @@ export default function MiEquipo() {
                   </div>
                 </div>
                 
-                <div className="flex-1 overflow-y-auto p-2 sm:p-3 grid grid-cols-2 gap-2 custom-scrollbar bg-neutral-light/20 content-start">
-                  {convocados
-                    .filter(p => 
-                      p.categoryKey === poolCategory &&
-                      p.nombre.toLowerCase().includes(search.toLowerCase())
-                    )
-                    .map(player => {
-                      const isMenuOpen = activePlayerMenu?.id === player.id;
-                      const isSelected = !!selectedPlayers.find(s => s.id === player.id);
-                      const initials = player.nombre?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || '?';
-                      
-                      return (
-                        <div key={player.id} className="relative">
-                          <div
-                            draggable={!isSelected}
-                            onDragStart={(e) => handleDragStart(e, player.id)}
-                            onDragEnd={handleDragEnd}
-                            onClick={() => {
-                              if (!isEditing || isLocked) return;
-                              if (!isSelected) {
-                                  // Si ya hay un slot en cancha seleccionado (Selección Cruzada: Puesto -> Jugador)
-                                  if (selectedPosition !== null) {
-                                     assignToSlot(player, selectedPosition);
-                                     setSelectedPosition(null);
-                                     setActivePlayerMenu(null);
-                                  } else {
-                                     // De lo contrario, abrir menú rápido / resaltar
-                                     setActivePlayerMenu(activePlayerMenu?.id === player.id ? null : player);
-                                  }
-                              }
-                            }}
-                            className={`relative group flex items-center gap-2 p-1.5 rounded-lg border-2 transition-all ${!isEditing || isLocked ? 'cursor-default' : 'cursor-pointer'} ${
-                              isSelected 
-                              ? 'bg-neutral-light/50 border-neutral/10 opacity-60 grayscale' 
-                              : isMenuOpen
-                                ? 'bg-yellow-50 border-yellow-300 shadow-md scale-[1.02]'
-                                : `bg-white border-neutral/10 ${!isEditing || isLocked ? '' : 'hover:shadow-md hover-shadow hover:scale-[1.025] transition-transform duration-200'}`
-                            }`}
-                          >
-                            <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 border ${
-                              isSelected ? 'bg-neutral/20 text-neutral' : 'bg-primary/10 text-primary border-primary/20'
-                            }`}>
-                              <span className="text-[8px] font-black">{initials}</span>
+                <div className="flex-1 overflow-y-auto p-2 sm:p-3 grid grid-cols-2 gap-2 custom-scrollbar bg-neutral-light/20 content-start relative min-h-[400px]">
+                  {isWaiting ? (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-white/50 backdrop-blur-sm z-20 animate-fade-in">
+                       <div className="w-16 h-16 bg-primary/5 rounded-full flex items-center justify-center mb-6 border-2 border-dashed border-primary/20 animate-pulse">
+                          <Lock className="w-6 h-6 text-primary/30" />
+                       </div>
+                       <h5 className="font-black text-primary text-sm uppercase tracking-tighter mb-2">Cerrado por Preparación</h5>
+                       <p className="text-[10px] font-bold text-neutral/60 uppercase tracking-widest leading-relaxed">
+                          El Staff está definiendo los convocados para la próxima fecha.<br/>
+                          <span className="text-accent font-black">El mercado abrirá en breve.</span>
+                       </p>
+                       
+                       <div className="mt-10 opacity-[0.05] grayscale pointer-events-none select-none">
+                          <img src="https://nniwyswxojkalelavdnn.supabase.co/storage/v1/object/public/logos/gilbert_ball.png" alt="" className="w-32 h-32 object-contain" onError={(e) => e.target.style.display = 'none'} />
+                       </div>
+                    </div>
+                  ) : (
+                    convocados
+                      .filter(p => 
+                        p.categoryKey === poolCategory &&
+                        p.nombre.toLowerCase().includes(search.toLowerCase())
+                      )
+                      .map(player => {
+                        // ... current map logic ...
+                        const isMenuOpen = activePlayerMenu?.id === player.id;
+                        const isSelected = !!selectedPlayers.find(s => s.id === player.id);
+                        const initials = player.nombre?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || '?';
+                        
+                        return (
+                          <div key={player.id} className="relative">
+                            <div
+                              draggable={!isSelected}
+                              onDragStart={(e) => handleDragStart(e, player.id)}
+                              onDragEnd={handleDragEnd}
+                              onClick={() => {
+                                if (!isEditing || isLocked) return;
+                                if (!isSelected) {
+                                    if (selectedPosition !== null) {
+                                       assignToSlot(player, selectedPosition);
+                                       setSelectedPosition(null);
+                                       setActivePlayerMenu(null);
+                                    } else {
+                                       setActivePlayerMenu(activePlayerMenu?.id === player.id ? null : player);
+                                    }
+                                }
+                              }}
+                              className={`relative group flex items-center gap-2 p-1.5 rounded-lg border-2 transition-all ${!isEditing || isLocked ? 'cursor-default' : 'cursor-pointer'} ${
+                                isSelected 
+                                ? 'bg-neutral-light/50 border-neutral/10 opacity-60 grayscale' 
+                                : isMenuOpen
+                                  ? 'bg-yellow-50 border-yellow-300 shadow-md scale-[1.02]'
+                                  : `bg-white border-neutral/10 ${!isEditing || isLocked ? '' : 'hover:shadow-md hover-shadow hover:scale-[1.025] transition-transform duration-200'}`
+                              }`}
+                            >
+                              <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 border ${
+                                isSelected ? 'bg-neutral/20 text-neutral' : 'bg-primary/10 text-primary border-primary/20'
+                              }`}>
+                                <span className="text-[8px] font-black">{initials}</span>
+                              </div>
+
+                              <div className="min-w-0 flex-1 flex flex-col leading-tight">
+                                <p className={`font-black uppercase text-[9px] whitespace-normal ${isSelected ? 'text-neutral' : 'text-primary'}`}>
+                                  {player.nombre}
+                                </p>
+                                <span className={`text-[7px] font-bold uppercase tracking-tighter truncate ${isSelected ? 'text-neutral/70' : 'text-accent'}`}>
+                                  {player.posicion || 'JUGADOR'}
+                                </span>
+                              </div>
+                              
+                              <div className="shrink-0 flex items-center justify-center">
+                                {isSelected ? (
+                                  <CheckCircle className="w-3.5 h-3.5 text-green-500" />
+                                ) : isEditing && !isLocked ? (
+                                  <div className={`w-5 h-5 rounded-md flex items-center justify-center transition-all ${
+                                     isMenuOpen ? 'bg-yellow-400 text-white animate-pulse' : 'bg-neutral-light text-primary group-hover:bg-accent group-hover:text-white'
+                                  }`}>
+                                    <span className="text-xs font-black">+</span>
+                                  </div>
+                                ) : null}
+                              </div>
                             </div>
 
-                            <div className="min-w-0 flex-1 flex flex-col leading-tight">
-                              <p className={`font-black uppercase text-[9px] whitespace-normal ${isSelected ? 'text-neutral' : 'text-primary'}`}>
-                                {player.nombre}
-                              </p>
-                              <span className={`text-[7px] font-bold uppercase tracking-tighter truncate ${isSelected ? 'text-neutral/70' : 'text-accent'}`}>
-                                {player.posicion || 'JUGADOR'}
-                              </span>
-                            </div>
-                            
-                            <div className="shrink-0 flex items-center justify-center">
-                              {isSelected ? (
-                                <CheckCircle className="w-3.5 h-3.5 text-green-500" />
-                              ) : isEditing && !isLocked ? (
-                                <div className={`w-5 h-5 rounded-md flex items-center justify-center transition-all ${
-                                   isMenuOpen ? 'bg-yellow-400 text-white animate-pulse' : 'bg-neutral-light text-primary group-hover:bg-accent group-hover:text-white'
-                                }`}>
-                                  <span className="text-xs font-black">+</span>
+                            {isMenuOpen && (
+                              <div className="absolute left-0 right-0 bottom-full mb-2 bg-white border-2 border-primary rounded-2xl shadow-2xl z-[60] p-2 animate-pop-in overflow-hidden max-h-[300px] flex flex-col">
+                                <div className="p-2 border-b border-neutral/10 flex justify-between items-center bg-neutral-light/30">
+                                  <span className="text-[9px] font-black text-primary/60 uppercase tracking-widest">Asignar a:</span>
+                                  <button onClick={(e) => { e.stopPropagation(); setActivePlayerMenu(null); }} className="text-neutral hover:text-red-500 font-bold px-2">×</button>
                                 </div>
-                              ) : null}
-                            </div>
+                                <div className="overflow-y-auto grid grid-cols-2 gap-1 p-1 custom-scrollbar">
+                                  {PITCH_POSITIONS.map((pos, idx) => {
+                                    const occupied = pitchSlots[idx];
+                                    const isOfficialPos = player.posicion === pos.label;
+                                    const isRestricted = player.posicion && player.posicion !== 'Jugador' && !isOfficialPos;
+
+                                    return (
+                                      <button
+                                        key={idx}
+                                        disabled={isRestricted}
+                                        onClick={(e) => { e.stopPropagation(); assignToSlot(player, idx); }}
+                                        className={`p-2 rounded-lg text-left transition-all flex items-center gap-2 group/item ${
+                                          occupied || isRestricted
+                                            ? 'bg-neutral-light opacity-50 cursor-not-allowed' 
+                                            : 'hover:bg-primary hover:text-white'
+                                        }`}
+                                      >
+                                        <span className={`w-5 h-5 rounded flex items-center justify-center text-[9px] font-black border ${occupied ? 'border-neutral/30' : 'bg-primary/10 border-primary/20 group-hover/item:bg-white group-hover/item:text-primary'}`}>{idx + 1}</span>
+                                        <div className="flex flex-col min-w-0">
+                                          <span className={`text-[9px] font-bold truncate leading-none ${isOfficialPos ? 'text-accent group-hover/item:text-white' : ''}`}>{pos.label}</span>
+                                          {occupied && <span className="text-[7px] opacity-70 italic">Ocupado</span>}
+                                          {isOfficialPos && !occupied && <span className="text-[7px] text-accent group-hover/item:text-white/80 font-black">SU PUESTO</span>}
+                                        </div>
+                                      </button>
+                                    )
+                                  })}
+                                </div>
+                              </div>
+                            )}
                           </div>
-
-                          {/* Quick Assign Pop-over for Mi Equipo */}
-                          {isMenuOpen && (
-                            <div className="absolute left-0 right-0 bottom-full mb-2 bg-white border-2 border-primary rounded-2xl shadow-2xl z-[60] p-2 animate-pop-in overflow-hidden max-h-[300px] flex flex-col">
-                              <div className="p-2 border-b border-neutral/10 flex justify-between items-center bg-neutral-light/30">
-                                <span className="text-[9px] font-black text-primary/60 uppercase tracking-widest">Asignar a:</span>
-                                <button onClick={(e) => { e.stopPropagation(); setActivePlayerMenu(null); }} className="text-neutral hover:text-red-500 font-bold px-2">×</button>
-                              </div>
-                              <div className="overflow-y-auto grid grid-cols-2 gap-1 p-1 custom-scrollbar">
-                                {PITCH_POSITIONS.map((pos, idx) => {
-                                  // Solo permitimos asignar si el puesto está vacío o si es la posición oficial del jugador
-                                  const occupied = pitchSlots[idx];
-                                  const isOfficialPos = player.posicion === pos.label;
-                                  const isRestricted = player.posicion && player.posicion !== 'Jugador' && !isOfficialPos;
-
-                                  return (
-                                    <button
-                                      key={idx}
-                                      disabled={isRestricted}
-                                      onClick={(e) => { e.stopPropagation(); assignToSlot(player, idx); }}
-                                      className={`p-2 rounded-lg text-left transition-all flex items-center gap-2 group/item ${
-                                        occupied || isRestricted
-                                          ? 'bg-neutral-light opacity-50 cursor-not-allowed' 
-                                          : 'hover:bg-primary hover:text-white'
-                                      }`}
-                                    >
-                                      <span className={`w-5 h-5 rounded flex items-center justify-center text-[9px] font-black border ${occupied ? 'border-neutral/30' : 'bg-primary/10 border-primary/20 group-hover/item:bg-white group-hover/item:text-primary'}`}>{idx + 1}</span>
-                                      <div className="flex flex-col min-w-0">
-                                        <span className={`text-[9px] font-bold truncate leading-none ${isOfficialPos ? 'text-accent group-hover/item:text-white' : ''}`}>{pos.label}</span>
-                                        {occupied && <span className="text-[7px] opacity-70 italic">Ocupado</span>}
-                                        {isOfficialPos && !occupied && <span className="text-[7px] text-accent group-hover/item:text-white/80 font-black">SU PUESTO</span>}
-                                      </div>
-                                    </button>
-                                  )
-                                })}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                        );
+                      })
+                  )}
                 </div>
               </div>
               
@@ -884,7 +933,7 @@ export default function MiEquipo() {
                   >
                     {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
                     {isLocked 
-                      ? 'MERCADO CERRADO' 
+                      ? (isWaiting ? 'PREPARANDO PRÓXIMA FECHA' : 'MERCADO CERRADO')
                       : (isComplete
                         ? '¡FINALIZAR EDICIÓN Y GUARDAR!'
                         : (selectedPlayers.length === 0 ? 'GUARDAR EQUIPO' : `GUARDAR PROGRESO (${selectedPlayers.length}/15)`))}

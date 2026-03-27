@@ -1,20 +1,27 @@
 import { useState, useEffect, useMemo } from 'react';
-import { getPlayersStatistics } from '../../lib/api';
+import { getPlayersStatistics, getActiveFecha, isWaitingMode } from '../../lib/api';
 import { Users, Loader2, Trophy, Medal, Search, Filter } from 'lucide-react';
 
 export default function PlayersTab() {
   const [players, setPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchParams] = useState(new URLSearchParams(window.location.search));
+  const [activeFecha, setActiveFecha] = useState(null);
+  const isWaiting = useMemo(() => isWaitingMode(activeFecha), [activeFecha]);
   const [filter, setFilter] = useState('Todas'); // 'Todas' | 'Primera' | 'Intermedia' | 'Pre-intermedia'
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     async function load() {
       try {
-        const data = await getPlayersStatistics();
+        const [stats, fecha] = await Promise.all([
+          getPlayersStatistics(),
+          getActiveFecha()
+        ]);
+        setActiveFecha(fecha);
         // Ordenar por puntos de mayor a menor por defecto
-        data.sort((a, b) => b.puntos - a.puntos);
-        setPlayers(data);
+        stats.sort((a, b) => b.puntos - a.puntos);
+        setPlayers(stats);
       } catch (err) {
         console.error(err);
       } finally {
@@ -56,6 +63,8 @@ export default function PlayersTab() {
       </div>
     );
   }
+
+
 
   return (
     <div className="flex flex-col gap-6 animate-fade-in max-w-5xl mx-auto w-full pb-20">
