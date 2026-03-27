@@ -295,13 +295,16 @@ export default function MiEquipo() {
       const { data: { user } } = await supabase.auth.getUser();
       await supabase.from('equipos_usuarios').delete().match({ usuario_id: user.id, fecha_id: activeFecha.id });
 
+      // Solo guardamos el capitan_id si ese jugador realmente está en el equipo actual
+      const currentCaptainInTeam = pitchSlots.find(p => p && p.id === captainId);
+      const finalCaptainId = currentCaptainInTeam ? captainId : null;
+
       const inserts = pitchSlots.map((p, idx) => p ? ({
         usuario_id: user.id,
         fecha_id: activeFecha.id,
         jugador_id: p.id,
         posicion_cancha: idx + 1,
-        capitan_id: captainId,
-        es_capitan: p.id === captainId
+        capitan_id: finalCaptainId
       }) : null).filter(Boolean);
 
       const { error: insertErr } = await supabase.from('equipos_usuarios').insert(inserts);
@@ -884,7 +887,7 @@ export default function MiEquipo() {
                       ? 'MERCADO CERRADO' 
                       : (isComplete
                         ? '¡FINALIZAR EDICIÓN Y GUARDAR!'
-                        : (selectedPlayers.length === 0 ? 'GUARDAR EQUIPO' : `FINALIZAR EDICIÓN (${selectedPlayers.length}/15)`))}
+                        : (selectedPlayers.length === 0 ? 'GUARDAR EQUIPO' : `GUARDAR PROGRESO (${selectedPlayers.length}/15)`))}
                   </button>
                 )}
 
