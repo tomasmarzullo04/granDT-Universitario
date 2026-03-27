@@ -20,9 +20,9 @@ export const SCORING = {
  * Calcula los puntos de un jugador dadas sus estadísticas.
  * Maneja valores null/undefined en cualquier campo (incluido drops).
  */
-export function calcularPuntosJugador(s) {
+export function calcularPuntosJugador(s, isCaptain = false) {
   if (!s) return 0;
-  return (
+  const basePoints = (
     ((s.tries || 0) * SCORING.TRY) +
     ((s.conversiones || 0) * SCORING.CONVERSION) +
     ((s.penales || 0) * SCORING.PENAL) +
@@ -37,6 +37,7 @@ export function calcularPuntosJugador(s) {
     ((s.tackles || 0) * SCORING.TACKLE) +
     SCORING.PRESENCIA
   );
+  return isCaptain ? basePoints * 2 : basePoints;
 }
 
 // ==========================================
@@ -312,7 +313,7 @@ export async function publicarResultadosFecha(fechaId, allStatsArray) {
   // 2. Leer equipos de todos los usuarios para esta fecha
   const { data: equipos, error: eqErr } = await supabase
     .from('equipos_usuarios')
-    .select('usuario_id, jugador_id')
+    .select('usuario_id, jugador_id, capitan_id')
     .eq('fecha_id', fechaId);
 
   if (eqErr) throw eqErr;
@@ -328,14 +329,21 @@ export async function publicarResultadosFecha(fechaId, allStatsArray) {
   // 4. Agrupar jugadores por usuario
   const usuariosMap = {};
   (equipos || []).forEach(row => {
-    if (!usuariosMap[row.usuario_id]) usuariosMap[row.usuario_id] = [];
-    usuariosMap[row.usuario_id].push(row.jugador_id);
+    if (!usuariosMap[row.usuario_id]) {
+      usuariosMap[row.usuario_id] = {
+        jugadorIds: [],
+        capitanId: row.capitan_id
+      };
+    }
+    usuariosMap[row.usuario_id].jugadorIds.push(row.jugador_id);
   });
   // 5. Calcular puntos por usuario
-  const rankingInserts = Object.entries(usuariosMap).map(([usuario_id, jugadorIds]) => {
+  const rankingInserts = Object.entries(usuariosMap).map(([usuario_id, data]) => {
+    const { jugadorIds, capitanId } = data;
     const puntosTotal = jugadorIds.reduce((sum, jId) => {
       const st = (statsData || []).find(s => s.jugador_id === jId);
-      return sum + calcularPuntosJugador(st);
+      const isCaptain = jId === capitanId;
+      return sum + calcularPuntosJugador(st, isCaptain);
     }, 0);
 
     return {
@@ -438,7 +446,7 @@ export async function getResumenFecha(fechaId, userId) {
   // 1. Jugadores elegidos por el usuario
   const { data: equipo, error: eqErr } = await supabase
     .from('equipos_usuarios')
-    .select('jugador_id, posicion_cancha')
+    .select('jugador_id, posicion_cancha, capitan_id')
     .eq('fecha_id', fechaId)
     .eq('usuario_id', userId);
 
@@ -472,12 +480,14 @@ export async function getResumenFecha(fechaId, userId) {
     const stats = (statsData || []).find(s => s.jugador_id === e.jugador_id) || null;
     const conv = (convocados || []).find(c => c.jugador_id === e.jugador_id) || {};
 
+    const isCaptain = e.jugador_id === e.capitan_id;
     return {
       jugador_id: e.jugador_id,
       posicion_cancha: e.posicion_cancha,
       nombre: info.nombre || 'Jugador',
       categoria: conv.categoria || 'Sin Categoría',
       posicion_oficial: conv.posicion_actual || '',
+      es_capitan: isCaptain,
       stats: {
         tries: stats?.tries || 0,
         conversiones: stats?.conversiones || 0,
@@ -492,7 +502,7 @@ export async function getResumenFecha(fechaId, userId) {
         cortes_limpios: stats?.cortes_limpios || 0,
         tackles: stats?.tackles || 0,
       },
-      puntos: calcularPuntosJugador(stats),
+      puntos: calcularPuntosJugador(stats, isCaptain),
     };
   });
 

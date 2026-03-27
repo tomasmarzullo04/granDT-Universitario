@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { getActiveFecha, getConvocados, archiveTeamSnapshot } from '../../lib/api';
-import { Save, Loader2, AlertCircle, CheckCircle, Search, Trophy, Info, Users, BarChart2, Lock } from 'lucide-react';
+import { Save, Loader2, AlertCircle, CheckCircle, Search, Trophy, Info, Users, BarChart2, Lock, Crown } from 'lucide-react';
 import RugbyPitch from '../RugbyPitch';
 import TeamCounters from '../TeamCounters';
 import ResumenFecha from '../ResumenFecha';
@@ -27,6 +27,8 @@ export default function MiEquipo() {
   const [activeSlotIndex, setActiveSlotIndex] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [activePlayerMenu, setActivePlayerMenu] = useState(null);
+  const [captainId, setCaptainId] = useState(null);
+  const [isCaptainSelectorOpen, setIsCaptainSelectorOpen] = useState(false);
 
   // Helper to get selected players from slots
   const selectedPlayers = useMemo(() => pitchSlots.filter(Boolean), [pitchSlots]);
@@ -76,11 +78,12 @@ export default function MiEquipo() {
         if (user) {
           const { data: selection } = await supabase
             .from('equipos_usuarios')
-            .select('jugador_id, posicion_cancha')
+            .select('jugador_id, posicion_cancha, capitan_id')
             .eq('usuario_id', user.id)
             .eq('fecha_id', fecha.id);
           
           if (selection && selection.length > 0) {
+            setCaptainId(selection[0].capitan_id);
             const newSlots = Array(15).fill(null);
             selection.forEach(s => {
               const p = normalized.find(p => p.id === s.jugador_id);
@@ -297,7 +300,8 @@ export default function MiEquipo() {
         fecha_id: activeFecha.id,
         jugador_id: p.id,
         posicion_cancha: idx + 1,
-        es_capitan: false 
+        capitan_id: captainId,
+        es_capitan: p.id === captainId
       }) : null).filter(Boolean);
 
       const { error: insertErr } = await supabase.from('equipos_usuarios').insert(inserts);
@@ -551,6 +555,22 @@ export default function MiEquipo() {
                 <div className="absolute inset-x-2 top-[22%] border-t-2 border-white/85 shadow-[0_0_2px_rgba(255,255,255,0.4)] pointer-events-none z-0"></div>
                 <div className="absolute inset-x-2 top-[78%] border-t-2 border-white/85 shadow-[0_0_2px_rgba(255,255,255,0.4)] pointer-events-none z-0"></div>
                 
+                {/* Floating Captain Button */}
+                {!isLocked && isEditing && selectedPlayers.length > 0 && (
+                  <button
+                    onClick={() => setIsCaptainSelectorOpen(true)}
+                    className="absolute top-4 right-4 z-30 bg-yellow-500 hover:bg-yellow-400 text-primary p-2 rounded-2xl shadow-xl border-2 border-white/50 transition-all hover:scale-110 active:scale-95 group flex items-center justify-center min-w-[44px] min-h-[44px]"
+                    title="Seleccionar Capitán"
+                  >
+                    <div className="w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-inner">
+                       <span className="text-primary font-black text-lg leading-none">C</span>
+                    </div>
+                    <span className="absolute right-full mr-2 top-1/2 -translate-y-1/2 bg-primary text-white text-[10px] font-black px-2 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl border border-white/10 uppercase tracking-widest">
+                      Elegir Capitán
+                    </span>
+                  </button>
+                )}
+                
                 {/* 5m lines (dashed) */}
                 <div className="absolute inset-x-2 top-[5%] border-t border-dashed border-white/50 pointer-events-none z-0"></div>
                 <div className="absolute inset-x-2 top-[95%] border-t border-dashed border-white/50 pointer-events-none z-0"></div>
@@ -591,6 +611,13 @@ export default function MiEquipo() {
                             className={`w-8 h-8 sm:w-12 sm:h-12 bg-primary border-[2.5px] border-white rounded-full flex items-center justify-center cursor-grab active:cursor-grabbing font-bebas tracking-wide sm:text-lg relative group animate-pop-in z-10 transition-shadow ${isEditing && !isLocked ? 'glow-hover shadow-[0_4px_6px_rgba(0,0,0,0.6)]' : 'shadow-[0_4px_6px_rgba(0,0,0,0.6)]'}`}
                           >
                             <span className="text-[12px] sm:text-[16px] font-black text-white">{i + 1}</span>
+                            
+                            {/* Captain Badge */}
+                            {player.id === captainId && (
+                              <div className="absolute -top-1 -left-1 w-5 h-5 sm:w-6 sm:h-6 bg-yellow-500 border-2 border-white rounded-full flex items-center justify-center shadow-lg z-30 animate-bounce-subtle">
+                                <span className="text-[8px] sm:text-[10px] font-black text-primary">C</span>
+                              </div>
+                            )}
                             
                             {isEditing && !isLocked && (
                                 <button 
@@ -978,6 +1005,84 @@ export default function MiEquipo() {
 
             <div className="bg-neutral-light/50 p-4 text-center">
                  <p className="text-[9px] font-black text-neutral uppercase tracking-[0.3em]">REGLA 5-5-5: {counts.primera}/5 · {counts.intermedia}/5 · {counts.pre}/5</p>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Captain Selection Modal */}
+      {isCaptainSelectorOpen && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-primary/40 backdrop-blur-md animate-fade-in">
+          <div className="bg-white rounded-[2rem] w-full max-w-md overflow-hidden shadow-2xl border border-neutral/20 animate-pop-in">
+            <div className="bg-primary p-6 relative overflow-hidden">
+              <div className="relative z-10 flex items-center gap-4">
+                <div className="w-12 h-12 bg-yellow-500 rounded-2xl flex items-center justify-center shadow-lg border-2 border-white/20">
+                  <span className="text-primary font-black text-2xl">C</span>
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bebas text-white tracking-wide uppercase leading-none">Elegí tu Capitán</h3>
+                  <p className="text-[10px] font-black text-yellow-500 uppercase tracking-[0.2em] mt-1">Puntuación Doble (x2)</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setIsCaptainSelectorOpen(false)}
+                className="absolute top-6 right-6 text-white/40 hover:text-white transition-colors p-2"
+              >
+                ×
+              </button>
+              {/* Decoration */}
+              <div className="absolute -right-8 -bottom-8 w-32 h-32 bg-accent opacity-10 rounded-full blur-3xl"></div>
+            </div>
+            
+            <div className="p-6">
+              <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                {selectedPlayers.length === 0 ? (
+                  <div className="py-12 text-center text-neutral/40 font-bold uppercase text-xs">
+                    Primero completá tu equipo
+                  </div>
+                ) : (
+                  selectedPlayers.map(player => (
+                    <button
+                      key={player.id}
+                      onClick={() => {
+                        setCaptainId(player.id);
+                        setIsCaptainSelectorOpen(false);
+                      }}
+                      className={`w-full flex items-center gap-4 p-4 rounded-2xl border-2 transition-all group ${
+                        captainId === player.id 
+                          ? 'bg-yellow-50 border-yellow-400 shadow-md' 
+                          : 'bg-white border-neutral/10 hover:border-primary/20 hover:bg-neutral-light/30'
+                      }`}
+                    >
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black ${
+                        captainId === player.id ? 'bg-yellow-500 text-primary' : 'bg-primary/5 text-primary'
+                      }`}>
+                        {player.nombre.charAt(0)}
+                      </div>
+                      <div className="text-left flex-1">
+                        <p className="font-black text-primary uppercase text-sm">{player.nombre}</p>
+                        <p className={`text-[10px] font-bold uppercase tracking-widest ${captainId === player.id ? 'text-yellow-600' : 'text-neutral/60'}`}>
+                          {player.posicion || 'JUGADOR'}
+                        </p>
+                      </div>
+                      {captainId === player.id && (
+                        <CheckCircle className="w-6 h-6 text-yellow-500" />
+                      )}
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity ${captainId === player.id ? 'bg-yellow-500/20' : 'bg-primary/10'}`}>
+                         <span className={`font-black text-sm ${captainId === player.id ? 'text-yellow-600' : 'text-primary/40'}`}>C</span>
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+              
+              <div className="mt-6">
+                 <button
+                  onClick={() => setIsCaptainSelectorOpen(false)}
+                  className="w-full py-4 bg-primary text-white font-black uppercase tracking-[0.2em] text-xs rounded-2xl shadow-xl hover:bg-primary-light transition-all active:scale-[0.98]"
+                 >
+                   Confirmar Selección
+                 </button>
+              </div>
             </div>
           </div>
         </div>
