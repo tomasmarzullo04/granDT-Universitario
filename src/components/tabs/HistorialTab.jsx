@@ -47,7 +47,7 @@ export default function HistorialTab() {
       const { data: rankingData } = await supabase
         .from('ranking_usuarios')
         .select('puntos_fecha')
-        .eq('user_id', profile.id)
+        .eq('usuario_id', profile.id)
         .eq('fecha_id', selectedFecha)
         .maybeSingle();
 
