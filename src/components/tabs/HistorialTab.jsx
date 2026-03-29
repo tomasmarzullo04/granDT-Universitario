@@ -60,7 +60,7 @@ export default function HistorialTab() {
            setTeamObj(mappedTeam);
         }
       } else {
-        // 2. FALLBACK: Buscar en equipos_usuarios (equipo activo, a˙n no archivado)
+        // 2. FALLBACK: Buscar en equipos_usuarios (equipo activo, a√∫n no archivado)
         const { data: equipoActivo } = await supabase
           .from('equipos_usuarios')
           .select('jugador_id, posicion_cancha, capitan_id')
@@ -106,7 +106,7 @@ export default function HistorialTab() {
            <History className="w-10 h-10 text-primary/40" />
         </div>
         <h2 className="text-2xl font-black text-primary mb-3">Sin Historial</h2>
-        <p className="text-neutral font-medium mb-6">TodavÌa no hay fechas para mostrar tu historial.</p>
+        <p className="text-neutral font-medium mb-6">Todav√≠a no hay fechas para mostrar tu historial.</p>
       </div>
     );
   }
@@ -123,7 +123,7 @@ export default function HistorialTab() {
             </div>
             <div>
                <h2 className="text-2xl font-black text-primary tracking-tight leading-none">Tu Historial</h2>
-               <p className="text-xs font-bold text-neutral">Repas· los equipos que armaste en fechas anteriores.</p>
+               <p className="text-xs font-bold text-neutral">Repas√° los equipos que armaste en fechas anteriores.</p>
             </div>
          </div>
 
@@ -133,7 +133,7 @@ export default function HistorialTab() {
             className="bg-neutral-light border border-neutral/20 rounded-xl px-4 py-3 text-sm font-bold text-primary focus:ring-2 focus:ring-primary/20 outline-none w-full md:w-auto"
          >
             {fechas.map(f => (
-               <option key={f.id} value={f.id}>Fecha {f.numero_fecha} ‚Äî vs {f.rival}</option>
+               <option key={f.id} value={f.id}>Fecha {f.numero_fecha} √¢‚Ç¨‚Äù vs {f.rival}</option>
             ))}
          </select>
       </div>
@@ -147,7 +147,7 @@ export default function HistorialTab() {
          <div className="bg-white rounded-3xl p-12 text-center border border-neutral/20 shadow-sm">
            <Users className="w-16 h-16 text-neutral/20 mx-auto mb-4" />
            <p className="text-lg font-black text-primary">No armaste equipo en esta fecha.</p>
-           <p className="text-sm text-neutral mt-2">No se encontrÛ ning˙n registro tuyo para este partido.</p>
+           <p className="text-sm text-neutral mt-2">No se encontr√≥ ning√∫n registro tuyo para este partido.</p>
          </div>
       ) : (
          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -182,7 +182,7 @@ export default function HistorialTab() {
                         <div>
                            <p className="text-sm font-black text-primary leading-none">{p.nombre}</p>
                            <p className="text-[10px] text-neutral font-bold uppercase mt-1">
-                             {historicoData._source === 'equipos_usuarios' ? 'Titular Activo' : 'Titular HistÛrico'}
+                             {historicoData._source === 'equipos_usuarios' ? 'Titular Activo' : 'Titular Hist√≥rico'}
                            </p>
                         </div>
                      </div>
