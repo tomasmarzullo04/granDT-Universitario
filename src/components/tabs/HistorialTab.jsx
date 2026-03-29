@@ -43,8 +43,18 @@ export default function HistorialTab() {
         .eq('fecha_id', selectedFecha)
         .maybeSingle();
 
+      // Obtener puntos del usuario para esta fecha desde ranking_usuarios
+      const { data: rankingData } = await supabase
+        .from('ranking_usuarios')
+        .select('puntos_fecha')
+        .eq('user_id', profile.id)
+        .eq('fecha_id', selectedFecha)
+        .maybeSingle();
+
+      const puntosUsuario = rankingData?.puntos_fecha ?? null;
+
       if (historial && historial.player_ids) {
-        setHistoricoData(historial);
+        setHistoricoData({ ...historial, puntos_totales: puntosUsuario ?? historial.puntos_totales });
         
         const { data: players } = await supabase
           .from('jugadores')
@@ -87,7 +97,7 @@ export default function HistorialTab() {
             setTeamObj(mappedTeam);
             setHistoricoData({
               player_ids: playerIds,
-              puntos_totales: null,
+              puntos_totales: puntosUsuario,
               capitan_id: equipoActivo[0]?.capitan_id || null,
               _source: 'equipos_usuarios'
             });
