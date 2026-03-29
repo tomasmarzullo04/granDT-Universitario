@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { getActiveFecha, getConvocados, archiveTeamSnapshot, isWaitingMode } from '../../lib/api';
+import { getActiveFecha, getConvocados, archiveTeamSnapshot, isWaitingMode, isSelectionWindowClosed, isTransitionMode } from '../../lib/api';
 import { Save, Loader2, AlertCircle, CheckCircle, Search, Trophy, Info, Users, BarChart2, Lock, Crown } from 'lucide-react';
 import RugbyPitch from '../RugbyPitch';
 import TeamCounters from '../TeamCounters';
@@ -11,6 +12,8 @@ import { PITCH_POSITIONS } from '../../constants/pitchPositions';
 
 export default function MiEquipo() {
   const { profile } = useAuth();
+  const [searchParams] = useSearchParams();
+  const forceOpen = searchParams.get('force_open') === 'true';
   const [activeFecha, setActiveFecha] = useState(null);
   const [convocados, setConvocados] = useState([]);
   const [pitchSlots, setPitchSlots] = useState(Array(15).fill(null));
@@ -92,6 +95,28 @@ export default function MiEquipo() {
               }
             });
             setPitchSlots(newSlots);
+          } else {
+            // 🧪 TEST MODE: Recuperar equipo de la última fecha si no hay equipo actual
+            const { data: lastTeam } = await supabase
+              .from('equipos_usuarios')
+              .select('jugador_id, posicion_cancha, capitan_id')
+              .eq('usuario_id', user.id)
+              .neq('fecha_id', fecha.id)
+              .order('created_at', { ascending: false })
+              .limit(15);
+            
+            if (lastTeam && lastTeam.length > 0) {
+              setCaptainId(lastTeam[0].capitan_id);
+              const newSlots = Array(15).fill(null);
+              lastTeam.forEach(s => {
+                const p = normalized.find(p => p.id === s.jugador_id);
+                if (p && s.posicion_cancha >= 1 && s.posicion_cancha <= 15) {
+                  newSlots[s.posicion_cancha - 1] = p;
+                }
+              });
+              setPitchSlots(newSlots);
+              console.log('🧪 TEST: Equipo recuperado de fecha anterior');
+            }
           }
         }
       }
@@ -112,55 +137,33 @@ export default function MiEquipo() {
     return res;
   }, [selectedPlayers]);
   
-  // -- NEW: Time-based Market Lock Logic --
-  const isMarketClosed = useMemo(() => {
-    const now = new Date();
-    const day = now.getDay(); // 0 = Sun, 5 = Fri, 6 = Sat
-    const hour = now.getHours();
-    const min = now.getMinutes();
+  // ── CICLO SEMANAL: Lógica de bloqueo ──
+  const isMarketClosed = useMemo(() => forceOpen ? false : isSelectionWindowClosed(), [forceOpen]);
+  const isTransition = useMemo(() => forceOpen ? false : isTransitionMode(activeFecha), [activeFecha, forceOpen]);
 
-    // Viernes 23:59:59 -> Lunes 00:00:00
-    if (day === 6 || day === 0) return true; // Sábado o Domingo
-    if (day === 5 && hour === 23 && min >= 59) return true; // Viernes casi medianoche (simplificado)
-    return false;
-  }, []);
-
-  const shouldSnapshotAndLock = useMemo(() => {
-     const now = new Date();
-     const day = now.getDay();
-     const hour = now.getHours();
-     const min = now.getMinutes();
-     // Lunes a las 23:59 o Martes/Miércoles/Jueves
-     const esLunesNoche = (day === 1 && hour === 23 && min >= 59);
-     const diasEspera = [2, 3, 4];
-     return esLunesNoche || diasEspera.includes(day);
-  }, []);
-
-  // Trigger Snapshot
+  // Snapshot automático al entrar en modo transición (miércoles)
   useEffect(() => {
     async function triggerSnapshotIfNeeded() {
-      if (shouldSnapshotAndLock && activeFecha && profile && pitchSlots.some(Boolean)) {
-         // Si la fecha sigue abierta o en juego
-         if (activeFecha.estado === 'abierta' || activeFecha.estado === 'en_juego') {
-             try {
-                const playerIds = pitchSlots.map(p => p ? p.id : null).filter(Boolean);
-                if (playerIds.length === 15) {
-                   await archiveTeamSnapshot(profile.id, activeFecha.numero_fecha, activeFecha.id, playerIds, 0);
-                   console.log("Snapshot automático de cierre guardado.");
-                }
-             } catch (err) {
-                console.error("Error al disparar snapshot automático:", err);
-             }
-         }
+      if (isTransition && activeFecha && profile && pitchSlots.some(Boolean)) {
+        if (activeFecha.estado === 'abierta' || activeFecha.estado === 'en_juego') {
+          try {
+            const playerIds = pitchSlots.map(p => p ? p.id : null).filter(Boolean);
+            if (playerIds.length > 0) {
+              await archiveTeamSnapshot(profile.id, activeFecha.numero_fecha, activeFecha.id, playerIds, 0);
+              console.log('Snapshot automático de transición guardado.');
+            }
+          } catch (err) {
+            console.error('Error al disparar snapshot automático:', err);
+          }
+        }
       }
     }
     triggerSnapshotIfNeeded();
-  }, [shouldSnapshotAndLock, activeFecha, profile, pitchSlots]);
-
+  }, [isTransition, activeFecha, profile, pitchSlots]);
 
   const isAdmin = profile?.role === 'admin';
-  const isWaiting = useMemo(() => isWaitingMode(activeFecha), [activeFecha]);
-  const isLocked = activeFecha?.estado === 'en_juego' || activeFecha?.estado === 'finalizada' || isMarketClosed || shouldSnapshotAndLock || isWaiting;
+  const isWaiting = useMemo(() => forceOpen ? false : isWaitingMode(activeFecha), [activeFecha, forceOpen]);
+  const isLocked = activeFecha?.estado === 'en_juego' || isMarketClosed || isTransition;
 
   const isComplete = isAdmin 
     ? selectedPlayers.length === 15 
@@ -323,35 +326,32 @@ export default function MiEquipo() {
     }
   };
 
-  if (isWaiting) {
+  // ── Modo Transición (Miércoles): Archivar y limpiar ──
+  if (isTransition && !forceOpen) {
     return (
-       <div className="flex flex-col items-center justify-center min-h-[70vh] max-w-5xl mx-auto px-4 text-center animate-fade-in relative overflow-hidden bg-white/40 rounded-[3rem] border-2 border-dashed border-neutral/10 shadow-inner">
-          {/* Watermark Logo */}
-          <div className="absolute inset-0 flex items-center justify-center opacity-[0.04] pointer-events-none grayscale select-none scale-150 transition-opacity">
-             <img src="https://nniwyswxojkalelavdnn.supabase.co/storage/v1/object/public/logos/gilbert_ball.png" alt="" className="w-full max-w-xl object-contain grayscale" onError={(e) => e.target.parentElement.style.display = 'none'} />
+      <div className="flex flex-col items-center justify-center min-h-[70vh] max-w-5xl mx-auto px-4 text-center animate-fade-in relative overflow-hidden bg-white/40 rounded-[3rem] border-2 border-dashed border-neutral/10 shadow-inner">
+        <div className="absolute inset-0 flex items-center justify-center opacity-[0.04] pointer-events-none grayscale select-none scale-150">
+          <img src="https://nniwyswxojkalelavdnn.supabase.co/storage/v1/object/public/logos/gilbert_ball.png" alt="" className="w-full max-w-xl object-contain grayscale" onError={(e) => e.target.parentElement.style.display = 'none'} />
+        </div>
+        <div className="relative z-10 space-y-10 py-20">
+          <div className="w-28 h-28 bg-primary/5 rounded-[2.5rem] flex items-center justify-center mx-auto border-2 border-dashed border-primary/20 animate-pulse-slow">
+            <Lock className="w-12 h-12 text-primary/30" />
           </div>
-
-          <div className="relative z-10 space-y-10 py-20 pb-20">
-             <div className="w-28 h-28 bg-primary/5 rounded-[2.5rem] flex items-center justify-center mx-auto border-2 border-dashed border-primary/20 animate-pulse-slow">
-                <Lock className="w-12 h-12 text-primary/30" />
-             </div>
-             
-             <div className="space-y-6">
-                <h2 className="text-4xl md:text-6xl font-black text-primary tracking-tighter uppercase leading-none px-4">
-                   ⏳ DIAGRAMACIÓN DE EQUIPO<br/><span className="text-accent underline decoration-4 underline-offset-8">INHABILITADA</span>
-                </h2>
-                <p className="text-sm md:text-lg font-bold text-neutral/70 max-w-lg mx-auto uppercase tracking-[0.2em] leading-relaxed px-4">
-                   El Staff está definiendo los planteles para la próxima fecha.<br/>
-                   <span className="block mt-4 text-primary font-black bg-primary/10 py-2 px-4 rounded-full inline-block italic">Habilitación automática al cargar convocados</span>
-                </p>
-             </div>
-
-             <div className="flex flex-col items-center gap-4 pt-10">
-                <div className="h-[2px] w-20 bg-accent/30 rounded-full"></div>
-                <p className="text-[10px] font-black text-neutral/40 uppercase tracking-[0.5em] italic">Gran DT Universitario</p>
-             </div>
+          <div className="space-y-6">
+            <h2 className="text-3xl md:text-5xl font-black text-primary tracking-tighter uppercase leading-none px-4">
+              ⏳ ESPERA DE CARGA DE PLANTELES<br/><span className="text-accent">PRÓXIMA FECHA</span>
+            </h2>
+            <p className="text-sm md:text-lg font-bold text-neutral/70 max-w-lg mx-auto uppercase tracking-[0.15em] leading-relaxed px-4">
+              El Staff está definiendo los convocados.<br/>
+              <span className="block mt-4 text-primary font-black bg-primary/10 py-2 px-4 rounded-full inline-block">La ventana de selección abrirá en breve.</span>
+            </p>
           </div>
-       </div>
+          <div className="flex flex-col items-center gap-4 pt-6">
+            <div className="h-[2px] w-20 bg-accent/30 rounded-full"></div>
+            <p className="text-[10px] font-black text-neutral/40 uppercase tracking-[0.5em] italic">Gran DT Universitario</p>
+          </div>
+        </div>
+      </div>
     );
   }
 
@@ -434,10 +434,23 @@ export default function MiEquipo() {
         </div>
       </div>
 
-      {isLocked && (
-        <div className="bg-blue-50 border border-blue-100 p-3 rounded-xl flex items-center justify-center shadow-sm animate-fade-in">
-          <p className="text-[11px] md:text-xs font-bold text-blue-800 text-center uppercase tracking-wider">
-            ⏳ PRÓXIMA FECHA EN PREPARACIÓN. El mercado abrirá una vez que el Staff confirme los convocados oficiales.
+      {/* Banner dinámico de estado */}
+      {isLocked ? (
+        <div className="bg-red-50 border border-red-200 p-3 rounded-xl flex items-center justify-center gap-3 shadow-sm animate-fade-in">
+          <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
+            <Lock className="w-4 h-4 text-red-600" />
+          </div>
+          <p className="text-[11px] md:text-xs font-bold text-red-700 text-center uppercase tracking-wider">
+            VENTANA DE SELECCIÓN CERRADA — Fecha en disputa o procesando resultados.
+          </p>
+        </div>
+      ) : (
+        <div className="bg-green-50 border border-green-200 p-3 rounded-xl flex items-center justify-center gap-3 shadow-sm animate-fade-in">
+          <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+            <span className="text-green-600 text-lg">🟢</span>
+          </div>
+          <p className="text-[11px] md:text-xs font-bold text-green-700 text-center uppercase tracking-wider">
+            VENTANA DE SELECCIÓN ABIERTA — Podés confirmar tu 15 ideal hasta el viernes a las 23:59.
           </p>
         </div>
       )}
@@ -776,7 +789,7 @@ export default function MiEquipo() {
                        <h5 className="font-black text-primary text-sm uppercase tracking-tighter mb-2">Cerrado por Preparación</h5>
                        <p className="text-[10px] font-bold text-neutral/60 uppercase tracking-widest leading-relaxed">
                           El Staff está definiendo los convocados para la próxima fecha.<br/>
-                          <span className="text-accent font-black">El mercado abrirá en breve.</span>
+                          <span className="text-accent font-black">La ventana de selección abrirá en breve.</span>
                        </p>
                        
                        <div className="mt-10 opacity-[0.05] grayscale pointer-events-none select-none">
@@ -900,7 +913,7 @@ export default function MiEquipo() {
                  </h4>
                  <ul className="text-xs space-y-2 font-bold opacity-90">
                     <li>- Arrastrá los jugadores a su posición en la pizarra.</li>
-                    <li>- **Sin límites de presupuesto**: Elegí a quienes quieras.</li>
+                     <li>- Elegí a tus 15 jugadores sin restricciones.</li>
                     <li>- **Regla 5-5-5**: Elegí exactamente 5 por categoría.</li>
                     <li>- Respetá las posiciones oficiales de la convocatoria.</li>
                  </ul>
@@ -933,7 +946,7 @@ export default function MiEquipo() {
                   >
                     {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
                     {isLocked 
-                      ? (isWaiting ? 'PREPARANDO PRÓXIMA FECHA' : 'MERCADO CERRADO')
+                      ? (isWaiting ? 'PREPARANDO PRÓXIMA FECHA' : 'VENTANA CERRADA')
                       : (isComplete
                         ? '¡FINALIZAR EDICIÓN Y GUARDAR!'
                         : (selectedPlayers.length === 0 ? 'GUARDAR EQUIPO' : `GUARDAR PROGRESO (${selectedPlayers.length}/15)`))}

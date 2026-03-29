@@ -81,6 +81,7 @@ export async function getActiveFecha() {
 
 /**
  * Determina si el sistema está en "Modo de Espera" (post-lunes 23:59 y sin nueva fecha).
+ * LEGACY — mantenida para compatibilidad.
  */
 export function isWaitingMode(activeFecha) {
   if (!activeFecha) return false;
@@ -90,38 +91,68 @@ export function isWaitingMode(activeFecha) {
 
   // 1. Si el estado es 'finalizada', estamos en modo espera (reset semanal).
   if (activeFecha.estado === 'finalizada') {
-    // Si es Martes, Miércoles, Jueves o Viernes morning, esperamos.
-    // O si es Lunes después del deadline.
     const isWaitingDay = (day === 1 && now.getHours() === 23 && now.getMinutes() >= 59) || [2, 3, 4, 5, 0].includes(day);
     return isWaitingDay;
   }
 
   // 2. CASO CRÍTICO: Si el estado sigue siendo 'abierta' pero es de la semana pasada (STALE).
-  // Intentamos extraer la fecha del rival: "Rival - YYYY-MM-DD"
   const dateMatch = activeFecha.rival?.match(/(\d{4}-\d{2}-\d{2})/);
   if (dateMatch) {
     try {
-      // Usamos la fecha del rival como base.
       const matchDate = new Date(dateMatch[1] + 'T23:59:59'); 
-      
-      // El deadline es el LUNES siguiente al partido a las 23:59:59.
       const deadline = new Date(matchDate);
-      // Calculamos cuánto falta para el lunes (1).
-      // matchDate.getDay() -> 6 (Sat) -> +2 días para el lunes.
-      // matchDate.getDay() -> 0 (Sun) -> +1 día para el lunes.
       const daysToMonday = matchDate.getDay() === 0 ? 1 : (8 - matchDate.getDay()) % 7;
       deadline.setDate(matchDate.getDate() + (daysToMonday === 0 ? 0 : daysToMonday));
       deadline.setHours(23, 59, 59);
 
       if (now > deadline) {
-        // El lunes ya pasó. Si todavía está 'abierta', es la vieja.
-        // Debe desaparecer según el pedido del usuario.
         return true;
       }
     } catch (e) {
       console.error("Error parsing match date:", e);
     }
   }
+
+  return false;
+}
+
+/**
+ * CICLO SEMANAL — Ventana de selección cerrada.
+ * Retorna true desde Viernes 23:59 hasta que el Admin cargue nueva fecha abierta.
+ * Bloquea edición pero el equipo sigue visible.
+ */
+export function isSelectionWindowClosed() {
+  const now = new Date();
+  const day = now.getDay(); // 0=Dom, 1=Lun, ..., 5=Vie, 6=Sáb
+  const hour = now.getHours();
+
+  // Sábado o Domingo completos → cerrado
+  if (day === 6 || day === 0) return true;
+  // Viernes a partir de las 23:00 → cerrado
+  if (day === 5 && hour >= 23) return true;
+
+  return false;
+}
+
+/**
+ * CICLO SEMANAL — Modo transición (Miércoles noche).
+ * Retorna true a partir del Miércoles 23:59 o si la fecha está finalizada.
+ * Señal para: archivar equipo, limpiar cancha, mostrar banner de espera.
+ */
+export function isTransitionMode(activeFecha) {
+  if (!activeFecha) return false;
+
+  // Si la fecha ya fue finalizada por el Admin → transición
+  if (activeFecha.estado === 'finalizada') return true;
+
+  const now = new Date();
+  const day = now.getDay();
+  const hour = now.getHours();
+
+  // Miércoles a partir de las 23:59 → transición
+  if (day === 3 && hour >= 23) return true;
+  // Jueves completo → transición (espera de nuevos planteles)
+  if (day === 4) return true;
 
   return false;
 }
