@@ -80,37 +80,15 @@ export async function getActiveFecha() {
 }
 
 /**
- * Determina si el sistema está en "Modo de Espera" (post-lunes 23:59 y sin nueva fecha).
- * LEGACY — mantenida para compatibilidad.
+ * Determina si el sistema está en "Modo de Espera" (Jueves y Viernes hasta que se carguen planteles).
  */
 export function isWaitingMode(activeFecha) {
-  if (!activeFecha) return false;
-  
   const now = new Date();
   const day = now.getDay(); 
 
-  // 1. Si el estado es 'finalizada', estamos en modo espera (reset semanal).
-  if (activeFecha.estado === 'finalizada') {
-    const isWaitingDay = (day === 1 && now.getHours() === 23 && now.getMinutes() >= 59) || [2, 3, 4, 5, 0].includes(day);
-    return isWaitingDay;
-  }
-
-  // 2. CASO CRÍTICO: Si el estado sigue siendo 'abierta' pero es de la semana pasada (STALE).
-  const dateMatch = activeFecha.rival?.match(/(\d{4}-\d{2}-\d{2})/);
-  if (dateMatch) {
-    try {
-      const matchDate = new Date(dateMatch[1] + 'T23:59:59'); 
-      const deadline = new Date(matchDate);
-      const daysToMonday = matchDate.getDay() === 0 ? 1 : (8 - matchDate.getDay()) % 7;
-      deadline.setDate(matchDate.getDate() + (daysToMonday === 0 ? 0 : daysToMonday));
-      deadline.setHours(23, 59, 59);
-
-      if (now > deadline) {
-        return true;
-      }
-    } catch (e) {
-      console.error("Error parsing match date:", e);
-    }
+  // Si no hay fecha activa o la que hay es la pasada (finalizada), y estamos en Jueves (4) o Viernes (5)
+  if (!activeFecha || activeFecha.estado === 'finalizada') {
+    return [4, 5].includes(day);
   }
 
   return false;
@@ -118,41 +96,51 @@ export function isWaitingMode(activeFecha) {
 
 /**
  * CICLO SEMANAL — Ventana de selección cerrada.
- * Retorna true desde Viernes 23:59 hasta que el Admin cargue nueva fecha abierta.
- * Bloquea edición pero el equipo sigue visible.
+ * Retorna true desde Sábado 00:00 (Viernes 23:59:59) hasta que se cargue una nueva fecha.
+ * Bloquea edición.
  */
 export function isSelectionWindowClosed() {
   const now = new Date();
   const day = now.getDay(); // 0=Dom, 1=Lun, ..., 5=Vie, 6=Sáb
-  const hour = now.getHours();
-
-  // Sábado o Domingo completos → cerrado
+  
+  // Sábado (6) o Domingo (0) → cerrado
   if (day === 6 || day === 0) return true;
-  // Viernes a partir de las 23:00 → cerrado
-  if (day === 5 && hour >= 23) return true;
+  // Lunes (1), Martes (2), Miércoles (3) → cerrado (viendo puntos)
+  if ([1, 2, 3].includes(day)) return true;
+
+  // El Viernes (5) a las 23:59 cierra.
+  if (day === 5) {
+    const hour = now.getHours();
+    const min = now.getMinutes();
+    if (hour >= 23 && min >= 59) return true;
+  }
 
   return false;
 }
 
 /**
- * CICLO SEMANAL — Modo transición (Miércoles noche).
- * Retorna true a partir del Miércoles 23:59 o si la fecha está finalizada.
- * Señal para: archivar equipo, limpiar cancha, mostrar banner de espera.
+ * CICLO SEMANAL — Modo transición / Archivado.
+ * El Miércoles a las 23:59 cierra el ciclo de la fecha actual.
+ * De Jueves a Viernes (hasta que abran planteles) es transición.
  */
 export function isTransitionMode(activeFecha) {
-  if (!activeFecha) return false;
-
-  // Si la fecha ya fue finalizada por el Admin → transición
-  if (activeFecha.estado === 'finalizada') return true;
-
   const now = new Date();
   const day = now.getDay();
   const hour = now.getHours();
+  const min = now.getMinutes();
 
-  // Miércoles a partir de las 23:59 → transición
-  if (day === 3 && hour >= 23) return true;
-  // Jueves completo → transición (espera de nuevos planteles)
-  if (day === 4) return true;
+  // Si la fecha ya fue finalizada manualmente por el Admin → transición inmediata
+  if (activeFecha?.estado === 'finalizada') return true;
+
+  // Miércoles después de las 23:59
+  if (day === 3 && hour === 23 && min >= 59) return true;
+  
+  // Jueves (4) y Viernes (5) son días de transición/espera
+  if (day === 4 || day === 5) {
+    // Si ya hay una fecha abierta, salimos de transición
+    if (activeFecha?.estado === 'abierta') return false;
+    return true;
+  }
 
   return false;
 }
@@ -229,11 +217,15 @@ export async function saveEquipoSelection(userId, fechaId, selectedPlayerIds, ca
     .delete()
     .match({ usuario_id: userId, fecha_id: fechaId });
 
-  const inserts = selectedPlayerIds.map(jugadorId => ({
+  const currentCaptainInTeam = selectedPlayerIds.includes(captainId);
+  const finalCaptainId = currentCaptainInTeam ? captainId : null;
+
+  const inserts = selectedPlayerIds.map((jugadorId, idx) => ({
     usuario_id: userId,
     fecha_id: fechaId,
     jugador_id: jugadorId,
-    es_capitan: jugadorId === captainId,
+    posicion_cancha: idx + 1,
+    capitan_id: finalCaptainId,
   }));
 
   const { data, error } = await supabase.from('equipos_usuarios').insert(inserts);

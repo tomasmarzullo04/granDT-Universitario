@@ -119,139 +119,31 @@ export default function ResumenFecha({ activeFecha }) {
         </div>
       </div>
 
-      {/* ── Players by Category ── */}
-      {Object.entries(byCategory).map(([cat, players]) => {
-        const colors = CAT_COLORS[cat] || CAT_COLORS['Primera'];
-        const catTotal = players.reduce((s, p) => s + p.puntos, 0);
-
-        return (
-          <div key={cat} className={`rounded-2xl border overflow-hidden shadow-sm ${colors.border}`}>
-            {/* Cat header */}
-            <div className={`flex items-center justify-between px-5 py-3 ${colors.bg}`}>
-              <div className="flex items-center gap-2">
-                <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg ${colors.badge}`}>{cat}</span>
-                <span className="text-xs font-bold text-neutral">{players.length} jugadores</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <TrendingUp className={`w-4 h-4 ${colors.text}`} />
-                <span className={`font-black text-lg ${colors.text}`}>{catTotal} pts</span>
-              </div>
-            </div>
-
-            {/* Players table */}
-            <div className="divide-y divide-neutral/10 bg-white">
-              {players
-                .sort((a, b) => b.puntos - a.puntos)
-                .map(player => {
-                  const { stats, puntos, nombre, posicion_oficial } = player;
-                  const initials = nombre?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || '?';
-
-                  return (
-                    <div key={player.jugador_id} className="flex items-center gap-4 px-4 py-3 hover:bg-neutral-light/20 transition-colors">
-                      {/* Avatar */}
-                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${colors.bg} ${colors.border}`}>
-                        <span className={`text-[11px] font-black ${colors.text}`}>{initials}</span>
-                      </div>
-
-                      {/* Name & position */}
-                      <div className="flex-1 min-w-0">
-                        <p className="font-black text-sm text-primary whitespace-normal leading-tight">{nombre}</p>
-                        <p className="text-[9px] font-bold text-neutral uppercase tracking-widest">{posicion_oficial || 'Jugador'}</p>
-                      </div>
-
-                      {/* Stats mini chips */}
-                      <div className="hidden sm:flex items-center gap-1.5 flex-wrap justify-end">
-                        {stats.tries > 0 && (
-                          <span className="text-[9px] font-black bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
-                            {stats.tries}T
-                          </span>
-                        )}
-                        {stats.conversiones > 0 && (
-                          <span className="text-[9px] font-black bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
-                            {stats.conversiones}C
-                          </span>
-                        )}
-                        {stats.penales > 0 && (
-                          <span className="text-[9px] font-black bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">
-                            {stats.penales}P
-                          </span>
-                        )}
-                        {stats.drops > 0 && (
-                          <span className="text-[9px] font-black bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full">
-                            {stats.drops}D
-                          </span>
-                        )}
-                        {stats.amarillas > 0 && (
-                          <span className="text-[9px] font-black bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">
-                            {stats.amarillas}🟡
-                          </span>
-                        )}
-                        {stats.rojas > 0 && (
-                          <span className="text-[9px] font-black bg-red-100 text-red-700 px-2 py-0.5 rounded-full">
-                            {stats.rojas}🔴
-                          </span>
-                        )}
-                        {stats.penales_hechos > 0 && (
-                          <span className="text-[9px] font-black bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">
-                            {stats.penales_hechos}PH
-                          </span>
-                        )}
-                        {stats.knock_ons > 0 && (
-                          <span className="text-[9px] font-black bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
-                            {stats.knock_ons}KO
-                          </span>
-                        )}
-                        {stats.lines_robados > 0 && (
-                          <span className="text-[9px] font-black bg-teal-100 text-teal-700 px-2 py-0.5 rounded-full">
-                            {stats.lines_robados}LR
-                          </span>
-                        )}
-                        {stats.asistencias > 0 && (
-                          <span className="text-[9px] font-black bg-cyan-100 text-cyan-700 px-2 py-0.5 rounded-full">
-                            {stats.asistencias}A
-                          </span>
-                        )}
-                        {stats.cortes_limpios > 0 && (
-                          <span className="text-[9px] font-black bg-fuchsia-100 text-fuchsia-700 px-2 py-0.5 rounded-full">
-                            {stats.cortes_limpios}CL
-                          </span>
-                        )}
-                        {stats.tackles > 0 && (
-                          <span className="text-[9px] font-black bg-lime-100 text-lime-700 px-2 py-0.5 rounded-full">
-                            {stats.tackles}TK
-                          </span>
-                        )}
-                        {/* If no stats at all, show presence */}
-                        {stats.tries === 0 && stats.conversiones === 0 && stats.penales === 0 &&
-                         stats.drops === 0 && stats.amarillas === 0 && stats.rojas === 0 &&
-                         stats.penales_hechos === 0 && stats.knock_ons === 0 && stats.lines_robados === 0 &&
-                         stats.asistencias === 0 && stats.cortes_limpios === 0 && stats.tackles === 0 && (
-                          <span className="text-[9px] font-bold text-neutral/50 px-2">presencia</span>
-                        )}
-                      </div>
-
-                      {/* Points */}
-                      <div className="text-right shrink-0 ml-2">
-                        <span className={`text-xl font-black ${puntos > 2 ? 'text-primary' : puntos < 0 ? 'text-red-500' : 'text-neutral/50'}`}>
-                          {puntos}
-                        </span>
-                        <p className="text-[9px] text-neutral font-bold">pts</p>
-                      </div>
-                    </div>
-                  );
-                })}
-            </div>
-          </div>
-        );
-      })}
-
-      {/* ── Footer total ── */}
-      <div className="bg-neutral-light/50 rounded-2xl p-4 flex items-center justify-between border border-neutral/20">
-        <div className="flex items-center gap-2">
-          <Star className="w-5 h-5 text-accent" />
-          <span className="font-black text-primary uppercase text-sm tracking-wide">Total de la fecha</span>
+      {/* ── Banner de Estado: Próxima Fecha ── */}
+      <div className="bg-blue-50/50 border-2 border-dashed border-blue-200 p-8 rounded-[2.5rem] text-center space-y-6 relative overflow-hidden group shadow-inner">
+        <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none grayscale select-none scale-150 rotate-12 transition-transform duration-1000 group-hover:rotate-0">
+          <img src="https://nniwyswxojkalelavdnn.supabase.co/storage/v1/object/public/logos/gilbert_ball.png" alt="" className="w-full max-w-sm object-contain" />
         </div>
-        <span className="text-3xl font-black text-primary">{resumen.puntosTotal} <span className="text-base text-neutral font-bold">pts</span></span>
+
+        <div className="relative z-10 space-y-4">
+          <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto border-2 border-blue-200 animate-pulse-slow">
+            <Trophy className="w-8 h-8 text-primary" />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-xl md:text-2xl font-black text-primary leading-tight uppercase tracking-tighter px-4">
+              ⏳ EL STAFF ESTÁ DEFINIENDO LOS CONVOCADOS<br className="hidden md:block" /> PARA LA <span className="text-blue-600">PRÓXIMA FECHA</span>
+            </h3>
+            <p className="text-xs md:text-sm font-bold text-gray-500 max-w-md mx-auto uppercase tracking-widest leading-relaxed px-4">
+              Preparate para diagramar tu 15 ideal.<br />
+              <span className="block mt-2 text-primary font-black">La ventana de selección abrirá en breve.</span>
+            </p>
+          </div>
+          
+          <div className="flex flex-col items-center gap-4 pt-4 border-t border-blue-200/50 max-w-[150px] mx-auto">
+            <div className="h-[2px] w-12 bg-blue-300 rounded-full"></div>
+            <p className="text-[9px] font-black text-primary/40 uppercase tracking-[0.5em] italic">Gran DT UNI</p>
+          </div>
+        </div>
       </div>
     </div>
   );

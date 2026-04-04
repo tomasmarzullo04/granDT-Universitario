@@ -53,8 +53,9 @@ export const AuthProvider = ({ children }) => {
         setProfile(null);
       }
     } catch (err) {
-      console.error(err);
+      console.error('Error in fetchProfile:', err);
     } finally {
+      // Garantizamos que el estado de carga termine SIEMPRE.
       setLoading(false);
     }
   };

@@ -61,6 +61,25 @@ export default function Signup() {
         throw new Error('Este correo ya está registrado en el sistema.');
       }
 
+      // 2. FAILSAFE: Intentar crear el perfil manualmente por si el trigger de la DB no está activo
+      if (data?.user) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert([{
+            id: data.user.id,
+            email: email,
+            full_name: fullName,
+            team_name: teamName,
+            role: 'player'
+          }]);
+        
+        if (profileError) {
+          console.warn('Profile trigger failed or missing. Manual insert attempt:', profileError.message);
+          // No lanzamos error aquí porque el trigger podría haber funcionado 
+          // (en cuyo caso el insert daría error por duplicado, lo cual es aceptable).
+        }
+      }
+
       // Redirect player to dashboard
       navigate('/dashboard');
       

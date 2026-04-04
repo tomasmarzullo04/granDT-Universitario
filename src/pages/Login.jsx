@@ -35,13 +35,34 @@ export default function Login() {
       if (loginError) throw loginError;
 
       // Importante: Verificar el rol inmediatamente
-      const { data: profileData, error: profileError } = await supabase
+      let { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', data.user.id)
-        .single();
+        .maybeSingle();
 
       if (profileError) throw profileError;
+
+      // Si no hay perfil, creamos uno básico de emergencia para permitir el acceso (failsafe)
+      if (!profileData) {
+        console.warn('Profile missing on login. Creating emergency profile...');
+        const { data: newProfile, error: insertError } = await supabase
+          .from('profiles')
+          .insert([{ 
+            id: data.user.id, 
+            email: data.user.email,
+            full_name: data.user.user_metadata?.full_name || 'Nuevo Usuario',
+            role: 'player' 
+          }])
+          .select('role')
+          .single();
+        
+        if (insertError) {
+           console.error('Lamentablemente no se pudo crear el perfil de emergencia:', insertError);
+           throw new Error('Error de configuración de cuenta: Perfil no encontrado.');
+        }
+        profileData = newProfile;
+      }
 
       // Validación de Seguridad: Si intenta entrar como Staff pero es Player
       if (loginRole === 'admin' && profileData.role !== 'admin') {

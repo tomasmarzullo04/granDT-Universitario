@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { getPlayersStatistics, getActiveFecha, isWaitingMode } from '../../lib/api';
+import { supabase } from '../../lib/supabase';
 import { Users, Loader2, Trophy, Medal, Search, Filter } from 'lucide-react';
 
 export default function PlayersTab() {
@@ -29,6 +30,19 @@ export default function PlayersTab() {
       }
     }
     load();
+
+    // 📡 REALTIME: Escuchar cambios en estadísticas para actualizar puntos en vivo
+    const channel = supabase
+      .channel('public:estadisticas_partido')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'estadisticas_partido' }, () => {
+        console.log('🔄 Estadísticas actualizadas, recargando...');
+        load();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const filteredPlayers = useMemo(() => {

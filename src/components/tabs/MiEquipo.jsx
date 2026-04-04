@@ -62,61 +62,82 @@ export default function MiEquipo() {
     async function init() {
       const fecha = await getActiveFecha();
       setActiveFecha(fecha);
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      let currentSquad = [];
+      let currentSelection = [];
+      let finalCaptainId = null;
+
+      // 1. Si hay fecha activa, intentar traer convocados
       if (fecha) {
         const players = await getConvocados(fecha.id);
-        const normalized = players.map(p => {
-          let cKey = 'pre'; // Fallback
+        currentSquad = players.map(p => {
+          let cKey = 'pre';
           const rawCat = (p.categoria || '').toLowerCase();
-          
-          // CRITICAL: Check for 'pre' first because 'intermedia' matches 'pre-intermedia'
           if (rawCat.includes('pre')) cKey = 'pre';
           else if (rawCat.includes('superior') || rawCat.includes('primera') || rawCat.includes('1ra')) cKey = 'primera';
           else if (rawCat.includes('intermedia') || rawCat.includes('inter')) cKey = 'intermedia';
-          
           return { ...p, categoryKey: cKey };
         });
-        setConvocados(normalized);
+        setConvocados(currentSquad);
 
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const { data: selection } = await supabase
-            .from('equipos_usuarios')
-            .select('jugador_id, posicion_cancha, capitan_id')
-            .eq('usuario_id', user.id)
-            .eq('fecha_id', fecha.id);
-          
-          if (selection && selection.length > 0) {
-            setCaptainId(selection[0].capitan_id);
+        const { data: selection } = await supabase
+          .from('equipos_usuarios')
+          .select('jugador_id, posicion_cancha, capitan_id')
+          .eq('usuario_id', user.id)
+          .eq('fecha_id', fecha.id);
+        
+        currentSelection = selection || [];
+      }
+
+      // 2. Si hay selección para la fecha actual, cargarla
+      if (currentSelection.length > 0) {
+        finalCaptainId = currentSelection[0].capitan_id;
+        const newSlots = Array(15).fill(null);
+        currentSelection.forEach(s => {
+          const p = currentSquad.find(p => p.id === s.jugador_id);
+          if (p && s.posicion_cancha >= 1 && s.posicion_cancha <= 15) {
+            newSlots[s.posicion_cancha - 1] = p;
+          }
+        });
+        setPitchSlots(newSlots);
+        setCaptainId(finalCaptainId);
+      } else {
+        // 3. FALLBACK: Si no hay selección actual (o estamos en espera/transición), buscar la última fecha con equipo
+        const { data: lastTeamSelection } = await supabase
+          .from('equipos_usuarios')
+          .select('jugador_id, posicion_cancha, capitan_id, fecha_id')
+          .eq('usuario_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(15);
+
+        if (lastTeamSelection && lastTeamSelection.length > 0) {
+          const lastFechaId = lastTeamSelection[0].fecha_id;
+          // Necesitamos las estadísticas o info de esos jugadores históricos
+          const lastPlayerIds = lastTeamSelection.map(s => s.jugador_id);
+          const { data: lastPlayersData } = await supabase
+            .from('jugadores')
+            .select('id, nombre, precio')
+            .in('id', lastPlayerIds);
+
+          if (lastPlayersData) {
+            finalCaptainId = lastTeamSelection[0].capitan_id;
             const newSlots = Array(15).fill(null);
-            selection.forEach(s => {
-              const p = normalized.find(p => p.id === s.jugador_id);
+            lastTeamSelection.forEach(s => {
+              const p = lastPlayersData.find(x => x.id === s.jugador_id);
               if (p && s.posicion_cancha >= 1 && s.posicion_cancha <= 15) {
-                newSlots[s.posicion_cancha - 1] = p;
+                // Mock category information for historical view if not available
+                newSlots[s.posicion_cancha - 1] = { ...p, categoryKey: 'primera' }; 
               }
             });
             setPitchSlots(newSlots);
-          } else {
-            // 🧪 TEST MODE: Recuperar equipo de la última fecha si no hay equipo actual
-            const { data: lastTeam } = await supabase
-              .from('equipos_usuarios')
-              .select('jugador_id, posicion_cancha, capitan_id')
-              .eq('usuario_id', user.id)
-              .neq('fecha_id', fecha.id)
-              .order('created_at', { ascending: false })
-              .limit(15);
-            
-            if (lastTeam && lastTeam.length > 0) {
-              setCaptainId(lastTeam[0].capitan_id);
-              const newSlots = Array(15).fill(null);
-              lastTeam.forEach(s => {
-                const p = normalized.find(p => p.id === s.jugador_id);
-                if (p && s.posicion_cancha >= 1 && s.posicion_cancha <= 15) {
-                  newSlots[s.posicion_cancha - 1] = p;
-                }
-              });
-              setPitchSlots(newSlots);
-              console.log('🧪 TEST: Equipo recuperado de fecha anterior');
-            }
+            setCaptainId(finalCaptainId);
+            console.log('🔄 Fallback: Cargado equipo de la fecha ID:', lastFechaId);
           }
         }
       }
@@ -326,34 +347,7 @@ export default function MiEquipo() {
     }
   };
 
-  // ── Modo Transición (Miércoles): Archivar y limpiar ──
-  if (isTransition && !forceOpen) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[70vh] max-w-5xl mx-auto px-4 text-center animate-fade-in relative overflow-hidden bg-white/40 rounded-[3rem] border-2 border-dashed border-neutral/10 shadow-inner">
-        <div className="absolute inset-0 flex items-center justify-center opacity-[0.04] pointer-events-none grayscale select-none scale-150">
-          <img src="https://nniwyswxojkalelavdnn.supabase.co/storage/v1/object/public/logos/gilbert_ball.png" alt="" className="w-full max-w-xl object-contain grayscale" onError={(e) => e.target.parentElement.style.display = 'none'} />
-        </div>
-        <div className="relative z-10 space-y-10 py-20">
-          <div className="w-28 h-28 bg-primary/5 rounded-[2.5rem] flex items-center justify-center mx-auto border-2 border-dashed border-primary/20 animate-pulse-slow">
-            <Lock className="w-12 h-12 text-primary/30" />
-          </div>
-          <div className="space-y-6">
-            <h2 className="text-3xl md:text-5xl font-black text-primary tracking-tighter uppercase leading-none px-4">
-              ⏳ ESPERA DE CARGA DE PLANTELES<br/><span className="text-accent">PRÓXIMA FECHA</span>
-            </h2>
-            <p className="text-sm md:text-lg font-bold text-neutral/70 max-w-lg mx-auto uppercase tracking-[0.15em] leading-relaxed px-4">
-              El Staff está definiendo los convocados.<br/>
-              <span className="block mt-4 text-primary font-black bg-primary/10 py-2 px-4 rounded-full inline-block">La ventana de selección abrirá en breve.</span>
-            </p>
-          </div>
-          <div className="flex flex-col items-center gap-4 pt-6">
-            <div className="h-[2px] w-20 bg-accent/30 rounded-full"></div>
-            <p className="text-[10px] font-black text-neutral/40 uppercase tracking-[0.5em] italic">Gran DT Universitario</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // El overlay gigante ha sido eliminado para permitir el modo lectura.
 
   if (loading) return (
     <div className="flex flex-col items-center justify-center p-20 animate-pulse">
@@ -435,23 +429,43 @@ export default function MiEquipo() {
       </div>
 
       {/* Banner dinámico de estado */}
-      {isLocked ? (
-        <div className="bg-red-50 border border-red-200 p-3 rounded-xl flex items-center justify-center gap-3 shadow-sm animate-fade-in">
-          <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
-            <Lock className="w-4 h-4 text-red-600" />
+      {isTransition ? (
+        <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl flex items-center justify-between gap-4 shadow-sm animate-fade-in">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center shrink-0">
+               <Loader2 className="w-5 h-5 text-amber-600 animate-spin" />
+            </div>
+            <div>
+              <p className="text-xs font-black text-amber-900 uppercase tracking-tight">⏳ Esperando carga de planteles</p>
+              <p className="text-[10px] font-bold text-amber-700/70 uppercase">Podés consultar tu historial o planteles anteriores mientras tanto.</p>
+            </div>
           </div>
-          <p className="text-[11px] md:text-xs font-bold text-red-700 text-center uppercase tracking-wider">
-            VENTANA DE SELECCIÓN CERRADA — Fecha en disputa o procesando resultados.
-          </p>
+          <button 
+            onClick={() => window.location.search = '?tab=historial'}
+            className="bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-black px-4 py-2 rounded-xl transition-all shadow-sm active:scale-95 whitespace-nowrap"
+          >
+            IR AL HISTORIAL COMPLETO
+          </button>
+        </div>
+      ) : isLocked ? (
+        <div className="bg-red-50 border border-red-200 p-4 rounded-2xl flex items-center gap-3 shadow-sm animate-fade-in">
+          <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center shrink-0">
+            <Lock className="w-5 h-5 text-red-600" />
+          </div>
+          <div>
+            <p className="text-xs font-black text-red-900 uppercase tracking-tight">🔒 Ventana de Selección Cerrada</p>
+            <p className="text-[10px] font-bold text-red-700/70 uppercase">La fecha está en juego o los resultados se están procesando.</p>
+          </div>
         </div>
       ) : (
-        <div className="bg-green-50 border border-green-200 p-3 rounded-xl flex items-center justify-center gap-3 shadow-sm animate-fade-in">
-          <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-            <span className="text-green-600 text-lg">🟢</span>
+        <div className="bg-green-50 border border-green-200 p-4 rounded-2xl flex items-center gap-3 shadow-sm animate-fade-in">
+          <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center shrink-0">
+            <CheckCircle className="w-5 h-5 text-green-600" />
           </div>
-          <p className="text-[11px] md:text-xs font-bold text-green-700 text-center uppercase tracking-wider">
-            VENTANA DE SELECCIÓN ABIERTA — Podés confirmar tu 15 ideal hasta el viernes a las 23:59.
-          </p>
+          <div>
+            <p className="text-xs font-black text-green-900 uppercase tracking-tight">✅ Mercado Abierto</p>
+            <p className="text-[10px] font-bold text-green-700/70 uppercase">Armá tu 15 ideal. Cierra el viernes a las 23:59.</p>
+          </div>
         </div>
       )}
 

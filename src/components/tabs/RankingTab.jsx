@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getRankingCompleto } from '../../lib/api';
+import { supabase } from '../../lib/supabase';
 import { Trophy, Loader2, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -24,6 +25,19 @@ export default function RankingTab() {
       setLoading(false);
     }
     fetchRanking();
+
+    // 📡 REALTIME: Escuchar cambios en estadísticas para actualizar ranking en vivo
+    const channel = supabase
+      .channel('public:ranking_updates')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'estadisticas_partido' }, () => {
+        console.log('🔄 Actualizando ranking...');
+        fetchRanking();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const renderTrend = (pts) => {

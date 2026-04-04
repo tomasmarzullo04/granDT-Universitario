@@ -19,7 +19,9 @@ export default function HistorialTab() {
   useEffect(() => {
     async function init() {
       const allFechas = await getAllFechas();
-      const disponibles = allFechas.filter(f => f.estado === 'finalizada' || f.estado === 'en_juego' || f.estado === 'abierta');
+      const disponibles = allFechas
+        .filter(f => f.estado === 'finalizada' || f.estado === 'en_juego' || f.estado === 'abierta')
+        .sort((a, b) => b.numero_fecha - a.numero_fecha);
       setFechas(disponibles);
       if (disponibles.length > 0) {
         setSelectedFecha(disponibles[0].id);
