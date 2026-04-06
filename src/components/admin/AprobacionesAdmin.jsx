@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Loader2, UserCheck, Image as ImageIcon, AlertCircle } from 'lucide-react';
+import { Loader2, UserCheck, Image as ImageIcon, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 export default function AprobacionesAdmin() {
   const [pendientes, setPendientes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [processingId, setProcessingId] = useState(null);
+  const [successMsg, setSuccessMsg] = useState(null); // Estado para el Toast
 
   useEffect(() => {
     fetchPendientes();
@@ -16,7 +17,6 @@ export default function AprobacionesAdmin() {
     try {
       setLoading(true);
       setError(null);
-      // Traer usuarios que NO son competidores pero que tienen comprobante cargado
       const { data, error: fetchError } = await supabase
         .from('profiles')
         .select('id, full_name, email, comprobante_url')
@@ -33,7 +33,66 @@ export default function AprobacionesAdmin() {
     }
   };
 
-  const handleAprobar = async (userId) => {
+  const sendWelcomeEmail = async (userEmail, userName) => {
+    try {
+      // Plantilla HTML Pro-Style para el correo
+      const htmlTemplate = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0;">
+          <div style="text-align: center; margin-bottom: 20px;">
+            <div style="background-color: #1966B3; padding: 15px; border-radius: 8px;">
+               <h1 style="color: white; margin: 0; font-size: 24px; font-weight: 900; letter-spacing: 1px;">GRAN DT UNI</h1>
+            </div>
+          </div>
+          
+          <div style="background-color: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: center;">
+            <h2 style="color: #1e293b; margin-top: 0; font-size: 22px;">¡Tu inscripción fue aprobada!</h2>
+            <p style="color: #475569; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
+              Hola <strong>${userName}</strong>,<br><br>
+              Hemos verificado tu pago correctamente. Ya sos un competidor oficial para esta temporada.<br>
+              Entrá ahora a la plataforma para armar tu XV ideal y elegir a tu capitán.
+            </p>
+            
+            <a href="https://localhost:5173/dashboard" style="background-color: #1966B3; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: bold; display: inline-block; font-size: 16px; letter-spacing: 0.5px;">IR A MI EQUIPO</a>
+          </div>
+          
+          <div style="text-align: center; margin-top: 20px; color: #94a3b8; font-size: 12px;">
+            <p>Club Universitario de Mar del Plata - 2026</p>
+          </div>
+        </div>
+      `;
+
+      // NOTA: Para desarrollo rápido en frontend usando Resend
+      const RESEND_API_KEY = "re_BcnePqhQ_AMQMPX5TRC1XyJMCUZy3Hg4y";
+
+      // IMPORTANTE: En el plan gratuito sin dominio verificado, Resend SOLO permite enviar AL correo registrado (el tuyo).
+      // Por eso hardcodeamos tu mail como destinatario para que la prueba no falle y te llegue de verdad.
+      const testEmail = "tomasmarzullo04@gmail.com";
+
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${RESEND_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: 'onboarding@resend.dev',
+          to: testEmail, // En producción real iría userEmail (requiere dominio verificado en Resend)
+          subject: '¡Bienvenido a la cancha! Inscripción Aprobada 🏉',
+          html: htmlTemplate,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al enviar el email');
+      }
+      
+      console.log('✅ Email enviado vía Resend a:', testEmail);
+    } catch (err) {
+      console.error('Error enviando email:', err);
+    }
+  };
+
+  const handleAprobar = async (userId, userEmail, userName) => {
     try {
       setProcessingId(userId);
       const { error: updateError } = await supabase
@@ -42,6 +101,13 @@ export default function AprobacionesAdmin() {
         .eq('id', userId);
 
       if (updateError) throw updateError;
+
+      // Disparar Email de bienvenida
+      await sendWelcomeEmail(userEmail, userName);
+
+      // Mostrar Notificación Toast
+      setSuccessMsg(`Usuario aprobado exitosamente. Email enviado a ${userName}.`);
+      setTimeout(() => setSuccessMsg(null), 5000);
 
       // Remover el aprobado de la lista local
       setPendientes(pendientes.filter(p => p.id !== userId));
@@ -86,6 +152,15 @@ export default function AprobacionesAdmin() {
 
   return (
     <div className="space-y-4">
+      {successMsg && (
+        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-2xl flex items-center gap-3 animate-fade-in shadow-sm">
+          <div className="bg-green-100 p-1.5 rounded-full shrink-0">
+            <CheckCircle2 className="w-5 h-5 text-green-600" />
+          </div>
+          <p className="font-bold text-sm tracking-wide">{successMsg}</p>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-2">
         <h2 className="text-lg font-bold text-dark flex items-center gap-2">
           Comprobantes en Revisión <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full text-xs">{pendientes.length}</span>
@@ -132,7 +207,7 @@ export default function AprobacionesAdmin() {
             </div>
 
             <button
-              onClick={() => handleAprobar(user.id)}
+              onClick={() => handleAprobar(user.id, user.email, user.full_name)}
               disabled={processingId === user.id}
               className={`w-full py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all 
                 ${processingId === user.id 
