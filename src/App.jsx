@@ -1,6 +1,8 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import { supabase } from './lib/supabase';
 
 import Login from './pages/Login';
 import Signup from './pages/Signup';
@@ -21,16 +23,56 @@ function RootRedirect() {
 }
 
 function UserDashboardGate() {
-  const { profile, loading } = useAuth();
+  const { user, profile, role, loading } = useAuth();
+  const [isVeteran, setIsVeteran] = useState(null);
   
+  useEffect(() => {
+    // Solo chequeamos si profile cargó, tiene rol player, y explícitamente está en false (o null antes de migracion real).
+    // Si es_competidor === true o es admin, bypass inmediato no requiere check.
+    if (!loading && profile && role !== 'admin' && profile.es_competidor === false) {
+      const checkVeteran = async () => {
+        try {
+          const { count, error } = await supabase
+            .from('equipos_usuarios')
+            .select('*', { count: 'exact', head: true })
+            .eq('usuario_id', user.id);
+            
+          if (!error && count > 0) {
+            setIsVeteran(true);
+          } else {
+            setIsVeteran(false);
+          }
+        } catch (e) {
+          setIsVeteran(false);
+        }
+      };
+      checkVeteran();
+    }
+  }, [loading, profile, role, user]);
+
   if (loading) return null;
 
-  // Si no es competidor, va al Gate
-  if (profile && profile.es_competidor === false) {
+  // 1. Admin SIEMPRE saltan el onboarding.
+  if (role === 'admin') return <Dashboard />;
+  
+  // 2. Si ya es competidor verificado, también pasa directo.
+  if (profile?.es_competidor === true) return <Dashboard />;
+
+  // 3. Chequeo de Veterano (en progreso)
+  if (isVeteran === null) {
+    // Si aún no hemos comprobado si es veterano y está en es_competidor === false, mostramos loader o nada (esperando fetch)
+    if (profile?.es_competidor === false) return null; 
+  }
+
+  // 4. Si es veterano, bypass.
+  if (isVeteran === true) return <Dashboard />;
+
+  // 5. Es nuevo y es_competidor es falso -> Onboarding!
+  if (profile?.es_competidor === false && isVeteran === false) {
     return <OnboardingScreen />;
   }
 
-  // Si no hay profile o es_competidor === true (o undefined en caso extremo)
+  // Fallback (ej: si recien se esta creando)
   return <Dashboard />;
 }
 
