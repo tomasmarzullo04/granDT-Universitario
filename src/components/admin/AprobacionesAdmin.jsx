@@ -19,7 +19,7 @@ export default function AprobacionesAdmin() {
       // Traer usuarios que NO son competidores pero que tienen comprobante cargado
       const { data, error: fetchError } = await supabase
         .from('profiles')
-        .select('id, nombre, email, comprobante_url')
+        .select('id, full_name, email, comprobante_url')
         .eq('es_competidor', false)
         .not('comprobante_url', 'is', null);
 
@@ -106,7 +106,7 @@ export default function AprobacionesAdmin() {
                 <UserCheck className="w-5 h-5" />
               </div>
               <div className="overflow-hidden">
-                <h4 className="font-bold text-dark truncate text-sm">{user.nombre || 'Jugador Sin Nombre'}</h4>
+                <h4 className="font-bold text-dark truncate text-sm">{user.full_name || 'Jugador Sin Nombre'}</h4>
                 <p className="text-xs text-neutral truncate">{user.email}</p>
               </div>
             </div>

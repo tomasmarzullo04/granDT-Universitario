@@ -12,6 +12,10 @@ export default function OnboardingScreen() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showScoring, setShowScoring] = useState(false);
 
+  // Nuevos estados para el Refactor de Guardado
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
+
   // Consideramos que ya subió comprobante si el campo "comprobante_url" tiene valor
   const hasUploaded = !!profile?.comprobante_url;
 
@@ -21,26 +25,43 @@ export default function OnboardingScreen() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleUpload = async (event) => {
+  const handleFileSelect = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setError('Por favor, selecciona una imagen válida.');
+      return;
+    }
+
+    setError(null);
+    setSelectedFile(file);
+    setPreviewUrl(URL.createObjectURL(file));
+  };
+
+  const handleCancelSelection = () => {
+    setSelectedFile(null);
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(null);
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!selectedFile) return;
+
     try {
       setUploading(true);
       setError(null);
 
-      const file = event.target.files[0];
-      if (!file) return;
-
-      if (!file.type.startsWith('image/')) {
-        throw new Error('Por favor, selecciona una imagen válida.');
-      }
-
-      const fileExt = file.name.split('.').pop();
+      const fileExt = selectedFile.name.split('.').pop();
       const fileName = `${user.id}_${Math.random()}.${fileExt}`;
       const filePath = `${fileName}`;
 
       // 1. Subir al bucket 'comprobantes'
       const { error: uploadError } = await supabase.storage
         .from('comprobantes')
-        .upload(filePath, file);
+        .upload(filePath, selectedFile);
 
       if (uploadError) {
         throw uploadError;
@@ -314,26 +335,54 @@ export default function OnboardingScreen() {
               </div>
             ) : (
               <div className="space-y-4">
-                <label className={`
-                  flex flex-col items-center justify-center w-full h-44 border-4 border-dashed border-slate-200 rounded-3xl cursor-pointer 
-                  transition-all duration-300
-                  ${uploading ? 'opacity-60 cursor-not-allowed bg-slate-50' : 'hover:border-primary hover:bg-primary/5 bg-slate-50/50 group'}
-                `}>
-                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                    {uploading ? (
-                      <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-primary mb-3"></div>
-                    ) : (
+                {!selectedFile ? (
+                  <label className={`
+                    flex flex-col items-center justify-center w-full h-44 border-4 border-dashed border-slate-200 rounded-3xl cursor-pointer 
+                    transition-all duration-300
+                    hover:border-primary hover:bg-primary/5 bg-slate-50/50 group
+                  `}>
+                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
                       <div className="p-4 bg-white rounded-2xl shadow-sm mb-4 group-hover:scale-110 transition-transform">
                         <UploadCloud className="w-8 h-8 text-primary" />
                       </div>
-                    )}
-                    <p className="text-sm text-slate-800 font-black uppercase tracking-tight">
-                      {uploading ? 'Procesando archivo...' : 'Click acá para subir tu comprobante'}
-                    </p>
-                    <p className="text-[10px] text-slate-400 mt-2 font-bold uppercase tracking-widest leading-none">JPG o PNG (máx. 5MB)</p>
+                      <p className="text-sm text-slate-800 font-black uppercase tracking-tight">
+                        Click acá para subir tu comprobante
+                      </p>
+                      <p className="text-[10px] text-slate-400 mt-2 font-bold uppercase tracking-widest leading-none">JPG o PNG (máx. 5MB)</p>
+                    </div>
+                    <input type="file" className="hidden" accept="image/*" onChange={handleFileSelect} />
+                  </label>
+                ) : (
+                  <div className="bg-slate-50 border border-slate-200 rounded-3xl p-6 shadow-inner flex flex-col items-center space-y-4">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Vista Previa del Comprobante</span>
+                    <div className="relative w-full max-w-sm aspect-[4/3] rounded-2xl overflow-hidden border-2 border-primary/20 shadow-sm bg-black/5">
+                      <img src={previewUrl} alt="Preview" className="w-full h-full object-contain" />
+                      {uploading && (
+                        <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center gap-3">
+                          <div className="animate-spin rounded-full h-10 w-10 border-b-4 border-primary"></div>
+                          <span className="font-bold text-primary text-sm uppercase tracking-widest">Subiendo...</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="flex gap-3 w-full max-w-sm pt-2">
+                       <button
+                         onClick={handleCancelSelection}
+                         disabled={uploading}
+                         className="flex-1 py-3 bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 rounded-xl font-bold uppercase text-xs tracking-wider transition-colors active:scale-95 disabled:opacity-50"
+                       >
+                         Cancelar
+                       </button>
+                       <button
+                         onClick={handleUpload}
+                         disabled={uploading}
+                         className="flex-[2] py-3 bg-primary hover:bg-primary/90 text-white rounded-xl font-bold uppercase text-xs tracking-wider transition-all shadow-md hover:shadow-lg active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+                       >
+                         <CheckCircle2 className="w-4 h-4" /> Guardar
+                       </button>
+                    </div>
                   </div>
-                  <input type="file" className="hidden" accept="image/*" onChange={handleUpload} disabled={uploading} />
-                </label>
+                )}
                 
                 {error && (
                   <div className="flex items-center gap-2 justify-center text-red-500 text-xs font-bold uppercase">

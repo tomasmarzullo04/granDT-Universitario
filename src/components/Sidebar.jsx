@@ -50,10 +50,24 @@ export default function Sidebar({ isOpen, onClose }) {
           </button>
         </div>
 
-        {/* Navigation Section (Mobile Exclusive) */}
+         {/* Navigation Section (Mobile Exclusive) */}
         <div className="p-5 border-b border-neutral/20 bg-neutral-light/30">
            <h3 className="text-[10px] text-neutral/70 font-black uppercase tracking-[0.2em] mb-4">Navegación Principal</h3>
            <div className="grid grid-cols-1 gap-2">
+              {/* ACCESO ADMIN (Solo si aplica) */}
+              {role === 'admin' && (
+                <button
+                  onClick={() => {
+                    navigate('/admin');
+                    onClose();
+                  }}
+                  className="flex items-center gap-3 p-3 bg-primary/5 border-2 border-primary/20 rounded-xl hover:border-primary transition-all group mb-2"
+                >
+                  <ShieldAlert className="w-5 h-5 text-primary" />
+                  <span className="font-black text-primary text-sm uppercase tracking-tight">Panel Administrador</span>
+                </button>
+              )}
+
               {[
                 { label: 'Mi Equipo', icon: Users, id: 'equipo' },
                 { label: 'Jugadores', icon: Users, id: 'jugadores' },
