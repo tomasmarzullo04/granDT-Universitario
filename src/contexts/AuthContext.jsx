@@ -38,6 +38,31 @@ export const AuthProvider = ({ children }) => {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Suscripción Realtime a cambios en el perfil del usuario activo
+  useEffect(() => {
+    let profileSubscription = null;
+
+    if (user?.id) {
+      profileSubscription = supabase
+        .channel(`public:profiles:${user.id}`)
+        .on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${user.id}` },
+          (payload) => {
+            console.log('🔄 Perfil modificado desde Admin:', payload.new);
+            setProfile(payload.new);
+          }
+        )
+        .subscribe();
+    }
+
+    return () => {
+      if (profileSubscription) {
+        supabase.removeChannel(profileSubscription);
+      }
+    };
+  }, [user?.id]);
+
   const fetchProfile = async (userId) => {
     try {
       const { data, error } = await supabase

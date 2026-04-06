@@ -6,6 +6,7 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import Admin from './pages/Admin';
+import OnboardingScreen from './pages/OnboardingScreen';
 
 function RootRedirect() {
   const { user, role, loading } = useAuth();
@@ -17,6 +18,20 @@ function RootRedirect() {
   if (role === 'admin') return <Navigate to="/admin" replace />;
   
   return <Navigate to="/dashboard" replace />;
+}
+
+function UserDashboardGate() {
+  const { profile, loading } = useAuth();
+  
+  if (loading) return null;
+
+  // Si no es competidor, va al Gate
+  if (profile && profile.es_competidor === false) {
+    return <OnboardingScreen />;
+  }
+
+  // Si no hay profile o es_competidor === true (o undefined en caso extremo)
+  return <Dashboard />;
 }
 
 export default function App() {
@@ -33,7 +48,7 @@ export default function App() {
 
           {/* Protected Routes for Players */}
           <Route element={<ProtectedRoute />}>
-            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/dashboard" element={<UserDashboardGate />} />
           </Route>
 
           {/* Protected Routes for Admins (requireAdmin = true) */}
