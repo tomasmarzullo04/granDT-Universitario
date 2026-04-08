@@ -138,8 +138,21 @@ export default function AdminDragDropBuilder() {
     });
   };
 
-  const handlePositionClick = (index) => {
-    // Si hay un jugador seleccionado esperando ser asignado (Selección Cruzada: Jugador -> Puesto)
+  // ── Mobile Drawer Stats ──
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [drawerSlot, setDrawerSlot] = useState(null);
+  const [drawerSearch, setDrawerSearch] = useState('');
+
+  const handleSlotClick = (index) => {
+    // Si estamos en mobile (detectado por media query o simplemente habilitamos el drawer para pantallas pequeñas)
+    if (window.innerWidth < 768) {
+      setDrawerSlot(index);
+      setIsDrawerOpen(true);
+      setDrawerSearch('');
+      return;
+    }
+    
+    // Lógica desktop original
     if (activePlayerMenu) {
       assignToSlot(activePlayerMenu, index);
       setActivePlayerMenu(null);
@@ -153,6 +166,12 @@ export default function AdminDragDropBuilder() {
       setSelectedPosition(selectedPosition === index ? null : index);
       setActivePlayerMenu(null);
     }
+  };
+
+  const handleDrawerSelect = (player) => {
+    assignToSlot(player, drawerSlot);
+    setIsDrawerOpen(false);
+    setDrawerSlot(null);
   };
 
   const handlePlayerClick = (player, isUsed) => {
@@ -206,14 +225,13 @@ export default function AdminDragDropBuilder() {
   };
 
   const removeFromPitch = (e, catOrig, idxOrig) => {
-    e.stopPropagation();
+    if (e && e.stopPropagation) e.stopPropagation();
     setPlanteles(prev => {
       const next = { Primera: [...prev.Primera], Intermedia: [...prev.Intermedia], 'Pre-intermedia': [...prev['Pre-intermedia']] };
       next[catOrig][idxOrig] = null;
       return next;
     });
   };
-
 
   const handleSave = async () => {
     if (!activeFecha) return;
@@ -222,10 +240,7 @@ export default function AdminDragDropBuilder() {
     setSuccess(false);
 
     try {
-      // 1. Limpiar todos los convocados de esta fecha (de las 3 categorías)
-      // para asegurar una sobrescritura limpia
       const categoriesToClear = ['Primera', 'Intermedia', 'Pre-intermedia'];
-      
       const { error: deleteError } = await supabase.from('convocados_fecha')
         .delete()
         .eq('fecha_id', activeFecha.id)
@@ -233,9 +248,7 @@ export default function AdminDragDropBuilder() {
 
       if (deleteError) throw deleteError;
 
-      // 2. Preparar los nuevos registros para todas las categorías
       const allInserts = [];
-      
       categoriesToClear.forEach(cat => {
         planteles[cat].forEach((player, index) => {
           if (player) {
@@ -249,9 +262,7 @@ export default function AdminDragDropBuilder() {
         });
       });
 
-      // 3. Insertar si hay algo que guardar
       if (allInserts.length > 0) {
-        console.log('Admin intentando guardar convocados:', allInserts);
         const { error: insertError } = await supabase.from('convocados_fecha').insert(allInserts);
         if (insertError) throw insertError;
       }
@@ -261,9 +272,7 @@ export default function AdminDragDropBuilder() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
       console.error('Error saving planteles:', err);
-      // Extraemos el mensaje de error si está disponible de Supabase
-      const msg = err.message || err.details || 'Verifica tu conexión.';
-      setError(`Error al guardar: ${msg}`);
+      setError(`Error al guardar: ${err.message || 'Error desconocido'}`);
     } finally {
       setSaving(false);
     }
@@ -277,6 +286,18 @@ export default function AdminDragDropBuilder() {
   };
 
   const filteredJugadores = jugadores.filter(p => p.nombre.toLowerCase().includes(search.toLowerCase()));
+
+  const filteredForDrawer = jugadores
+    .filter(p => p.nombre.toLowerCase().includes(drawerSearch.toLowerCase()))
+    .sort((a, b) => {
+       const isUsedA = !!getPlayerStatus(a.id);
+       const isUsedB = !!getPlayerStatus(b.id);
+       if (isUsedA && !isUsedB) return 1;
+       if (!isUsedA && isUsedB) return -1;
+       return 0;
+    });
+
+  const countComplete = planteles[activeCategory].filter(Boolean).length;
 
   if (loading) {
     return (
@@ -300,6 +321,21 @@ export default function AdminDragDropBuilder() {
   return (
     <div className="w-full h-full flex flex-col pt-2 animate-fade-in relative z-10 px-0 sm:px-4 pb-20">
       
+      {/* ── FAB Guardar (Mobile) ── */}
+      <button
+        onClick={handleSave}
+        disabled={saving}
+        className="md:hidden fixed bottom-24 right-6 w-14 h-14 bg-accent text-white rounded-full shadow-2xl z-[60] flex items-center justify-center animate-bounce-subtle border-4 border-white active:scale-95 transition-transform"
+      >
+        {saving ? <Loader2 className="w-6 h-6 animate-spin" /> : <Save className="w-6 h-6" />}
+      </button>
+
+      {/* ── Badge Completitud Flotante (Mobile) ── */}
+      <div className="md:hidden fixed bottom-24 left-6 px-4 py-2 bg-primary text-white rounded-full shadow-2xl z-[60] font-black text-xs border-2 border-white flex items-center gap-2">
+        <Users className="w-3.5 h-3.5 text-accent" />
+        {countComplete}/15
+      </div>
+
       {/* Header & Main Save */}
       <div className="mb-6 space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-neutral/20 pb-4">
@@ -307,7 +343,7 @@ export default function AdminDragDropBuilder() {
             <h1 className="text-xl md:text-3xl font-black text-primary flex items-center gap-2">
               <Users className="w-6 h-6 md:w-8 md:h-8 text-accent" /> Armado de Equipos
             </h1>
-            <p className="text-[10px] md:text-sm font-bold text-neutral uppercase tracking-widest mt-1">
+            <p className="text-[10px] md:text-xs font-bold text-neutral uppercase tracking-widest mt-1">
               Matchday vs {activeFecha.rival}
             </p>
           </div>
@@ -326,16 +362,16 @@ export default function AdminDragDropBuilder() {
         </div>
 
         {error && (
-          <div className="bg-red-50 border-2 border-red-200 text-red-600 p-4 rounded-2xl flex items-center gap-3 shadow-sm animate-shake">
-            <AlertCircle className="w-5 h-5 flex-shrink-0" />
-            <p className="text-sm font-bold">{error}</p>
+          <div className="bg-red-50 border-2 border-red-100 text-red-600 p-3 rounded-xl flex items-center gap-3 shadow-sm animate-shake">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <p className="text-xs font-bold">{error}</p>
           </div>
         )}
         
         {success && (
-          <div className="bg-green-50 border-2 border-green-200 text-green-700 p-4 rounded-2xl flex items-center gap-3 shadow-sm animate-fade-in">
-            <CheckCircle className="w-5 h-5 flex-shrink-0" />
-            <p className="text-sm font-bold">{success}</p>
+          <div className="bg-green-50 border-2 border-green-100 text-green-700 p-3 rounded-xl flex items-center gap-3 shadow-sm animate-fade-in">
+            <CheckCircle className="w-4 h-4 flex-shrink-0" />
+            <p className="text-xs font-bold">{success}</p>
           </div>
         )}
 
@@ -348,7 +384,7 @@ export default function AdminDragDropBuilder() {
               <button
                 key={cat}
                 onClick={() => { setSelectedPosition(null); setActiveCategory(cat); }}
-                className={`flex-1 min-w-[100px] md:min-w-[140px] px-3 md:px-6 py-2.5 md:py-3 text-[10px] md:text-sm font-black tracking-wider rounded-lg md:rounded-xl transition-all flex items-center justify-center gap-2 ${
+                className={`flex-1 min-w-[100px] md:min-w-[140px] px-3 md:px-6 py-2 md:py-3 text-[10px] md:text-sm font-black tracking-wider rounded-lg md:rounded-xl transition-all flex items-center justify-center gap-2 ${
                   activeCategory === cat ? 'bg-primary text-white shadow-md' : 'text-neutral hover:bg-white/50'
                 }`}
               >
@@ -363,28 +399,28 @@ export default function AdminDragDropBuilder() {
       </div>
 
       <div className="flex flex-col lg:flex-row gap-4 md:gap-8 lg:h-[750px]">
-        {/* PITCH AREA (Izquierda) */}
-        <div className="flex-1 bg-white border border-neutral/20 p-3 md:p-6 rounded-3xl shadow-xl flex flex-col relative overflow-hidden h-[600px] lg:h-full">
-          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/grass.png')] opacity-20 pointer-events-none"></div>
+        {/* ── PITCH AREA (Izquierda) ── */}
+        <div className="flex-1 bg-white border border-neutral/20 p-2 md:p-6 rounded-3xl shadow-xl flex flex-col relative overflow-hidden h-[550px] md:h-[600px] lg:h-full">
+          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/grass.png')] opacity-10 pointer-events-none"></div>
           
-          <div className="text-center mb-6 relative z-10 flex items-center justify-center gap-3">
+          <div className="text-center mb-4 md:mb-6 relative z-10 flex items-center justify-center gap-3 px-4">
              <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-neutral/20"></div>
-             <h2 className="font-black text-2xl text-primary tracking-tight">{activeCategory.toUpperCase()}</h2>
+             <h2 className="font-black text-lg md:text-2xl text-primary tracking-tight">{activeCategory.toUpperCase()}</h2>
              <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-neutral/20"></div>
           </div>
 
-            <div 
-              className="flex-1 relative w-full h-full max-w-lg mx-auto rounded-3xl border-[6px] border-neutral-light/50 overflow-hidden shadow-2xl transition-colors duration-500"
-              style={{ backgroundColor: '#1B4D3E', aspectRatio: '2/3.2' }} /* Verde Bosque Rugbier */
-            >
+          <div 
+            className="flex-1 relative w-full h-full max-w-lg mx-auto rounded-3xl border-[4px] md:border-[6px] border-neutral-light/50 overflow-hidden shadow-2xl transition-colors duration-500"
+            style={{ backgroundColor: '#1B4D3E', aspectRatio: '2/3.2' }} /* Verde Bosque Rugbier */
+          >
             {/* Field Detail Lines */}
-            <div className="absolute inset-x-0 top-0 h-[10%] bg-white/5 border-b border-white/20"></div> {/* In-goal Top */}
-            <div className="absolute inset-x-0 bottom-0 h-[10%] bg-white/5 border-t border-white/20"></div> {/* In-goal Bottom */}
-            <div className="absolute inset-x-0 top-1/2 -mt-[1px] border-t-[3px] border-white/30"></div> {/* Halfway */}
-            <div className="absolute inset-x-0 top-[22%] border-t-[2px] border-white/25"></div> {/* 22m */}
-            <div className="absolute inset-x-0 top-[35%] border-t-[2px] border-dashed border-white/15"></div> {/* 10m */}
-            <div className="absolute inset-x-0 top-[65%] border-t-[2px] border-dashed border-white/15"></div> {/* 10m */}
-            <div className="absolute inset-x-0 top-[78%] border-t-[2px] border-white/25"></div> {/* 22m */}
+            <div className="absolute inset-x-0 top-0 h-[10%] bg-white/5 border-b border-white/20"></div> 
+            <div className="absolute inset-x-0 bottom-0 h-[10%] bg-white/5 border-t border-white/20"></div> 
+            <div className="absolute inset-x-0 top-1/2 -mt-[1px] border-t-[2px] md:border-t-[3px] border-white/30"></div> 
+            <div className="absolute inset-x-0 top-[22%] border-t-[1px] md:border-t-[2px] border-white/25"></div> 
+            <div className="absolute inset-x-0 top-[35%] border-t-[1px] md:border-t-[2px] border-dashed border-white/15"></div> 
+            <div className="absolute inset-x-0 top-[65%] border-t-[1px] md:border-t-[2px] border-dashed border-white/15"></div> 
+            <div className="absolute inset-x-0 top-[78%] border-t-[1px] md:border-t-[2px] border-white/25"></div> 
 
             {/* Position Circles */}
             {PITCH_POSITIONS.map((pos, i) => {
@@ -394,54 +430,45 @@ export default function AdminDragDropBuilder() {
               return (
                 <div
                   key={i}
-                  className={`absolute -translate-x-1/2 -translate-y-1/2 w-[34px] h-[34px] sm:w-[58px] sm:h-[58px] transition-all duration-300 ${
+                  className={`absolute -translate-x-1/2 -translate-y-1/2 w-[40px] h-[40px] md:w-[58px] md:h-[58px] transition-all duration-300 ${
                      isSelected && !player ? 'scale-125' : ''
                   }`}
                   style={{ top: pos.top, left: pos.left }}
-                  onClick={() => handlePositionClick(i)}
+                  onClick={() => handleSlotClick(i)}
                   onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('scale-110'); }}
                   onDragLeave={(e) => { e.currentTarget.classList.remove('scale-110'); }}
                   onDrop={(e) => handleDrop(e, i)}
                   onDragEnter={(e) => e.preventDefault()}
                 >
                   {player ? (
-                    <div className={`flex flex-col ${
-                      parseFloat(pos.left) > 80 ? 'items-end' : 
-                      parseFloat(pos.left) < 20 ? 'items-start' : 
-                      'items-center'
-                    }`}>
+                    <div className="flex flex-col items-center">
                       <div 
                         draggable
                         onDragStart={(e) => handleDragStart(e, player.id)}
                         onDragEnd={handleDragEnd}
-                        className="w-8 h-8 sm:w-12 sm:h-12 bg-accent border-2 sm:border-[3px] border-white rounded-full flex items-center justify-center cursor-grab active:cursor-grabbing shadow-xl relative group animate-pop-in"
+                        className="w-8 h-8 md:w-12 md:h-12 bg-accent border-2 md:border-[3px] border-white rounded-full flex items-center justify-center cursor-grab active:cursor-grabbing shadow-xl relative group animate-pop-in"
                       >
-                        <span className="text-[9px] sm:text-xs font-black text-white">{i + 1}</span>
+                        <span className="text-[10px] md:text-xs font-black text-white">{i + 1}</span>
                         
                         <button 
                           onClick={(e) => removeFromPitch(e, activeCategory, i)}
-                          className="absolute -top-1 -right-1 w-6 h-6 bg-red-600 text-white rounded-full flex items-center justify-center text-xs font-black shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-20 border-2 border-white"
-                          title="Quitar jugador"
+                          className="absolute -top-1.5 -right-1.5 w-5 h-5 md:w-6 md:h-6 bg-red-600 text-white rounded-full flex items-center justify-center text-[10px] font-black shadow-lg md:opacity-0 md:group-hover:opacity-100 transition-opacity z-20 border-2 border-white"
                         >
                           ×
                         </button>
                       </div>
                       
                       <div 
-                        className={`mt-1 text-white font-black uppercase player-name-full ${
-                          parseFloat(pos.left) > 80 ? 'text-right' : 
-                          parseFloat(pos.left) < 20 ? 'text-left' : 
-                          'text-center'
-                        }`}
+                        className="mt-1 text-white font-black uppercase text-center"
                         style={{ 
-                          fontSize: '7px',
-                          lineHeight: '0.9',
-                          maxWidth: '65px',
-                          textShadow: '0 1px 2px rgba(0,0,0,1), 0 0 10px rgba(0,0,0,0.5)',
-                          width: 'max-content'
+                          fontSize: '8px',
+                          lineHeight: '1',
+                          maxWidth: '70px',
+                          textShadow: '0 1px 3px rgba(0,0,0,0.8)',
+                          wordBreak: 'break-word'
                         }}
                       >
-                         {player.nombre}
+                         {player.nombre.split(' ')[0]}
                       </div>
                     </div>
                   ) : (
@@ -452,10 +479,10 @@ export default function AdminDragDropBuilder() {
                           ? 'bg-accent/20 border-accent/50 animate-pulse-subtle border-solid'
                           : 'bg-white/5 border-white/20 hover:bg-white/10 hover:border-white/40'
                     }`}>
-                      <div className={`font-black text-sm sm:text-lg leading-none ${isSelected ? 'text-yellow-400' : 'text-white/40'}`}>
+                      <div className={`font-black text-xs md:text-lg leading-none ${isSelected ? 'text-yellow-400' : 'text-white/40'}`}>
                         {i + 1}
                       </div>
-                      <div className={`text-[6px] sm:text-[7px] font-black uppercase tracking-tighter text-center leading-[1] px-1 ${isSelected ? 'text-yellow-400/80' : 'text-white/20'}`}>
+                      <div className={`text-[6px] md:text-[7px] font-black uppercase tracking-tighter text-center leading-[1] px-1 ${isSelected ? 'text-yellow-400/80' : 'text-white/20'}`}>
                          {pos.label}
                       </div>
                     </div>
@@ -466,8 +493,9 @@ export default function AdminDragDropBuilder() {
           </div>
         </div>
 
-        {/* JUGADORES DISPONIBLES (Derecha) */}
-        <div className="lg:w-[380px] flex-shrink-0 bg-white border border-neutral/20 rounded-3xl shadow-xl flex flex-col h-[600px] lg:h-full overflow-hidden">
+        {/* ── JUGADORES DISPONIBLES (Desktop / Side Panel) ── */}
+        <div className="hidden lg:flex lg:w-[380px] flex-shrink-0 bg-white border border-neutral/20 rounded-3xl shadow-xl flex-col h-full overflow-hidden">
+           {/* ... Contenido original de Atletas aquí, mantenlo para Desktop ... */}
            <div className="p-5 border-b border-neutral/20 bg-neutral-light/30 space-y-4">
              <div className="flex items-center justify-between">
                 <h3 className="font-black text-primary text-lg flex items-center gap-2">
@@ -491,7 +519,6 @@ export default function AdminDragDropBuilder() {
                 const status = getPlayerStatus(player.id);
                 const isUsed = !!status;
                 const isMenuOpen = activePlayerMenu?.id === player.id;
-
                 return (
                   <div key={player.id} className="relative group">
                     <div
@@ -499,9 +526,9 @@ export default function AdminDragDropBuilder() {
                       onDragStart={(e) => handleDragStart(e, player.id)}
                       onDragEnd={handleDragEnd}
                       onClick={() => handlePlayerClick(player, isUsed)}
-                      className={`p-3 md:p-4 rounded-xl md:rounded-2xl border-2 flex justify-between items-center transition-all ${
+                      className={`p-4 rounded-2xl border-2 flex justify-between items-center transition-all ${
                         isUsed 
-                          ? 'opacity-40 grayscale border-neutral/10 bg-neutral-light/50 cursor-not-allowed scale-[0.98]' 
+                          ? 'opacity-40 grayscale border-neutral/10 bg-neutral-light/50 cursor-not-allowed' 
                           : selectedPosition !== null || isMenuOpen
                             ? 'bg-yellow-50 border-yellow-300 hover:bg-yellow-100 hover:scale-[1.02] cursor-pointer shadow-md'
                             : 'bg-white border-neutral/10 hover:border-primary/30 hover:scale-[1.02] cursor-grab active:cursor-grabbing shadow-sm hover:shadow-lg'
@@ -509,91 +536,89 @@ export default function AdminDragDropBuilder() {
                     >
                       <div className="flex-1 min-w-0">
                         <p className={`font-black text-sm truncate ${isUsed ? 'text-neutral' : 'text-primary'}`}>{player.nombre}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                           <span className="text-[9px] text-neutral font-black uppercase tracking-widest bg-neutral-light px-2 py-0.5 rounded">
-                             {player.posicion || 'JUGADOR'}
-                           </span>
+                        <span className="text-[9px] text-neutral font-black uppercase tracking-widest bg-neutral-light px-2 py-0.5 rounded mt-1 inline-block">
+                          {player.posicion || 'JUGADOR'}
+                        </span>
+                      </div>
+                      {status && (
+                        <div className="bg-primary/10 text-primary font-black text-[9px] px-3 py-1.5 rounded-full border border-primary/20">
+                          {status.toUpperCase()}
                         </div>
-                      </div>
-                      
-                      <div className="flex flex-col items-end gap-2 ml-3 shrink-0">
-                        {status && (
-                          <div className="flex items-center gap-1.5 bg-primary/10 text-primary font-black text-[9px] px-3 py-1.5 rounded-full border border-primary/20 shrink-0">
-                            <CheckCircle className="w-3 h-3" /> {status.toUpperCase()}
-                          </div>
-                        )}
-                        {!status && (selectedPosition !== null || isMenuOpen) && (
-                          <div className="w-8 h-8 rounded-xl bg-yellow-400 text-white flex items-center justify-center font-black animate-pulse">
-                            +
-                          </div>
-                        )}
-                      </div>
+                      )}
                     </div>
-
-                    {/* Quick Assign Pop-over Menu */}
-                    {isMenuOpen && (
-                      <div className="absolute left-0 right-0 top-full mt-2 bg-white border-2 border-primary rounded-2xl shadow-2xl z-50 p-2 animate-pop-in overflow-hidden max-h-[300px] flex flex-col">
-                        <div className="p-2 border-b border-neutral/10 flex justify-between items-center bg-neutral-light/30">
-                           <span className="text-[10px] font-black text-primary/60 uppercase tracking-widest">Asignar a:</span>
-                           <button onClick={(e) => { e.stopPropagation(); setActivePlayerMenu(null); }} className="text-neutral hover:text-red-500 font-bold">Cerrar</button>
-                        </div>
-                        <div className="overflow-y-auto grid grid-cols-2 gap-1 p-1">
-                          {PITCH_POSITIONS.map((pos, idx) => {
-                             const occupied = planteles[activeCategory][idx];
-                             return (
-                               <button
-                                 key={idx}
-                                 onClick={(e) => { e.stopPropagation(); assignToSlot(player, idx); }}
-                                 className={`p-2 rounded-lg text-left transition-all flex items-center gap-2 group/item ${
-                                   occupied 
-                                     ? 'bg-neutral-light opacity-50 cursor-not-allowed' 
-                                     : 'hover:bg-primary hover:text-white'
-                                 }`}
-                               >
-                                 <span className={`w-5 h-5 rounded flex items-center justify-center text-[10px] font-black border ${occupied ? 'border-neutral/30' : 'bg-primary/10 border-primary/20 group-hover/item:bg-white group-hover/item:text-primary'}`}>{idx + 1}</span>
-                                 <div className="flex flex-col">
-                                   <span className="text-[10px] font-bold truncate leading-none">{pos.label}</span>
-                                   {occupied && <span className="text-[8px] opacity-70 italic truncate">Ocupado</span>}
-                                 </div>
-                               </button>
-                             )
-                          })}
-                        </div>
-                      </div>
-                    )}
                   </div>
                 )
              })}
-             
-             {filteredJugadores.length === 0 && (
-               <div className="flex flex-col items-center justify-center p-12 text-center opacity-40">
-                 <Search className="w-10 h-10 mb-4" />
-                 <p className="font-black">No se encontraron jugadores</p>
-               </div>
-             )}
-           </div>
-
-           {/* Quick Tips */}
-           <div className="p-4 bg-primary text-white text-[10px] font-bold">
-              <p className="flex items-center gap-2">
-                 <span className="w-1.5 h-1.5 rounded-full bg-accent animate-ping"></span>
-                 Tip: Arrastrá los nombres directamente a las posiciones de la cancha.
-              </p>
            </div>
         </div>
       </div>
 
-      {/* MOBILE SAVE BUTTON (STATIC & CENTERED) */}
-      <div className="mt-8 flex md:hidden justify-center pb-8 border-t border-neutral/10 pt-8">
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="w-full max-w-xs bg-accent hover:bg-accent-dark text-white py-4 rounded-2xl font-black transition-all shadow-xl flex items-center justify-center gap-3 disabled:opacity-70 group"
-        >
-          {saving ? <Loader2 className="w-6 h-6 animate-spin" /> : <Save className="w-6 h-6" />}
-          GUARDAR CONVOCADOS
-        </button>
-      </div>
+      {/* ── MOBILE SELECTION DRAWER (Bottom Sheet) ── */}
+      {isDrawerOpen && (
+        <div className="fixed inset-0 z-[100] flex flex-col justify-end animate-fade-in md:hidden">
+          <div className="absolute inset-0 bg-primary/40 backdrop-blur-sm" onClick={() => setIsDrawerOpen(false)}></div>
+          
+          <div className="relative bg-white rounded-t-[32px] shadow-[0_-20px_50px_rgba(0,0,0,0.3)] max-h-[85vh] flex flex-col animate-slide-up">
+            {/* Handle bar */}
+            <div className="w-12 h-1.5 bg-neutral/20 rounded-full mx-auto my-4 shrink-0"></div>
+            
+            <div className="px-6 pb-6 space-y-4 flex flex-col flex-1 min-h-0">
+               <div className="flex items-center justify-between">
+                  <h3 className="font-black text-primary text-xl">Elección: <span className="text-accent">{PITCH_POSITIONS[drawerSlot].label}</span></h3>
+                  <button onClick={() => setIsDrawerOpen(false)} className="bg-neutral-light p-2 rounded-full"><X className="w-5 h-5 text-neutral" /></button>
+               </div>
+               
+               <div className="relative">
+                  <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-neutral" />
+                  <input 
+                    autoFocus
+                    type="text"
+                    placeholder="Buscar jugador..."
+                    value={drawerSearch}
+                    onChange={e => setDrawerSearch(e.target.value)}
+                    className="w-full bg-neutral-light border-2 border-neutral/10 rounded-2xl py-4 pl-12 pr-4 font-bold text-primary focus:border-primary/30 outline-none transition-all"
+                  />
+               </div>
+
+               <div className="flex-1 overflow-y-auto space-y-3 pb-6 no-scrollbar">
+                  {filteredForDrawer.map(player => {
+                    const status = getPlayerStatus(player.id);
+                    const isUsed = !!status;
+                    return (
+                      <button
+                        key={player.id}
+                        disabled={isUsed}
+                        onClick={() => handleDrawerSelect(player)}
+                        className={`w-full p-4 rounded-2xl border-2 text-left flex justify-between items-center transition-all ${
+                          isUsed 
+                            ? 'opacity-40 grayscale bg-neutral-light border-neutral/10' 
+                            : 'bg-white border-neutral/10 active:scale-95 active:bg-neutral-light/50'
+                        }`}
+                      >
+                        <div>
+                          <p className="font-black text-primary text-sm">{player.nombre}</p>
+                          <p className="text-[10px] font-bold text-neutral uppercase mt-1">{player.posicion}</p>
+                        </div>
+                        {status && (
+                          <div className="bg-primary/10 text-primary font-black text-[9px] px-3 py-1.5 rounded-full border border-primary/20">
+                            {status.toUpperCase()}
+                          </div>
+                        )}
+                        {!status && <div className="w-8 h-8 rounded-full bg-primary/5 flex items-center justify-center text-primary font-black">+</div>}
+                      </button>
+                    );
+                  })}
+                  {filteredForDrawer.length === 0 && (
+                    <div className="py-12 text-center opacity-40">
+                       <p className="font-black">No se encontró a nadie</p>
+                    </div>
+                  )}
+               </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+

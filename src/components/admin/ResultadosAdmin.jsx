@@ -10,7 +10,7 @@ import {
 } from '../../lib/api';
 import {
   Save, Loader2, FileBarChart, ChevronDown, CheckCircle,
-  AlertCircle, TrendingUp, Zap, AlertTriangle, X,
+  AlertCircle, TrendingUp, Zap, AlertTriangle, X, Search,
 } from 'lucide-react';
 
 const CATEGORIES = ['Primera', 'Intermedia', 'Pre-intermedia'];
@@ -289,9 +289,26 @@ export default function ResultadosAdmin() {
     }
   };
 
+  const [searchTerm, setSearchTerm] = useState('');
+  const [expandedPlayers, setExpandedPlayers] = useState(new Set());
+
+  const toggleExpand = (playerId) => {
+    setExpandedPlayers(prev => {
+      const next = new Set(prev);
+      if (next.has(playerId)) next.delete(playerId);
+      else next.add(playerId);
+      return next;
+    });
+  };
+
   const isFinalizada = selectedFechaObj?.estado === 'finalizada';
-  const activePlayers = playersByCategory[activeCategory] || [];
+  const activePlayers = (playersByCategory[activeCategory] || []).filter(p => 
+    p.nombre.toLowerCase().includes(searchTerm.toLowerCase())
+  );
   const totalPlayersAll = CATEGORIES.reduce((s, c) => s + (playersByCategory[c]?.length || 0), 0);
+
+  // Stats principales para mobile
+  const PRIMARY_STATS = ['tries', 'tackles', 'penales'];
 
   return (
     <>
@@ -303,50 +320,76 @@ export default function ResultadosAdmin() {
         />
       )}
 
-      <div className="space-y-6 animate-fade-in">
+      {/* ── FAB GUARDAR (Mobile) ── */}
+      {!isFinalizada && activePlayers.length > 0 && (
+        <div className="md:hidden fixed bottom-24 right-6 flex flex-col gap-3 z-[60]">
+           <button
+             onClick={handleSaveCategory}
+             disabled={saving}
+             className="w-14 h-14 bg-accent text-white rounded-full shadow-2xl flex items-center justify-center border-4 border-white active:scale-95 transition-all"
+           >
+             {saving ? <Loader2 className="w-6 h-6 animate-spin" /> : <Save className="w-6 h-6" />}
+           </button>
+        </div>
+      )}
 
-        {/* ── Header ───────────────────────────────────────────────────── */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-neutral/10 pb-6">
-          <div>
-            <h2 className="text-xl md:text-2xl font-black text-primary flex items-center gap-2">
-              <TrendingUp className="w-6 h-6 text-accent" /> CARGA DE ESTADÍSTICAS
-            </h2>
-            <p className="text-[10px] md:text-xs font-black text-neutral uppercase tracking-widest mt-1">
-              {isFinalizada
-                ? '✓ Fecha Finalizada'
-                : 'Cargá las stats por categoría'}
-            </p>
-          </div>
+      <div className="space-y-6 animate-fade-in relative">
 
-          {/* Fecha selector */}
-          <div className="relative min-w-[260px]">
-            <select
-              value={selectedFecha}
-              onChange={e => setSelectedFecha(e.target.value)}
-              className="w-full bg-neutral-light border border-neutral/20 rounded-xl px-4 py-3 text-sm font-bold text-primary appearance-none focus:ring-2 focus:ring-primary/20 outline-none"
-            >
-              {fechas.map(f => (
-                <option key={f.id} value={f.id}>
-                  Fecha {f.numero_fecha} — vs {f.rival}
-                  {f.estado === 'finalizada' ? ' ✓' : f.estado === 'abierta' ? ' 🔴 ABIERTA' : ''}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="w-4 h-4 absolute right-4 top-1/2 -translate-y-1/2 text-neutral pointer-events-none" />
+        {/* ── Header Sticky en Mobile ── */}
+        <div className="sticky top-[56px] bg-slate-50 z-40 -mx-2 px-2 pb-4 pt-2 md:relative md:top-0 md:bg-transparent md:mx-0 md:px-0">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-neutral/10 pb-4 md:pb-6">
+            <div>
+              <h2 className="text-xl md:text-2xl font-black text-primary flex items-center gap-2">
+                <TrendingUp className="w-6 h-6 text-accent" /> CARGA DE ESTADÍSTICAS
+              </h2>
+              <p className="hidden md:block text-[10px] md:text-xs font-black text-neutral uppercase tracking-widest mt-1">
+                {isFinalizada ? '✓ Fecha Finalizada' : 'Cargá las stats por categoría'}
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3">
+              {/* Buscador Mobile/Desktop */}
+              <div className="relative">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-neutral" />
+                <input
+                  type="text"
+                  placeholder="Buscar jugador..."
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                  className="w-full sm:w-64 bg-white border border-neutral/20 rounded-xl pl-9 pr-4 py-2.5 text-sm font-bold text-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all shadow-sm"
+                />
+                {searchTerm && (
+                  <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <X className="w-3 h-3 text-neutral hover:text-primary" />
+                  </button>
+                )}
+              </div>
+
+              {/* Fecha selector */}
+              <div className="relative min-w-[200px]">
+                <select
+                  value={selectedFecha}
+                  onChange={e => setSelectedFecha(e.target.value)}
+                  className="w-full bg-white border border-neutral/20 rounded-xl px-4 py-2.5 text-sm font-bold text-primary appearance-none focus:ring-4 focus:ring-primary/10 outline-none shadow-sm cursor-pointer"
+                >
+                  {fechas.map(f => (
+                    <option key={f.id} value={f.id}>
+                      F{f.numero_fecha} — vs {f.rival}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="w-4 h-4 absolute right-4 top-1/2 -translate-y-1/2 text-neutral pointer-events-none" />
+              </div>
+            </div>
           </div>
         </div>
 
         {/* ── Status Message ────────────────────────────────────────────── */}
         {statusMsg.text && (
-          <div className={`p-4 rounded-2xl flex items-center gap-3 border shadow-sm animate-fade-in ${
-            statusMsg.type === 'error'
-              ? 'bg-red-50 border-red-200 text-red-600'
-              : 'bg-green-50 border-green-200 text-green-700'
+          <div className={`p-4 rounded-2xl flex items-center gap-3 border shadow-md animate-fade-in ${
+            statusMsg.type === 'error' ? 'bg-red-50 border-red-200 text-red-600' : 'bg-green-50 border-green-200 text-green-700'
           }`}>
-            {statusMsg.type === 'error'
-              ? <AlertCircle className="w-5 h-5 shrink-0" />
-              : <CheckCircle className="w-5 h-5 shrink-0" />
-            }
+            {statusMsg.type === 'error' ? <AlertCircle className="w-5 h-5 shrink-0" /> : <CheckCircle className="w-5 h-5 shrink-0" />}
             <p className="text-sm font-bold">{statusMsg.text}</p>
           </div>
         )}
@@ -359,14 +402,11 @@ export default function ResultadosAdmin() {
           <div className="bg-neutral-light/50 rounded-3xl p-12 text-center border-2 border-dashed border-neutral/20">
             <FileBarChart className="w-12 h-12 text-neutral/30 mx-auto mb-4" />
             <h3 className="text-xl font-bold text-neutral">No hay jugadores convocados</h3>
-            <p className="text-sm text-neutral/60 mt-1">
-              Cargá el plantel en la pestaña "Armado" antes de registrar estadísticas.
-            </p>
           </div>
         ) : (
           <>
-            {/* ── Category Tabs ──────────────────────────────────────── */}
-            <div className="flex gap-2 p-1 bg-neutral-light rounded-2xl border border-neutral/20 max-w-fit">
+            {/* ── Tabs de Categoría Táctiles ── */}
+            <div className="flex gap-1 p-1 bg-neutral-light rounded-2xl border border-neutral/20 overflow-x-auto no-scrollbar snap-x">
               {CATEGORIES.map(cat => {
                 const count = playersByCategory[cat]?.length || 0;
                 const saved = savedCategories.has(cat);
@@ -374,19 +414,13 @@ export default function ResultadosAdmin() {
                   <button
                     key={cat}
                     onClick={() => setActiveCategory(cat)}
-                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-black tracking-wide transition-all ${
-                      activeCategory === cat
-                        ? 'bg-primary text-white shadow-md'
-                        : 'text-neutral hover:bg-white/70 hover:text-primary hover-shadow'
+                    className={`flex-1 min-w-[110px] items-center justify-center gap-2 px-4 py-3 rounded-xl text-[11px] font-black tracking-wide transition-all snap-center ${
+                      activeCategory === cat ? 'bg-primary text-white shadow-lg' : 'text-neutral hover:bg-white/50'
                     }`}
                   >
                     {cat}
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-black ${
-                      saved
-                        ? 'bg-green-500 text-white'
-                        : count > 0
-                        ? 'bg-accent text-white'
-                        : 'bg-neutral/20 text-neutral'
+                    <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-black ml-1 ${
+                      saved ? 'bg-green-500 text-white' : count > 0 ? 'bg-accent text-white' : 'bg-neutral/20 text-neutral'
                     }`}>
                       {saved ? '✓' : count}
                     </span>
@@ -395,25 +429,22 @@ export default function ResultadosAdmin() {
               })}
             </div>
 
-            {/* ── Players Table ──────────────────────────────────────── */}
+            {/* ── Players View ────────────────────────────────────────── */}
             {activePlayers.length === 0 ? (
-              <div className="bg-neutral-light/30 rounded-2xl p-8 text-center border border-dashed border-neutral/20">
-                <p className="text-sm font-black text-neutral uppercase tracking-widest">
-                  No hay convocados en {activeCategory} para esta fecha
-                </p>
+              <div className="bg-white rounded-3xl p-12 text-center border border-neutral/20">
+                <p className="font-black text-neutral opacity-40 uppercase tracking-widest">No hay coincidencias</p>
               </div>
             ) : (
               <>
                 {/* ── Desktop Table ── */}
-                <div className="hidden md:block bg-white rounded-2xl overflow-hidden border border-neutral/20 shadow-sm">
-                  {/* ... table content remains same ... */}
+                <div className="hidden md:block bg-white rounded-2xl overflow-hidden border border-neutral/20 shadow-sm transition-all">
                   <div className="divide-y divide-neutral/10">
-                    {activePlayers.map((player, idx) => {
+                    {activePlayers.map((player) => {
                       const pStats = stats[player.id] || {};
                       const pts = calcularPuntosJugador(pStats);
-                      const initials = player.nombre?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || '?';
+                      const initials = player.nombre?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
                       return (
-                        <div key={player.id} className="grid items-center px-4 py-3 hover:bg-neutral-light/20 transition-colors" style={{ gridTemplateColumns: '1fr repeat(12, auto) 80px' }}>
+                        <div key={player.id} className="grid items-center px-4 py-3 hover:bg-neutral-light/20 transition-colors" style={{ gridTemplateColumns: '1.2fr repeat(12, auto) 80px' }}>
                           <div className="flex items-center gap-3 min-w-0">
                             <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
                               <span className="text-[11px] font-black text-primary">{initials}</span>
@@ -421,52 +452,81 @@ export default function ResultadosAdmin() {
                             <div className="min-w-0"><p className="font-black text-sm text-primary truncate leading-tight">{player.nombre}</p></div>
                           </div>
                           {STAT_FIELDS.map(f => (
-                            <div key={f.key} className="flex justify-center px-1">
+                            <div key={f.key} className="flex justify-center px-0.5">
                               <StatBox field={f} value={pStats[f.key] || 0} onInc={() => updateStat(player.id, f.key, 1)} onDec={() => updateStat(player.id, f.key, -1)} />
                             </div>
                           ))}
-                          <div className="text-right font-black text-primary">{pts}</div>
+                          <div className="text-right font-black text-primary text-lg">{pts}</div>
                         </div>
                       );
                     })}
                   </div>
                 </div>
 
-                {/* ── Mobile Card View ── */}
-                <div className="md:hidden space-y-6">
+                {/* ── Mobile Compact Cards ── */}
+                <div className="md:hidden space-y-4">
                   {activePlayers.map(player => {
                     const pStats = stats[player.id] || {};
                     const pts = calcularPuntosJugador(pStats);
+                    const isExpanded = expandedPlayers.has(player.id);
                     return (
-                      <div key={player.id} className="bg-white rounded-2xl border border-neutral/20 shadow-md p-4">
-                        <div className="flex items-center justify-between mb-4 pb-3 border-b border-neutral/10">
-                          <div className="flex items-center gap-3">
-                             <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center font-black text-primary text-xs">
-                                {player.nombre.charAt(0)}
-                             </div>
-                             <div>
-                                <p className="font-black text-primary text-sm leading-none">{player.nombre}</p>
-                                <p className="text-[10px] font-bold text-neutral uppercase mt-1">{player.posicion}</p>
-                             </div>
+                      <div key={player.id} className="bg-white rounded-[24px] border border-neutral/20 shadow-sm overflow-hidden animate-pop-in">
+                        {/* Fila Principal */}
+                        <div className="p-4 bg-white">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-3">
+                               <div className="w-10 h-10 bg-primary/5 rounded-2xl flex items-center justify-center font-black text-primary text-xs border border-primary/10">
+                                  {player.nombre.charAt(0)}
+                               </div>
+                               <div>
+                                  <p className="font-black text-primary text-sm leading-tight">{player.nombre}</p>
+                                  <p className="text-[9px] font-bold text-neutral uppercase mt-1 tracking-tighter opacity-70">{player.posicion}</p>
+                               </div>
+                            </div>
+                            <div className="bg-primary/5 px-3 py-1 rounded-xl border border-primary/10 flex flex-col items-center">
+                               <span className={`text-lg font-black leading-none ${pts >= 0 ? 'text-primary' : 'text-red-600'}`}>{pts}</span>
+                               <span className="text-[8px] font-black text-neutral/40 uppercase">PTS</span>
+                            </div>
                           </div>
-                          <div className="text-right">
-                             <span className={`text-2xl font-black ${pts >= 0 ? 'text-primary' : 'text-red-500'}`}>{pts}</span>
-                             <p className="text-[8px] font-black text-neutral uppercase">PTS</p>
+                          
+                          {/* 3 Stats Principales */}
+                          <div className="grid grid-cols-3 gap-2">
+                             {STAT_FIELDS.filter(f => PRIMARY_STATS.includes(f.key)).map(f => (
+                               <div key={f.key} className={`flex flex-col items-center p-2 rounded-xl border ${f.bg} ${f.border}`}>
+                                  <span className={`text-[8px] font-black uppercase mb-1.5 ${f.color} tracking-tighter`}>{f.label}</span>
+                                  <div className="flex items-center gap-2">
+                                     <button onClick={() => updateStat(player.id, f.key, -1)} disabled={(pStats[f.key] || 0) <= 0} className="w-7 h-7 bg-white rounded-lg border border-neutral/20 flex items-center justify-center font-black text-xs shadow-sm active:bg-red-50">-</button>
+                                     <span className="text-sm font-black w-3 text-center">{pStats[f.key] || 0}</span>
+                                     <button onClick={() => updateStat(player.id, f.key, 1)} className="w-7 h-7 bg-white rounded-lg border border-neutral/20 flex items-center justify-center font-black text-xs shadow-sm active:bg-green-50">+</button>
+                                  </div>
+                               </div>
+                             ))}
                           </div>
+
+                          <button 
+                            onClick={() => toggleExpand(player.id)}
+                            className="w-full mt-3 py-2 text-[10px] font-black text-neutral/40 flex items-center justify-center gap-2 uppercase tracking-widest border-t border-dashed border-neutral/10 pt-3"
+                          >
+                             {isExpanded ? 'Ocultar extras' : 'Ver todas las métricas'}
+                             <ChevronDown className={`w-3 h-3 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                          </button>
                         </div>
-                        
-                        <div className="grid grid-cols-3 gap-2">
-                           {STAT_FIELDS.map(f => (
-                             <div key={f.key} className={`flex flex-col items-center p-2 rounded-xl border ${f.bg} ${f.border}`}>
-                                <span className={`text-[8px] font-black uppercase mb-1 ${f.color}`}>{f.label}</span>
-                                <div className="flex items-center gap-2">
-                                   <button onClick={() => updateStat(player.id, f.key, -1)} disabled={(pStats[f.key] || 0) <= 0} className="w-6 h-6 bg-white rounded-md border border-neutral/20 flex items-center justify-center font-black text-xs shadow-sm">-</button>
-                                   <span className="text-sm font-black">{pStats[f.key] || 0}</span>
-                                   <button onClick={() => updateStat(player.id, f.key, 1)} className="w-6 h-6 bg-white rounded-md border border-neutral/20 flex items-center justify-center font-black text-xs shadow-sm">+</button>
-                                </div>
-                             </div>
-                           ))}
-                        </div>
+
+                        {/* Panel Expandido (Resto de Stats) */}
+                        {isExpanded && (
+                          <div className="bg-neutral-light/30 px-3 pb-4 pt-1 border-t border-neutral/5 grid grid-cols-3 sm:grid-cols-4 gap-2 animate-slide-down">
+                             {STAT_FIELDS.filter(f => !PRIMARY_STATS.includes(f.key)).map(f => (
+                               <div key={f.key} className={`flex flex-col items-center p-2 rounded-xl border ${f.bg} ${f.border} opacity-90`}>
+                                  <span className={`text-[7px] font-black uppercase mb-1 ${f.color} tracking-tighter`}>{f.label}</span>
+                                  <div className="flex items-center gap-1.5">
+                                     <button onClick={() => updateStat(player.id, f.key, -1)} disabled={(pStats[f.key] || 0) <= 0} className="w-6 h-6 bg-white rounded-lg border border-neutral/20 flex items-center justify-center font-black text-[10px] shadow-sm">-</button>
+                                     <span className="text-xs font-black min-w-[12px] text-center">{pStats[f.key] || 0}</span>
+                                     <button onClick={() => updateStat(player.id, f.key, 1)} className="w-6 h-6 bg-white rounded-lg border border-neutral/20 flex items-center justify-center font-black text-[10px] shadow-sm">+</button>
+                                  </div>
+                               </div>
+                             ))}
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -474,27 +534,22 @@ export default function ResultadosAdmin() {
               </>
             )}
 
-            {/* ── Action Buttons ──────────────────────────────────────── */}
-            <div className="flex flex-col md:flex-row items-center justify-center gap-4 pt-4">
-              {/* Guardar Categoría */}
+            {/* ── Footer Actions Desktop ── */}
+            <div className="hidden md:flex flex-col md:flex-row items-center justify-center gap-4 pt-4 pb-12">
               <button
                 onClick={handleSaveCategory}
                 disabled={saving || activePlayers.length === 0 || isFinalizada}
-                className="w-full md:w-auto flex items-center justify-center gap-2 px-8 py-4 bg-white border-2 border-primary text-primary font-black rounded-2xl hover:bg-primary/5 hover-shadow transition-all shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                className="w-full md:w-auto flex items-center justify-center gap-2 px-8 py-4 bg-white border-2 border-primary text-primary font-black rounded-2xl hover:bg-primary/5 transition-all shadow-sm active:scale-95 transition-transform"
               >
-                {saving
-                  ? <Loader2 className="w-5 h-5 animate-spin" />
-                  : <Save className="w-5 h-5" />
-                }
+                {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
                 Guardar {activeCategory}
               </button>
 
-              {/* Publicar Resultados Finales */}
               {!isFinalizada && (
                 <button
                   onClick={() => setShowConfirm(true)}
                   disabled={totalPlayersAll === 0}
-                  className="w-full md:w-auto flex items-center justify-center gap-2 px-10 py-4 bg-accent text-white font-black rounded-2xl shadow-xl hover:scale-[1.02] hover-shadow transition-all disabled:opacity-40 disabled:hover:scale-100 disabled:cursor-not-allowed"
+                  className="w-full md:w-auto flex items-center justify-center gap-2 px-10 py-4 bg-accent text-white font-black rounded-2xl shadow-xl hover:scale-[1.02] transition-all"
                 >
                   <Zap className="w-5 h-5" />
                   PUBLICAR RESULTADOS
@@ -502,11 +557,21 @@ export default function ResultadosAdmin() {
               )}
             </div>
 
-            {/* Hint sobre proceso */}
+            {/* Botón de Publicar en Mobile (Sección Final) */}
             {!isFinalizada && (
-              <p className="text-[10px] text-neutral font-bold text-center opacity-60 uppercase tracking-widest">
-                Guardá cada categoría por separado antes de publicar.
-              </p>
+              <div className="md:hidden pb-12 px-2">
+                 <button
+                    onClick={() => setShowConfirm(true)}
+                    disabled={totalPlayersAll === 0}
+                    className="w-full py-5 bg-primary text-white font-black rounded-2xl shadow-2xl flex items-center justify-center gap-3 active:scale-95 transition-transform"
+                  >
+                    <Zap className="w-6 h-6 text-accent" />
+                    PUBLICAR FECHA FINAL
+                  </button>
+                  <p className="text-[10px] text-neutral font-bold text-center mt-4 opacity-10 uppercase tracking-[0.2em]">
+                    Club Universitario de Salta — Rugby Manager
+                  </p>
+              </div>
             )}
           </>
         )}
@@ -514,3 +579,6 @@ export default function ResultadosAdmin() {
     </>
   );
 }
+
+
+
