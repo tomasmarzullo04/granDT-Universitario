@@ -287,6 +287,8 @@ export default function AdminDragDropBuilder() {
 
   const filteredJugadores = jugadores.filter(p => p.nombre.toLowerCase().includes(search.toLowerCase()));
 
+  const countComplete = planteles[activeCategory].filter(Boolean).length;
+
   const filteredForDrawer = jugadores
     .filter(p => p.nombre.toLowerCase().includes(drawerSearch.toLowerCase()))
 const POSITION_MAP = {
