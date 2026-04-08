@@ -45,6 +45,7 @@ export function calcularPuntosJugador(s, isCaptain = false) {
 // ==========================================
 
 export const APP_STATUS = {
+  ESPERANDO_CONVOCADOS: 'ESPERANDO_CONVOCADOS',
   MERCADO_ABIERTO: 'MERCADO_ABIERTO',
   MERCADO_CERRADO: 'MERCADO_CERRADO',
   PROCESANDO: 'PROCESANDO',
@@ -85,6 +86,15 @@ export async function getLiveStatus() {
   const fin = activeMatchday.fin_fecha ? new Date(activeMatchday.fin_fecha) : new Date(0);
 
   if (now < cierre) {
+    // NUEVO: Verificar si ya hay convocados cargados para esta fecha
+    const { count } = await supabase
+      .from('convocados_fecha')
+      .select('*', { count: 'exact', head: true })
+      .eq('fecha_id', activeMatchday.id);
+    
+    if (!count || count === 0) {
+      return { activeMatchday, status: APP_STATUS.ESPERANDO_CONVOCADOS };
+    }
     return { activeMatchday, status: APP_STATUS.MERCADO_ABIERTO };
   } else if (now >= cierre && now < fin) {
     return { activeMatchday, status: APP_STATUS.MERCADO_CERRADO };
@@ -92,6 +102,22 @@ export async function getLiveStatus() {
     // now >= fin pero stats_cargadas es false
     return { activeMatchday, status: APP_STATUS.PROCESANDO };
   }
+}
+
+/**
+ * Retorna la última fecha que tiene resultados publicados oficialmente.
+ */
+export async function getLastPublishedFecha() {
+  const { data, error } = await supabase
+    .from('fechas')
+    .select('*')
+    .eq('stats_cargadas', true)
+    .order('numero_fecha', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  
+  if (error || !data) return null;
+  return data;
 }
 
 export async function getActiveFecha() {

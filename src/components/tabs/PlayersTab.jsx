@@ -72,7 +72,7 @@ export default function PlayersTab() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
         <Loader2 className="w-12 h-12 animate-spin text-primary" />
-        <p className="text-neutral font-bold animate-pulse uppercase tracking-widest text-[10px]">Cargando Plantel...</p>
+        <p className="text-neutral font-medium animate-pulse uppercase tracking-widest text-[10px]">Cargando Plantel...</p>
       </div>
     );
   }
@@ -90,7 +90,7 @@ export default function PlayersTab() {
             placeholder="Buscar por nombre..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-neutral-light border border-neutral/10 rounded-2xl pl-12 pr-4 py-3 text-sm font-bold text-primary focus:ring-4 focus:ring-primary/5 focus:border-primary/30 outline-none transition-all placeholder:text-neutral/50"
+            className="w-full bg-neutral-light border border-neutral/10 rounded-2xl pl-12 pr-4 py-3 text-sm font-medium text-primary focus:ring-4 focus:ring-primary/5 focus:border-primary/30 outline-none transition-all placeholder:text-neutral/50"
           />
         </div>
         

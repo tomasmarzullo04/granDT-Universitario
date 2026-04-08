@@ -1028,7 +1028,7 @@ export default function MiEquipo() {
                           <p className="font-black text-slate-900 text-sm leading-tight uppercase player-name-full group-hover:translate-x-0.5 transition-transform">
                             {player.nombre}
                           </p>
-                          <p className="text-[9px] font-bold text-neutral opacity-50 uppercase tracking-widest mt-0.5">
+                          <p className="text-[9px] font-medium text-neutral opacity-50 uppercase tracking-widest mt-0.5">
                              {player.posicion}
                           </p>
                         </div>
@@ -1089,7 +1089,7 @@ export default function MiEquipo() {
             <div className="p-6">
               <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                 {selectedPlayers.length === 0 ? (
-                  <div className="py-12 text-center text-neutral/40 font-bold uppercase text-xs">
+                  <div className="py-12 text-center text-neutral/40 font-medium uppercase text-xs">
                     Primero completá tu equipo
                   </div>
                 ) : (

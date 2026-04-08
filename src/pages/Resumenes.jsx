@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { 
   getLiveStatus, getResumenFecha, getRankingCompleto, 
   SCORING, getPlayersStatistics, getMarketMetrics, getEntrenadorDeLaFecha,
-  APP_STATUS
+  APP_STATUS, getLastPublishedFecha
 } from '../lib/api';
 import { 
   Shield, Zap, AlertTriangle, TrendingUp, Medal, Footprints, Target, 
@@ -49,13 +49,16 @@ export default function Resumenes() {
       
       try {
         const { activeMatchday, status: liveStatus } = await getLiveStatus();
+        const lastFinished = await getLastPublishedFecha();
         
+        // Las métricas (Equipo, Entrenador, etc.) ahora vienen de la ÚLTIMA fecha terminada
+        // El banner (Estado) viene de la fecha activa/próxima
         const [eqData, ranking, allPlayerStats, market, coach] = await Promise.all([
-          activeMatchday ? getResumenFecha(activeMatchday.id, user.id) : Promise.resolve(null),
+          lastFinished ? getResumenFecha(lastFinished.id, user.id) : Promise.resolve(null),
           getRankingCompleto(),
           getPlayersStatistics(),
           getMarketMetrics(activeMatchday?.id),
-          activeMatchday ? getEntrenadorDeLaFecha(activeMatchday.id) : Promise.resolve(null)
+          lastFinished ? getEntrenadorDeLaFecha(lastFinished.id) : Promise.resolve(null)
         ]);
 
         // Guardar en estados
@@ -108,7 +111,7 @@ export default function Resumenes() {
       <PlayerLayout>
         <div className="flex flex-col items-center justify-center min-h-[500px]">
           <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
-          <p className="mt-4 text-neutral/60 font-bold uppercase tracking-widest text-sm">Sincronizando Estadísticas...</p>
+          <p className="mt-4 text-neutral/60 font-medium uppercase tracking-widest text-sm">Sincronizando Estadísticas...</p>
         </div>
       </PlayerLayout>
     );
@@ -155,119 +158,76 @@ export default function Resumenes() {
   }
 
   // --- BANNER RENDERER ---
+  // ── RENDERIZADO DE BANNER DINÁMICO ──
   const renderBanner = () => {
     if (!fecha) return null;
 
-    // 1. MERCADO ABIERTO
+    let bannerConfig = {
+      bg: 'bg-blue-50/50',
+      border: 'border-blue-100',
+      icon: Clock,
+      iconColor: 'text-blue-500',
+      title: '⏳ ESPERANDO CONVOCADOS',
+      desc: `El Staff está confirmando los planteles para el partido contra ${fecha.rival}...`,
+      textColor: 'text-blue-900'
+    };
+
     if (status === APP_STATUS.MERCADO_ABIERTO) {
-      const isMissing = teamCount < 15;
-      return (
-        <div className={`w-full ${isMissing ? 'bg-red-600' : 'bg-emerald-600'} text-white p-4 md:p-6 rounded-2xl shadow-lg border border-white/10 relative overflow-hidden mb-8 transition-colors duration-500`}>
-           <div className="absolute right-0 top-0 opacity-10 transform translate-x-4 -translate-y-4">
-              {isMissing ? <AlertCircle className="w-48 h-48" /> : <Shield className="w-48 h-48" />}
-           </div>
-           <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div className="flex items-start gap-4">
-                 <div className="p-3 bg-white/20 rounded-xl backdrop-blur-md">
-                    {isMissing ? <AlertTriangle className="w-6 h-6 text-white" /> : <Shield className="w-6 h-6 text-white" />}
-                 </div>
-                 <div>
-                    <h3 className="font-black text-lg md:text-xl tracking-tight uppercase leading-none">
-                       {isMissing ? '¡ENTRÁ A LA CANCHA!' : '¡EQUIPO LISTO!'}
-                    </h3>
-                    <p className="text-sm font-bold opacity-90 mt-1 max-w-lg">
-                       {isMissing 
-                         ? `Fecha ${fecha.numero_fecha} vs ${fecha.rival}. Tenés ${teamCount}/15 confirmados. ¡Seleccioná tu XV!`
-                         : `XV Inicial confirmado contra ${fecha.rival}. Kick-off en breve. ¡Vamos UNI!`}
-                    </p>
-                 </div>
-              </div>
-              <Link to="/dashboard?tab=equipo" className="bg-white text-gray-900 px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-colors shadow-md text-center">
-                 {isMissing ? 'Completar Plantel' : 'Revisar Selección'}
-              </Link>
-           </div>
-        </div>
-      );
+      bannerConfig = {
+        bg: 'bg-green-50/50',
+        border: 'border-green-100',
+        icon: Footprints,
+        iconColor: 'text-green-600',
+        title: '🏉 ¡MERCADO ABIERTO!',
+        desc: `Armá tu XV para jugar contra ${fecha.rival}. Cierre: Viernes 23:59hs.`,
+        textColor: 'text-green-900'
+      };
+    } else if (status === APP_STATUS.MERCADO_CERRADO || status === APP_STATUS.PROCESANDO) {
+      bannerConfig = {
+        bg: 'bg-slate-50/50',
+        border: 'border-slate-200',
+        icon: Shield,
+        iconColor: 'text-slate-500',
+        title: '🔒 MERCADO CERRADO',
+        desc: `¡Éxitos al UNI en el clásico contra ${fecha.rival}!`,
+        textColor: 'text-slate-900'
+      };
+    } else if (status === APP_STATUS.RESULTADOS_LISTOS) {
+      bannerConfig = {
+        bg: 'bg-emerald-500',
+        border: 'border-emerald-600',
+        icon: Trophy,
+        iconColor: 'text-white',
+        title: '✅ RESULTADOS PUBLICADOS',
+        desc: `Mirá cómo te fue en la fecha contra ${fecha.rival}.`,
+        textColor: 'text-white'
+      };
     }
 
-    // 2. MERCADO CERRADO (Sábado/Domingo pre-stats)
-    if (status === APP_STATUS.MERCADO_CERRADO) {
-       return (
-        <div className="w-full bg-amber-500 text-white p-4 md:p-6 rounded-2xl shadow-lg border border-white/10 relative overflow-hidden mb-8 transition-colors">
-           <div className="absolute right-0 top-0 opacity-10 transform translate-x-4 -translate-y-4">
-              <Clock className="w-48 h-48" />
-           </div>
-           <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div className="flex items-start gap-4">
-                 <div className="p-3 bg-white/20 rounded-xl backdrop-blur-md">
-                    <Clock className="w-6 h-6" />
-                 </div>
-                 <div>
-                    <h3 className="font-black text-lg md:text-xl tracking-tight uppercase leading-none">
-                       ⏳ MERCADO CERRADO
-                    </h3>
-                    <p className="text-sm font-bold opacity-90 mt-1 max-w-lg">
-                       El mercado está cerrado. ¡Éxitos al UNI contra {fecha.rival}! Esperamos el silbatazo final.
-                    </p>
-                 </div>
-              </div>
-           </div>
+    return (
+      <div className={`
+        ${bannerConfig.bg} rounded-[32px] border ${bannerConfig.border} p-5 md:p-6 mb-8 relative overflow-hidden transition-all animate-fade-in
+      `}>
+        <div className="flex items-center gap-5 relative z-10">
+          <div className={`p-4 rounded-2xl ${status === APP_STATUS.RESULTADOS_LISTOS ? 'bg-white/20' : 'bg-white shadow-sm'}`}>
+            <bannerConfig.icon className={`w-8 h-8 ${bannerConfig.iconColor}`} />
+          </div>
+          <div className="flex-1">
+            <h3 className={`text-lg font-black tracking-tight ${bannerConfig.textColor}`}>
+              {bannerConfig.title}
+            </h3>
+            <p className={`text-sm font-medium ${status === APP_STATUS.RESULTADOS_LISTOS ? 'text-white/90' : 'text-neutral/70'}`}>
+              {bannerConfig.desc}
+            </p>
+          </div>
+          {status === APP_STATUS.MERCADO_ABIERTO && (
+            <Link to="/dashboard?tab=equipo" className="bg-primary text-white px-6 py-3 rounded-2xl font-black text-xs uppercase shadow-lg shadow-primary/20 hover:scale-105 transition-transform active:scale-95">
+              Jugar
+            </Link>
+          )}
         </div>
-      );
-    }
-
-    // 3. PROCESANDO (Post-partido, sin stats)
-    if (status === APP_STATUS.PROCESANDO) {
-       return (
-        <div className="w-full bg-slate-600 text-white p-4 md:p-6 rounded-2xl shadow-lg border border-white/10 relative overflow-hidden mb-8 transition-colors">
-           <div className="absolute right-0 top-0 opacity-10 transform translate-x-4 -translate-y-4">
-              <Activity className="w-48 h-48" />
-           </div>
-           <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div className="flex items-start gap-4">
-                 <div className="p-3 bg-white/20 rounded-xl backdrop-blur-md">
-                    <Loader2 className="w-6 h-6 text-white animate-spin" />
-                 </div>
-                 <div>
-                    <h3 className="font-black text-lg md:text-xl tracking-tight uppercase leading-none">
-                       ⚙️ PROCESANDO DATOS
-                    </h3>
-                    <p className="text-sm font-bold opacity-90 mt-1 max-w-lg">
-                       El Staff está cargando las estadísticas del partido contra {fecha.rival}. ¡Volvé en unos minutos!
-                    </p>
-                 </div>
-              </div>
-           </div>
-        </div>
-      );
-    }
-
-    // 4. RESULTADOS LISTOS
-    if (status === APP_STATUS.RESULTADOS_LISTOS) {
-       return (
-        <div className="w-full bg-primary text-white p-4 md:p-6 rounded-2xl shadow-lg border border-white/10 relative overflow-hidden mb-8 transition-colors">
-           <div className="absolute right-0 top-0 opacity-10 transform translate-x-4 -translate-y-4">
-              <Trophy className="w-48 h-48" />
-           </div>
-           <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div className="flex items-start gap-4">
-                 <div className="p-3 bg-white/20 rounded-xl backdrop-blur-md">
-                    <Star className="w-6 h-6" />
-                 </div>
-                 <div>
-                    <h3 className="font-black text-lg md:text-xl tracking-tight uppercase leading-none">
-                       ✅ RESULTADOS LISTOS
-                    </h3>
-                    <p className="text-sm font-bold opacity-90 mt-1 max-w-lg">
-                       ¡Resultados de la Fecha {fecha.numero_fecha} vs {fecha.rival} publicados! Revisá tu rendimiento.
-                    </p>
-                 </div>
-              </div>
-           </div>
-        </div>
-      );
-    }
-    return null;
+      </div>
+    );
   };
 
   return (
@@ -292,24 +252,83 @@ export default function Resumenes() {
                     </div>
                  </div>
 
-                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    {[
-                      { label: 'Ptos Fecha', val: equipoData?.puntosTotal || 0, sub: 'Fin de semana', icon: Star, color: 'text-primary' },
-                      { label: 'Ranking', val: `#${rankingInfo?.posicion || '-'}`, sub: 'Global Club', icon: Trophy, color: 'text-accent' },
-                      { label: 'MVP Team', val: mvp ? mvp.nombre : 'S/D', sub: mvp ? `+${mvp.puntos} pts` : '-', icon: Medal, color: 'text-emerald-600', isTitle: true },
-                      { label: 'El Capitán', val: capitan ? capitan.nombre : 'S/D', sub: 'Multiplicador x2', icon: Shield, color: 'text-blue-600', isTitle: true }
-                    ].map((card, i) => (
-                      <div key={i} className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
-                         <div className="absolute right-0 bottom-0 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity translate-x-1/4 translate-y-1/4">
-                            <card.icon className="w-24 h-24" />
-                         </div>
-                         <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1">{card.label}</p>
-                         <h4 className={`text-2xl font-black tracking-tighter ${card.color} ${card.isTitle ? 'text-lg md:text-xl truncate' : 'text-3xl'}`}>
-                            {card.val}
-                         </h4>
-                         <p className="text-[11px] text-slate-500 font-bold mt-0.5">{card.sub}</p>
+                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className={`p-5 md:p-6 rounded-[32px] border transition-all hover:shadow-xl ${equipoData ? 'bg-white border-neutral/10' : 'bg-neutral-light/30 border-dashed border-neutral/20'}`}>
+                      <div className="flex items-center justify-between mb-8">
+                        <div className="w-12 h-12 bg-primary/5 rounded-2xl flex items-center justify-center border border-primary/10">
+                          <Shield className="w-6 h-6 text-primary" />
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[10px] uppercase tracking-widest text-neutral/50 font-medium mb-1">Mi Puntuación</p>
+                          <h4 className="text-3xl font-black text-primary leading-none">{equipoData?.puntosTotal || 0}</h4>
+                        </div>
                       </div>
-                    ))}
+                      
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-end border-b border-neutral/5 pb-3">
+                          <span className="text-xs text-neutral font-medium">Jugadores activos</span>
+                          <span className="text-sm font-black text-primary">{teamCount}<span className="text-neutral/30 font-medium ml-1">/15</span></span>
+                        </div>
+                        <div className="flex justify-between items-end">
+                          <span className="text-xs text-neutral font-medium">Rank Global</span>
+                          <span className="text-sm font-black text-primary">#{rankingInfo?.posicion || '--'}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* MVP de la Fecha */}
+                    <div className="bg-white border border-neutral/10 p-5 md:p-6 rounded-[32px] transition-all hover:shadow-xl group relative overflow-hidden">
+                      <div className="flex items-center justify-between mb-8 relative z-10">
+                        <div className="w-12 h-12 bg-accent/5 rounded-2xl flex items-center justify-center border border-accent/10">
+                          <Zap className="w-6 h-6 text-accent" />
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[10px] uppercase tracking-widest text-neutral/50 font-medium mb-1">MVP de Fecha</p>
+                          <h4 className="text-sm font-black text-primary truncate max-w-[120px]">
+                            {mvp ? mvp.nombre : 'S/D'}
+                          </h4>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-end justify-between relative z-10">
+                        <div>
+                           <p className="text-[10px] font-medium text-neutral/40 uppercase tracking-tighter mb-0.5">Puntos MVP</p>
+                           <span className="text-2xl font-black text-accent">{mvp?.puntos || 0}</span>
+                        </div>
+                        {mvp && (
+                           <span className="text-[9px] font-black text-accent bg-accent/5 px-2 py-1 rounded-lg border border-accent/10 uppercase tracking-widest">
+                             {mvp.categoria}
+                           </span>
+                        )}
+                      </div>
+                      <Activity className="absolute -bottom-6 -right-6 w-24 h-24 text-accent/5 group-hover:scale-110 transition-transform duration-700" />
+                    </div>
+
+                    {/* Entrenador de la Fecha */}
+                    <div className="bg-primary p-5 md:p-6 rounded-[32px] shadow-xl shadow-primary/20 relative overflow-hidden group">
+                      <div className="flex items-center justify-between mb-8 relative z-10 text-white/90">
+                        <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/20">
+                          <Medal className="w-6 h-6 text-white" />
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[10px] uppercase tracking-widest text-white/50 font-medium mb-1 text-sky-200">Coach de Fecha</p>
+                          <h4 className="text-sm font-black text-white truncate max-w-[120px]">
+                            {entrenadorFecha ? entrenadorFecha.nombre : 'S/D'}
+                          </h4>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-end justify-between relative z-10">
+                        <div>
+                           <p className="text-[10px] font-medium text-white/50 uppercase tracking-tighter mb-0.5">Puntos Coach</p>
+                           <span className="text-2xl font-black text-white">{entrenadorFecha?.puntos || 0}</span>
+                        </div>
+                        <Link to="/dashboard?tab=ranking" className="bg-white/10 hover:bg-white/20 p-2 rounded-xl transition-colors border border-white/10">
+                          <ChevronRight className="w-4 h-4 text-white" />
+                        </Link>
+                      </div>
+                      <Trophy className="absolute -bottom-6 -left-6 w-24 h-24 text-white/5 group-hover:rotate-12 transition-transform duration-700" />
+                    </div>
                  </div>
               </section>
 
@@ -321,18 +340,6 @@ export default function Resumenes() {
                  </div>
                  
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Entrenador de la Fecha */}
-                    <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex items-center justify-between border-l-4 border-l-primary">
-                       <div className="flex flex-col">
-                          <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1">Entrenador de la Fecha</span>
-                          <span className="text-lg font-black text-slate-800 leading-none">{entrenadorFecha?.nombre || 'Calculando...'}</span>
-                          <span className="text-xs font-bold text-primary mt-2">{entrenadorFecha?.puntos || 0} pts sumados</span>
-                       </div>
-                       <div className="bg-slate-50 p-3 rounded-full">
-                          <Star className="w-6 h-6 text-primary" />
-                       </div>
-                    </div>
-
                     {/* Más elegido Fecha */}
                     <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex items-center justify-between border-l-4 border-l-emerald-500">
                        <div className="flex flex-col">
@@ -350,7 +357,7 @@ export default function Resumenes() {
                        <div className="flex flex-col">
                           <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1">Capitán más elegido</span>
                           <span className="text-lg font-black text-slate-800 leading-none">{marketMetrics?.mostCapitanHist?.nombre || 'S/D'}</span>
-                          <span className="text-xs font-bold text-accent mt-2">Liderazgo favorito</span>
+                          <span className="text-xs font-medium text-accent mt-2">Liderazgo favorito</span>
                        </div>
                        <div className="bg-orange-50 p-3 rounded-full">
                           <Shield className="w-6 h-6 text-accent" />
@@ -362,7 +369,7 @@ export default function Resumenes() {
                        <div className="flex flex-col">
                           <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1">Más Penalizado</span>
                           <span className="text-lg font-black text-slate-800 leading-none">{marketMetrics?.mostPenalized?.nombre || 'Limpio'}</span>
-                          <span className="text-xs font-bold text-red-600 mt-2">-{marketMetrics?.mostPenalized?.penaltyPoints || 0} pts disciplina</span>
+                          <span className="text-xs font-medium text-red-600 mt-2">-{marketMetrics?.mostPenalized?.penaltyPoints || 0} pts disciplina</span>
                        </div>
                        <div className="bg-red-50 p-3 rounded-full">
                           <Zap className="w-6 h-6 text-red-500" />
@@ -393,9 +400,9 @@ export default function Resumenes() {
                          </div>
                          <div className="flex items-baseline gap-1">
                             <span className={`text-4xl font-black ${item.c}`}>{item.neg ? '-' : '+'}{item.v}</span>
-                            <span className="text-slate-400 text-xs font-bold">pts</span>
+                            <span className="text-slate-400 text-xs font-medium">pts</span>
                          </div>
-                         <p className="text-[10px] text-slate-400 font-bold uppercase mt-2">{item.sub}</p>
+                         <p className="text-[10px] text-slate-400 font-medium uppercase mt-2">{item.sub}</p>
                       </div>
                     ))}
                  </div>
@@ -434,7 +441,7 @@ export default function Resumenes() {
                           </div>
                           <div className="flex-1">
                              <h4 className="font-black text-slate-800 text-sm leading-none group-hover:text-primary transition-colors">{p.nombre}</h4>
-                             <p className="text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-wider">{p.categoria}</p>
+                             <p className="text-[10px] text-slate-400 font-medium uppercase mt-1 tracking-wider">{p.categoria}</p>
                           </div>
                           <div className="text-right">
                              <div className="text-lg font-black text-primary leading-none">{p.puntos}</div>
@@ -485,7 +492,7 @@ export default function Resumenes() {
                       </div>
                       <h4 className="font-black text-white text-4xl mb-2 tracking-tighter uppercase">CAMPEÓN</h4>
                       <p className="text-accent font-black text-2xl uppercase tracking-widest">Botines</p>
-                      <p className="text-white/60 text-xs font-bold uppercase mt-1 tracking-tighter">GAMA ALTA (A Elección)</p>
+                      <p className="text-white/60 text-xs font-medium uppercase mt-1 tracking-tighter">GAMA ALTA (A Elección)</p>
                    </div>
                    <div className="h-6 bg-primary-light rounded-b-[2.5rem]"></div>
                 </div>
