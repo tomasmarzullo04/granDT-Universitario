@@ -35,7 +35,6 @@ export default function PlayersTab() {
     const channel = supabase
       .channel('public:estadisticas_partido')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'estadisticas_partido' }, () => {
-        console.log('🔄 Estadísticas actualizadas, recargando...');
         load();
       })
       .subscribe();

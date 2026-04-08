@@ -96,7 +96,7 @@ export default function Resumenes() {
         };
 
       } catch (err) {
-        console.error('Error loading resumen data:', err);
+        // Error silenciado para producción, solo loguear en desarrollo si fuera necesario
       } finally {
         setLoading(false);
       }
@@ -355,10 +355,10 @@ export default function Resumenes() {
             </div>
 
             {/* Sidebar (Right) */}
-            <div className="lg:col-span-4 space-y-8">
+            <div className="lg:col-span-4 flex flex-col gap-8">
               
-              {/* Bloque Identidad "VAMOS UNI" */}
-              <div className="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center text-center group">
+              {/* Bloque Identidad "VAMOS UNI" - Arriba en Desktop, Abajo en Mobile */}
+              <div className="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center text-center group order-2 md:order-1">
                  <div className="w-24 h-24 mb-6 relative">
                     <img 
                       src="/escudo.jpg" 
@@ -371,8 +371,8 @@ export default function Resumenes() {
                  <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-2">Club Universitario MDP</p>
               </div>
 
-              {/* Top 5 del Torneo */}
-              <section className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+              {/* Top 5 del Torneo - Arriba en Mobile, Abajo en Desktop */}
+              <section className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden order-1 md:order-2">
                  <div className="p-6 bg-primary text-white flex items-center justify-between">
                     <h3 className="font-black uppercase tracking-tight text-sm">Top 5 del Torneo</h3>
                     <Trophy className="w-4 h-4 text-accent" />
