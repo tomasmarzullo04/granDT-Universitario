@@ -18,6 +18,25 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;700;900&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
+    <!-- Diagnostic Script -->
+    <script>
+      window.onerror = function(msg, url, lineNo, columnNo, error) {
+        var div = document.createElement('div');
+        div.style.position = 'fixed';
+        div.style.top = '0';
+        div.style.left = '0';
+        div.style.width = '100%';
+        div.style.backgroundColor = 'red';
+        div.style.color = 'white';
+        div.style.padding = '10px';
+        div.style.zIndex = '999999';
+        div.style.fontSize = '12px';
+        div.style.wordBreak = 'break-all';
+        div.innerHTML = '<strong>Error Detectado:</strong> ' + msg + '<br>Línea: ' + lineNo + '<br>' + (error ? error.stack : '');
+        document.body.appendChild(div);
+        return false;
+      };
+    </script>
   </head>
   <body>
     <div id="root"></div>
