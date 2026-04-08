@@ -187,15 +187,35 @@ export default function AdminDragDropBuilder() {
   };
 
   const toggleCategoryLock = (cat) => {
+    if (categoryLocks[cat] === 'editing') {
+       const count = planteles[cat].filter(Boolean).length;
+       if (count < 15) {
+          setError(`No puedes guardar ${cat} con solo ${count}/15 jugadores. Completa el equipo primero.`);
+          setTimeout(() => setError(null), 3000);
+          return;
+       }
+    }
+    
     setCategoryLocks(prev => ({
       ...prev,
       [cat]: prev[cat] === 'editing' ? 'saved' : 'editing'
     }));
     setInteractionState({ type: 'NONE', target: null });
+    setError(null);
   };
 
   const handleSave = async () => {
-    if (!activeFecha) return;
+    const incomplete = Object.entries(planteles).find(([cat, p]) => p.filter(Boolean).length < 15);
+    if (incomplete) {
+       setError(`No puedes publicar. La categoría ${incomplete[0]} está incompleta (${incomplete[1].filter(Boolean).length}/15).`);
+       return;
+    }
+
+    if (!allSaved) {
+       setError("Debes GUARDAR las tres categorías antes de publicar.");
+       return;
+    }
+
     setSaving(true);
     setError(null);
     setSuccess(false);
@@ -361,7 +381,7 @@ export default function AdminDragDropBuilder() {
             return (
               <div
                 key={i}
-                className={`absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-300 w-[60px] h-[60px] md:w-[75px] md:h-[75px] ${
+                className={`absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-300 w-[50px] h-[50px] md:w-[75px] md:h-[75px] ${
                   (isActiveSlot || (isWaitingSlot && !player)) ? 'scale-110 z-20' : 'z-10'
                 }`}
                 style={{ top: pos.top, left: pos.left }}
@@ -372,18 +392,18 @@ export default function AdminDragDropBuilder() {
                 {player ? (
                   <div className={`relative group w-full h-full flex items-center justify-center ${isLocked ? 'cursor-default' : 'cursor-pointer animate-fade-in'}`}>
                     {/* Circle with Full Name */}
-                    <div className="w-12 h-12 md:w-16 md:h-16 rounded-full border-2 border-white shadow-xl overflow-hidden bg-primary relative transition-all duration-300 group-hover:scale-110 flex items-center justify-center p-2 text-center">
+                    <div className="w-10 h-10 md:w-16 md:h-16 rounded-full border-2 border-white shadow-xl overflow-hidden bg-primary relative transition-all duration-300 group-hover:scale-110 flex items-center justify-center p-1.5 text-center">
                        {player.foto_url && (
                          <img src={player.foto_url} alt={player.nombre} className="absolute inset-0 w-full h-full object-cover opacity-40" />
                        )}
-                       <p className="relative z-10 text-[7px] md:text-[8.5px] font-black text-white uppercase tracking-[0.2em] leading-tight font-bebas break-words">
+                       <p className="relative z-10 text-[6px] md:text-[8.5px] font-black text-white uppercase tracking-[0.15em] leading-[1] font-bebas break-words">
                          {player.nombre}
                        </p>
                     </div>
 
                     {/* Position Badge (Outside) */}
-                    <div className="absolute -top-1 -right-1 w-6 h-6 bg-white border-2 border-primary rounded-full flex items-center justify-center shadow-lg z-20">
-                       <span className="text-[10px] font-black text-primary font-bebas">{i + 1}</span>
+                    <div className="absolute -top-1 -right-1 w-5 h-5 md:w-6 md:h-6 bg-white border-2 border-primary rounded-full flex items-center justify-center shadow-lg z-20">
+                       <span className="text-[8px] md:text-[10px] font-black text-primary font-bebas">{i + 1}</span>
                     </div>
 
                     {!isLocked && (
@@ -405,10 +425,10 @@ export default function AdminDragDropBuilder() {
                         : 'bg-black/10 border-white/20 border-dashed hover:bg-white/5 hover:border-white/30'
                     }
                   `}>
-                    <span className={`font-bebas text-lg leading-none ${isActiveSlot ? 'text-white' : 'text-white/20'}`}>
+                    <span className={`font-bebas text-sm md:text-lg leading-none ${isActiveSlot ? 'text-white' : 'text-white/20'}`}>
                       {i + 1}
                     </span>
-                    <span className={`text-[7px] font-black uppercase tracking-widest ${isActiveSlot ? 'text-white' : 'text-white/10'}`}>
+                    <span className={`text-[6px] md:text-[7px] font-black uppercase tracking-widest ${isActiveSlot ? 'text-white' : 'text-white/10'}`}>
                       {pos.label.split(' ')[0]}
                     </span>
                   </div>

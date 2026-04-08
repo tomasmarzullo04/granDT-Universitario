@@ -8,8 +8,8 @@ export const PITCH_POSITIONS = [
   { top: '16%', left: '60%', label: 'SEGUNDA 5' },
   // Forwards - Row 3
   { top: '26%', left: '28%', label: 'TERCERA 6' },
-  { top: '28%', left: '50%', label: 'OCTAVO' },
   { top: '26%', left: '72%', label: 'TERCERA 7' },
+  { top: '28%', left: '50%', label: 'OCTAVO' },
   // Backs - The Diagonal / Pivot
   { top: '42%', left: '42%', label: 'MEDIO SCRUM' },
   { top: '52%', left: '62%', label: 'APERTURA' },
