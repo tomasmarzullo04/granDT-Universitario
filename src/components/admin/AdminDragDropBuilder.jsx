@@ -590,3 +590,46 @@ const POSITION_MAP = {
   );
 }
 
+function PitchSlot({ num, label, player, isSelected, onSlotClick, onRemove, onDrop }) {
+  return (
+    <div 
+      onClick={onSlotClick}
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={onDrop}
+      className={`
+        relative w-16 h-16 md:w-20 md:h-20 rounded-full border-2 border-dashed
+        flex flex-col items-center justify-center transition-all cursor-pointer group
+        ${isSelected ? 'bg-yellow-400/30 border-yellow-400 scale-110 shadow-lg z-20' : 
+          player ? 'bg-white border-white scale-105 shadow-md shadow-black/10' : 'bg-white/10 border-white/20 hover:bg-white/20'}
+      `}
+    >
+      {!player && (
+        <>
+          <span className="text-[10px] md:text-xs font-black text-white/40">{num}</span>
+          <span className="text-[8px] md:text-[10px] font-black text-white/30 uppercase tracking-tighter">{label}</span>
+        </>
+      )}
+
+      {player && (
+        <div className="flex flex-col items-center text-center animate-fade-in px-1">
+          <div className="w-8 h-8 md:w-10 md:h-10 bg-primary text-white rounded-lg flex items-center justify-center font-black text-[10px] md:text-xs mb-1 shadow-sm">
+            {label}
+          </div>
+          <p className="text-[8px] md:text-[10px] font-black text-primary leading-tight truncate w-full">
+            {player.nombre.split(' ')[0]}
+          </p>
+          <button 
+            onClick={onRemove}
+            className="absolute -top-1 -right-1 bg-red-500 text-white w-5 h-5 rounded-full flex items-center justify-center shadow-md active:scale-95 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+          >
+            <span className="text-xs">×</span>
+          </button>
+        </div>
+      )}
+
+      {isSelected && (
+        <div className="absolute inset-0 rounded-full border-4 border-yellow-400 animate-pulse pointer-events-none"></div>
+      )}
+    </div>
+  );
+}
