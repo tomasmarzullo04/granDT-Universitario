@@ -310,7 +310,7 @@ export default function MiEquipo() {
     );
   }
 
-  if (matchdayStatus === APP_STATUS.RESULTADOS_LISTOS && activeFecha) {
+  if (matchdayStatus === APP_STATUS.RESULTADOS_PUBLICADOS && activeFecha) {
     return (
       <div className="space-y-6 animate-fade-in">
         <div className="flex items-center gap-3 bg-white rounded-2xl border border-neutral/20 shadow-sm px-6 py-4">
@@ -908,7 +908,7 @@ export default function MiEquipo() {
                   >
                     {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
                     {isLocked 
-                      ? (isWaiting ? 'PREPARANDO PRÓXIMA FECHA' : 'VENTANA CERRADA')
+                      ? (matchdayStatus === APP_STATUS.ESPERANDO_PLANTELES ? 'PREPARANDO PRÓXIMA FECHA' : 'VENTANA CERRADA')
                       : (isComplete
                         ? '¡FINALIZAR EDICIÓN Y GUARDAR!'
                         : (selectedPlayers.length === 0 ? 'GUARDAR EQUIPO' : `GUARDAR PROGRESO (${selectedPlayers.length}/15)`))}

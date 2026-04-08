@@ -12,6 +12,7 @@ import {
   ChevronRight, CalendarDays, Loader2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import Navigation from '../components/Navigation';
 
 // --- CACHE GLOBAL PARA PERSISTENCIA DE ESTADO ---
 let dashboardCache = {
@@ -75,7 +76,7 @@ export default function Resumenes() {
         if (userRankIndex !== -1) {
           const info = {
             posicion: userRankIndex + 1,
-            puntosTotalesCampaña: ranking[userRankIndex].puntos
+            "puntosTotales Campaña": ranking[userRankIndex].puntos
           };
           setRankingInfo(info);
           dashboardCache.rankingInfo = info;
@@ -223,6 +224,11 @@ export default function Resumenes() {
       };
     }
 
+    // --- Lógica de Título Dinámico ---
+    const bannerTitle = lastResultsMatch && lastResultsData?.items?.length > 0
+      ? `RESUMEN FECHA ${lastResultsMatch.numero_fecha}`
+      : "RESUMEN GENERAL";
+
     return (
       <div className={`
         ${bannerConfig.bg} rounded-[32px] border ${bannerConfig.border} p-5 md:p-6 mb-8 relative overflow-hidden transition-all animate-fade-in
@@ -233,7 +239,7 @@ export default function Resumenes() {
           </div>
           <div className="flex-1">
             <h3 className={`text-lg font-black tracking-tight ${bannerConfig.textColor}`}>
-              {bannerConfig.title}
+              {bannerTitle}
             </h3>
             <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 mt-1">
                <p className={`text-sm font-medium ${status === APP_STATUS.RESULTADOS_PUBLICADOS ? 'text-white/90' : 'text-neutral/70'}`}>
@@ -260,23 +266,30 @@ export default function Resumenes() {
 
   return (
     <PlayerLayout>
-      <div className="min-h-screen bg-slate-50/50 -mx-4 -mt-4 px-4 pt-6 pb-20 overflow-x-hidden">
-        <div className="max-w-5xl mx-auto">
-          
-          {/* Top Banner Refined */}
-          {renderBanner()}
+      <div className="flex flex-col gap-6 relative">
+        <Navigation />
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             
             {/* Main Content (Left) */}
             <div className="lg:col-span-8 space-y-8">
+              
+              {/* Top Banner Refined */}
+              {renderBanner()}
               
               {/* Rendimiento (Dashboard Pro) */}
               <section>
                  <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                        <Activity className="w-6 h-6 text-primary" />
-                       <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">RESUMEN FECHA ANTERIOR ({lastResultsMatch?.rival || '...'})</h2>
+                       <h2 className="text-3xl font-black text-primary uppercase tracking-tighter">
+                  {status === APP_STATUS.ESPERANDO_PLANTELES && upcomingMatch
+                    ? `PRÓXIMA FECHA: ${upcomingMatch.rival}`
+                    : status === APP_STATUS.ESPERANDO_PLANTELES
+                      ? 'RESUMEN GENERAL'
+                      : `RESUMEN FECHA ANTERIOR (${lastResultsMatch?.rival || 'S/D'} - ${lastResultsMatch?.rival?.split('-')[1]?.trim() || ''})`
+                  }
+              </h2>
                     </div>
                  </div>
  
@@ -367,12 +380,12 @@ export default function Resumenes() {
                     <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">Estadísticas Individuales</h2>
                  </div>
                  
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Más elegido Fecha */}
-                    <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex items-center justify-between border-l-4 border-l-emerald-500">
+                    <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex items-center justify-between border-l-4 border-l-emerald-500 min-h-[110px]">
                        <div className="flex flex-col">
                           <span className="text-[10px] text-slate-400 font-medium uppercase tracking-widest mb-1">Más elegido (Esta Fecha)</span>
-                          <span className="text-lg font-black text-slate-800 leading-none">{marketMetrics?.mostElegidoFecha?.nombre || '...' }</span>
+                          <span className="text-lg font-black text-slate-800 leading-none">{marketMetrics?.mostElegidoFecha?.nombre || 'S/D' }</span>
                           <span className="text-xs font-medium text-emerald-600 mt-2">{marketMetrics?.mostElegidoFecha?.count || 0} elecciones</span>
                        </div>
                        <div className="bg-emerald-50 p-3 rounded-full">
@@ -381,11 +394,11 @@ export default function Resumenes() {
                     </div>
 
                     {/* Capitán más elegido */}
-                    <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex items-center justify-between border-l-4 border-l-accent">
+                    <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex items-center justify-between border-l-4 border-l-accent min-h-[110px]">
                        <div className="flex flex-col">
                           <span className="text-[10px] text-slate-400 font-medium uppercase tracking-widest mb-1">Capitán más elegido</span>
                           <span className="text-lg font-black text-slate-800 leading-none">{marketMetrics?.mostCapitanHist?.nombre || 'S/D'}</span>
-                          <span className="text-xs font-medium text-accent mt-2">Liderazgo favorito</span>
+                          <span className="text-xs font-medium text-accent mt-2">{marketMetrics?.mostCapitanHist?.count || 0} elecciones</span>
                        </div>
                        <div className="bg-orange-50 p-3 rounded-full">
                           <Shield className="w-6 h-6 text-accent" />
@@ -393,17 +406,29 @@ export default function Resumenes() {
                     </div>
 
                     {/* Más Tarjetas */}
-                    <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex items-center justify-between border-l-4 border-l-red-500">
+                    <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex items-center justify-between border-l-4 border-l-red-500 min-h-[110px]">
                        <div className="flex flex-col">
                           <span className="text-[10px] text-slate-400 font-medium uppercase tracking-widest mb-1">Más Penalizado</span>
-                          <span className="text-lg font-black text-slate-800 leading-none">{marketMetrics?.mostPenalized?.nombre || 'Limpio'}</span>
+                          <span className="text-lg font-black text-slate-800 leading-none">{marketMetrics?.mostPenalized?.nombre || 'S/D'}</span>
                           <span className="text-xs font-medium text-red-600 mt-2">-{marketMetrics?.mostPenalized?.penaltyPoints || 0} pts disciplina</span>
                        </div>
                        <div className="bg-red-50 p-3 rounded-full">
                           <Zap className="w-6 h-6 text-red-500" />
                        </div>
                     </div>
-                 </div>
+
+                    {/* Entrenador de la Fecha */}
+                    <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex items-center justify-between border-l-4 border-l-primary min-h-[110px]">
+                       <div className="flex flex-col">
+                          <span className="text-[10px] text-slate-400 font-medium uppercase tracking-widest mb-1">Entrenador de la Fecha</span>
+                          <span className="text-lg font-black text-slate-800 leading-none">{entrenadorFecha?.nombre || 'S/D'}</span>
+                          <span className="text-xs font-medium text-primary mt-2">{entrenadorFecha?.puntos || 0} puntos totales</span>
+                       </div>
+                       <div className="bg-primary/5 p-3 rounded-full">
+                          <Medal className="w-6 h-6 text-primary" />
+                       </div>
+                    </div>
+                  </div>
               </section>
 
               {/* Desglose Táctico */}
@@ -544,9 +569,7 @@ export default function Resumenes() {
                 <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.3em]">Cierre de Torneo: Temporada Regular 2026</p>
              </div>
           </section>
-
         </div>
-      </div>
-    </PlayerLayout>
-  );
+      </PlayerLayout>
+    );
 }

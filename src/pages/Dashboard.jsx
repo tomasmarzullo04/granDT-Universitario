@@ -9,44 +9,16 @@ import ProximasFechas from '../components/ProximasFechas';
 import HistorialTab from '../components/tabs/HistorialTab';
 import { getActiveFecha } from '../lib/api';
 
+import Navigation from '../components/Navigation';
+
 export default function Dashboard() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'equipo';
-
-  const tabs = [
-    { id: 'equipo', label: 'Mi Equipo', icon: Users },
-    { id: 'jugadores', label: 'Jugadores', icon: Users },
-    { id: 'ranking', label: 'Ranking', icon: Trophy },
-    { id: 'fechas', label: 'Fechas', icon: CalendarDays },
-    { id: 'historial', label: 'Historial', icon: History },
-  ];
-
-  const setActiveTab = (id) => {
-    setSearchParams({ tab: id });
-  };
-
-  // No longer needed: checkCierre() logic removed as it's now handled as a banner in MiEquipo
 
   return (
     <PlayerLayout>
       <div className="flex flex-col gap-6 relative">
-        {/* Navigation Tabs (Desktop Only) */}
-        <div className="hidden sm:flex bg-white p-1.5 rounded-2xl border border-neutral/20 shadow-sm sticky top-[80px] z-40 overflow-x-auto no-scrollbar">
-          {tabs.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-black transition-all whitespace-nowrap ${
-                activeTab === tab.id 
-                  ? 'bg-primary text-white shadow-lg scale-[1.02]' 
-                  : 'text-neutral hover:bg-neutral-light'
-              }`}
-            >
-              <tab.icon className="w-4 h-4" />
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        <Navigation />
 
         {/* Tab Content */}
         <div className="animate-fade-in min-h-[500px]">

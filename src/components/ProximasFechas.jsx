@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getAllFechas, getActiveFecha } from '../lib/api';
+import { getAllFechas, getLiveStatus, APP_STATUS } from '../lib/api';
 import { CalendarDays, MapPin } from 'lucide-react';
 
 export default function ProximasFechas() {
@@ -8,17 +8,24 @@ export default function ProximasFechas() {
 
   useEffect(() => {
     async function loadFechas() {
-      // Obtenemos todas y la activa
+      // Obtenemos todas, la activa y el estado real
+      const { activeMatchday, status } = await getLiveStatus();
       const all = await getAllFechas();
-      const activa = await getActiveFecha();
       
-      const numeroActual = activa ? activa.numero_fecha : 0;
+      const numeroActual = activeMatchday ? activeMatchday.numero_fecha : 0;
       
-      // Filtramos las futuras (ordenadas ascendentemente)
+      // Filtramos: 
+      // 1. Incluimos la activa si el mercado está abierto o se están cargando planteles (para que no parezca que falta)
+      // 2. Incluimos las futuras
       const proximas = all
-        .filter(f => f.numero_fecha > numeroActual)
+        .filter(f => {
+          if (activeMatchday && f.id === activeMatchday.id) {
+            return status === APP_STATUS.ARMADO_EQUIPO || status === APP_STATUS.ESPERANDO_PLANTELES;
+          }
+          return f.numero_fecha > numeroActual;
+        })
         .sort((a, b) => a.numero_fecha - b.numero_fecha)
-        .slice(0, 3); // Tomamos 3
+        .slice(0, 4); // Tomamos hasta 4 para compensar si incluimos la activa
         
       setFechas(proximas);
       setLoading(false);

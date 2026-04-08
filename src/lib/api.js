@@ -161,11 +161,13 @@ export async function getConvocados(fechaId) {
 
   try {
     return data
-      .filter(convocado => convocado.jugadores !== null)
+      .filter(convocado => convocado && convocado.jugadores)
       .map(convocado => {
         const playerInfo = Array.isArray(convocado.jugadores)
           ? convocado.jugadores[0]
           : convocado.jugadores;
+
+        if (!playerInfo) return null;
 
         return {
           ...playerInfo,
@@ -178,7 +180,8 @@ export async function getConvocados(fechaId) {
               ? convocado.categoria.toLowerCase()
               : 'primera',
         };
-      });
+      })
+      .filter(Boolean); // Remover nulls
   } catch (err) {
     console.error('Error mapping convocados data:', err);
     return [];
@@ -740,8 +743,9 @@ export async function getEntrenadorDeLaFecha(fechaId) {
     .maybeSingle();
 
   if (ranking) {
+    const profile = Array.isArray(ranking.profiles) ? ranking.profiles[0] : ranking.profiles;
     return {
-      nombre: ranking.profiles?.full_name || 'S/D',
+      nombre: profile?.full_name || 'S/D',
       puntos: ranking.puntos_fecha
     };
   }
@@ -749,10 +753,18 @@ export async function getEntrenadorDeLaFecha(fechaId) {
   // 2. Fallback: Cálculo on-the-fly para esta fecha específica
   const [statsRes, teamsRes] = await Promise.all([
     supabase.from('estadisticas_partido').select('*').eq('fecha_id', fechaId),
-    supabase.from('equipos_usuarios').select('usuario_id, jugador_id, capitan_id, profiles(full_name)').eq('fecha_id', fechaId)
+    supabase.from('equipos_usuarios').select('usuario_id, jugador_id, capitan_id').eq('fecha_id', fechaId)
   ]);
 
   if (statsRes.error || teamsRes.error || !teamsRes.data.length) return null;
+
+  // 3. Obtener perfiles por separado para evitar errores de relación (Robusto)
+  const userIds = [...new Set(teamsRes.data.map(t => t.usuario_id))];
+  const { data: profiles } = await supabase.from('profiles').select('id, full_name').in('id', userIds);
+  const profilesMap = (profiles || []).reduce((acc, p) => {
+    acc[p.id] = p.full_name;
+    return acc;
+  }, {});
 
   const statsMap = (statsRes.data || []).reduce((acc, s) => {
     acc[s.jugador_id] = s;
@@ -767,7 +779,8 @@ export async function getEntrenadorDeLaFecha(fechaId) {
     const isCaptain = sel.jugador_id === sel.capitan_id;
     const pts = calcularPuntosJugador(stat, isCaptain);
     scoresMap[sel.usuario_id] = (scoresMap[sel.usuario_id] || 0) + pts;
-    if (sel.profiles?.full_name) namesMap[sel.usuario_id] = sel.profiles.full_name;
+    const name = profilesMap[sel.usuario_id];
+    if (name) namesMap[sel.usuario_id] = name;
   });
 
   const topUserId = Object.keys(scoresMap).reduce((a, b) => scoresMap[a] > scoresMap[b] ? a : b, null);
