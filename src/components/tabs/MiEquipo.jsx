@@ -111,37 +111,8 @@ export default function MiEquipo() {
           });
           setPitchSlots(newSlots);
           setCaptainId(finalCaptainId);
-        } else {
-          // 3. FALLBACK: Buscar la última fecha con equipo
-          const { data: lastTeamSelection } = await supabase
-            .from('equipos_usuarios')
-            .select('jugador_id, posicion_cancha, capitan_id, fecha_id')
-            .eq('usuario_id', user.id)
-            .order('created_at', { ascending: false })
-            .limit(15);
-
-          if (lastTeamSelection && lastTeamSelection.length > 0) {
-            const lastFechaId = lastTeamSelection[0].fecha_id;
-            const lastPlayerIds = lastTeamSelection.map(s => s.jugador_id);
-            const { data: lastPlayersData } = await supabase
-              .from('jugadores')
-              .select('id, nombre')
-              .in('id', lastPlayerIds);
-
-            if (lastPlayersData) {
-              finalCaptainId = lastTeamSelection[0].capitan_id;
-              const newSlots = Array(15).fill(null);
-              lastTeamSelection.forEach(s => {
-                const p = lastPlayersData.find(x => x.id === s.jugador_id);
-                if (p && s.posicion_cancha >= 1 && s.posicion_cancha <= 15) {
-                  newSlots[s.posicion_cancha - 1] = { ...p, categoryKey: 'primera' }; 
-                }
-              });
-              setPitchSlots(newSlots);
-              setCaptainId(finalCaptainId);
-            }
-          }
         }
+        // Eliminado Fallback de fecha anterior para obligar a re-armar equipo (Req. Automización V3)
       } catch (err) {
         console.error('Error init MiEquipo:', err);
       } finally {
@@ -163,8 +134,9 @@ export default function MiEquipo() {
   }, [selectedPlayers]);
   
   // ── CICLO SEMANAL: Lógica de bloqueo ──
-  const isLocked = forceOpen ? false : matchdayStatus !== APP_STATUS.MERCADO_ABIERTO;
-  const isTransition = matchdayStatus === APP_STATUS.MERCADO_CERRADO && !activeFecha;
+  const canEdit = matchdayStatus === APP_STATUS.ARMADO_EQUIPO || forceOpen;
+  const isLocked = !canEdit;
+  const isTransition = matchdayStatus === APP_STATUS.RESULTADOS_PUBLICADOS && !activeFecha;
 
   const isComplete = isAdmin 
     ? selectedPlayers.length === 15 
@@ -273,14 +245,6 @@ export default function MiEquipo() {
 
   const handlePositionClick = (index) => {
     if (!isEditing || isLocked) return;
-
-    // Si ya hay un jugador seleccionado (Selección Cruzada: Jugador -> Puesto)
-    if (activePlayerMenu) {
-      assignToSlot(activePlayerMenu, index);
-      setActivePlayerMenu(null);
-      setSelectedPosition(null);
-      return;
-    }
 
     if (pitchSlots[index]) {
       removeFromSlot({ stopPropagation: () => {} }, index);
@@ -769,28 +733,38 @@ export default function MiEquipo() {
                 </div>
                 
                 <div className="flex-1 overflow-y-auto p-2 sm:p-3 grid grid-cols-2 gap-2 custom-scrollbar bg-neutral-light/20 content-start relative min-h-[400px]">
-                  {matchdayStatus === APP_STATUS.MERCADO_CERRADO && !forceOpen ? (
+                  {isLocked ? (
                     <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-white/50 backdrop-blur-sm z-20 animate-fade-in">
-                       <div className="w-16 h-16 bg-primary/5 rounded-full flex items-center justify-center mb-6 border-2 border-dashed border-primary/20 animate-pulse">
+                       <div className="w-16 h-16 bg-primary/5 rounded-full flex items-center justify-center mb-6 border-2 border-dashed border-primary/20">
                           <Lock className="w-6 h-6 text-primary/30" />
                        </div>
-                       <h5 className="font-black text-primary text-sm uppercase tracking-tighter mb-2">Cerrado por Preparación</h5>
+                       <h5 className="font-black text-primary text-sm uppercase tracking-tighter mb-2">
+                          {matchdayStatus === APP_STATUS.ESPERANDO_PLANTELES ? 'Esperando Planteles' : 'Mercado Cerrado'}
+                       </h5>
                        <p className="text-[10px] font-bold text-neutral/60 uppercase tracking-widest leading-relaxed">
-                          El Staff está definiendo los convocados para la próxima fecha.<br/>
-                          <span className="text-accent font-black">La ventana de selección abrirá en breve.</span>
+                          La ventana de selección no está disponible en este momento.<br/>
+                          <span className="text-accent font-black">Consultá el banner en el inicio.</span>
                        </p>
-                       
-                       <div className="mt-10 opacity-[0.05] grayscale pointer-events-none select-none">
-                          <img src="https://nniwyswxojkalelavdnn.supabase.co/storage/v1/object/public/logos/gilbert_ball.png" alt="" className="w-32 h-32 object-contain" onError={(e) => e.target.style.display = 'none'} />
-                       </div>
                     </div>
-                  ) : (
-                    convocados
-                      .filter(p => 
-                        p.categoryKey === poolCategory &&
-                        p.nombre.toLowerCase().includes(search.toLowerCase())
-                      )
-                      .map(player => {
+                  ) : null}
+
+                  {convocados
+                    .filter(p => 
+                      p.categoryKey === poolCategory &&
+                      p.nombre.toLowerCase().includes(search.toLowerCase())
+                    )
+                    .length === 0 ? (
+                      <div className="col-span-2 flex flex-col items-center justify-center p-12 text-center text-neutral opacity-40">
+                         <Search className="w-16 h-16 mb-4 animate-bounce" />
+                         <p className="font-black uppercase tracking-tighter">Sin resultados</p>
+                      </div>
+                    ) : (
+                      convocados
+                        .filter(p => 
+                          p.categoryKey === poolCategory &&
+                          p.nombre.toLowerCase().includes(search.toLowerCase())
+                        )
+                        .map(player => {
                         // ... current map logic ...
                         const isMenuOpen = activePlayerMenu?.id === player.id;
                         const isSelected = !!selectedPlayers.find(s => s.id === player.id);

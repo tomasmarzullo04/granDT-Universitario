@@ -45,67 +45,33 @@ export function calcularPuntosJugador(s, isCaptain = false) {
 // ==========================================
 
 export const APP_STATUS = {
-  ESPERANDO_CONVOCADOS: 'ESPERANDO_CONVOCADOS',
-  MERCADO_ABIERTO: 'MERCADO_ABIERTO',
-  MERCADO_CERRADO: 'MERCADO_CERRADO',
-  PROCESANDO: 'PROCESANDO',
-  RESULTADOS_LISTOS: 'RESULTADOS_LISTOS',
+  ESPERANDO_PLANTELES: 'ESPERANDO_PLANTELES',
+  ARMADO_EQUIPO: 'ARMADO_EQUIPO',
+  FECHA_EN_JUEGO: 'FECHA_EN_JUEGO',
+  ESPERANDO_STATS: 'ESPERANDO_STATS',
+  RESULTADOS_PUBLICADOS: 'RESULTADOS_PUBLICADOS'
 };
 
 /**
- * Determina dinámicamente el estado del torneo basándose en la fecha/hora actual.
- * Prioriza la automatización por timestamps sobre el estado manual.
+ * Determina dinámicamente el estado del torneo desde el backend (RPC).
  */
 export async function getLiveStatus() {
-  const now = new Date();
+  const { data, error } = await supabase.rpc('get_tournament_lifecycle_context');
   
-  const { data: fechas, error } = await supabase
-    .from('fechas')
-    .select('*')
-    .order('numero_fecha', { ascending: true });
-
-  if (error || !fechas || fechas.length === 0) {
-    return { activeMatchday: null, status: APP_STATUS.MERCADO_CERRADO };
+  if (error) {
+    console.error('Error fetching live status:', error);
+    // Fallback básico si falla el RPC (poco probable si la DB está ok)
+    return { activeMatchday: null, status: APP_STATUS.FECHA_EN_JUEGO };
   }
 
-  // 1. Prioridad: Fecha en la que estamos actualmente (desde inicio_semana hasta fin_fecha o sin stats_cargadas)
-  // Buscamos la primera fecha que NO esté finalizada (stats_cargadas = false)
-  let activeMatchday = fechas.find(f => !f.stats_cargadas);
-
-  // Si todas tienen stats_cargadas, mostramos la última como RESULTADOS_LISTOS
-  if (!activeMatchday) {
-    const last = fechas[fechas.length - 1];
-    return { activeMatchday: last, status: APP_STATUS.RESULTADOS_LISTOS };
-  }
-
-  // 2. Determinar estado de la fecha activa
-  if (activeMatchday.stats_cargadas) return { activeMatchday, status: APP_STATUS.RESULTADOS_LISTOS };
-
-  const inicio = activeMatchday.inicio_semana ? new Date(activeMatchday.inicio_semana) : new Date(0);
-  const cierre = activeMatchday.cierre_mercado ? new Date(activeMatchday.cierre_mercado) : new Date(0);
-  const fin = activeMatchday.fin_fecha ? new Date(activeMatchday.fin_fecha) : new Date(0);
-
-  if (now < cierre) {
-    // NUEVO: Verificar si ya hay convocados cargados para esta fecha
-    const { count } = await supabase
-      .from('convocados_fecha')
-      .select('*', { count: 'exact', head: true })
-      .eq('fecha_id', activeMatchday.id);
-    
-    if (!count || count === 0) {
-      return { activeMatchday, status: APP_STATUS.ESPERANDO_CONVOCADOS };
-    }
-    return { activeMatchday, status: APP_STATUS.MERCADO_ABIERTO };
-  } else if (now >= cierre && now < fin) {
-    return { activeMatchday, status: APP_STATUS.MERCADO_CERRADO };
-  } else {
-    // now >= fin pero stats_cargadas es false
-    return { activeMatchday, status: APP_STATUS.PROCESANDO };
-  }
+  return {
+    activeMatchday: data.activeMatchday,
+    status: data.status
+  };
 }
 
 /**
- * Retorna la última fecha que tiene resultados publicados oficialmente.
+ * Retorna la última fecha que tiene resultados publicados oficialmente EXCLUSIVAMENTE.
  */
 export async function getLastPublishedFecha() {
   const { data, error } = await supabase
@@ -114,11 +80,12 @@ export async function getLastPublishedFecha() {
     .eq('stats_cargadas', true)
     .order('numero_fecha', { ascending: false })
     .limit(1)
-    .maybeSingle();
+    .single();
   
-  if (error || !data) return null;
+  if (error) return null;
   return data;
 }
+
 
 export async function getActiveFecha() {
   // Priorizar automatización
@@ -416,88 +383,39 @@ export async function upsertEstadisticas(statsArray) {
 
 /**
  * PUBLICAR RESULTADOS FINALES:
- * 1. Guarda todas las stats de la fecha en estadisticas_partido.
- * 2. Calcula los puntos de cada usuario (sus 15 elegidos) en ranking_usuarios.
- * 3. Marca la fecha como 'finalizada'.
+ * Llama al procedimiento almacenado V3 (Transaccional, Idempotente, Atómico).
  */
 export async function publicarResultadosFecha(fechaId, allStatsArray) {
-  // 1. Guardar todas las estadísticas
-  await upsertEstadisticas(allStatsArray);
+  // allStatsArray debe ser mapeado al formato esperado por el JSONB de Postgres
+  const statsPayload = allStatsArray.map(s => ({
+    jugador_id: s.jugador_id,
+    tries: parseInt(s.tries || 0),
+    conversiones: parseInt(s.conversiones || 0),
+    penales: parseInt(s.penales || 0),
+    drops: parseInt(s.drops || 0),
+    amarillas: parseInt(s.amarillas || 0),
+    rojas: parseInt(s.rojas || 0),
+    penales_hechos: parseInt(s.penales_hechos || 0),
+    knock_ons: parseInt(s.knock_ons || 0),
+    lines_robados: parseInt(s.lines_robados || 0),
+    asistencias: parseInt(s.asistencias || 0),
+    cortes_limpios: parseInt(s.cortes_limpios || 0),
+    tackles: parseInt(s.tackles || 0)
+  }));
 
-  // 2. Leer equipos de todos los usuarios para esta fecha
-  const { data: equipos, error: eqErr } = await supabase
-    .from('equipos_usuarios')
-    .select('usuario_id, jugador_id, capitan_id')
-    .eq('fecha_id', fechaId);
-
-  if (eqErr) throw eqErr;
-
-  // 3. Leer estadísticas ya guardadas de esta fecha
-  const { data: statsData, error: stErr } = await supabase
-    .from('estadisticas_partido')
-    .select('*')
-    .eq('fecha_id', fechaId);
-
-  if (stErr) throw stErr;
-
-  // 4. Agrupar jugadores por usuario
-  const usuariosMap = {};
-  (equipos || []).forEach(row => {
-    if (!usuariosMap[row.usuario_id]) {
-      usuariosMap[row.usuario_id] = {
-        jugadorIds: [],
-        capitanId: row.capitan_id
-      };
-    }
-    usuariosMap[row.usuario_id].jugadorIds.push(row.jugador_id);
-  });
-  // 5. Calcular puntos por usuario
-  const rankingInserts = Object.entries(usuariosMap).map(([usuario_id, data]) => {
-    const { jugadorIds, capitanId } = data;
-    const puntosTotal = jugadorIds.reduce((sum, jId) => {
-      const st = (statsData || []).find(s => s.jugador_id === jId);
-      const isCaptain = jId === capitanId;
-      return sum + calcularPuntosJugador(st, isCaptain);
-    }, 0);
-
-    return {
-      usuario_id,
-      fecha_id: fechaId,
-      puntos_fecha: puntosTotal,
-    };
+  const { data, error } = await supabase.rpc('process_publication_v3', {
+    p_fecha_id: fechaId,
+    p_stats_json: statsPayload
   });
 
-  // 6. Upsert en ranking_usuarios
-  if (rankingInserts.length > 0) {
-    // Borramos los registros de esta fecha para asegurar que no haya duplicados
-    await supabase
-      .from('ranking_usuarios')
-      .delete()
-      .eq('fecha_id', fechaId);
-
-    const { error: insRankErr } = await supabase
-      .from('ranking_usuarios')
-      .insert(rankingInserts);
-
-    if (insRankErr) {
-      console.error('Error insertando en ranking_usuarios:', insRankErr.message);
-      throw insRankErr;
-    }
+  if (error) {
+    console.error('Error in publication RPC:', error);
+    throw error;
   }
 
-  // 7. Marcar fecha como finalizada y cargar stats
-  const { error: fechaErr } = await supabase
-    .from('fechas')
-    .update({ 
-      estado: 'finalizada',
-      stats_cargadas: true 
-    })
-    .eq('id', fechaId);
-
-  if (fechaErr) throw fechaErr;
-
-  return true;
+  return data;
 }
+
 
 // ==========================================
 // RANKING
@@ -526,13 +444,55 @@ export async function getRankingCompleto() {
     .from('ranking_usuarios')
     .select('usuario_id, puntos_fecha');
 
-  if (rErr) return [];
+  let totalPuntosMap = {};
 
-  // Agrupar puntos por usuario_id
-  const totalPuntosMap = (rankingData || []).reduce((acc, curr) => {
-    acc[curr.usuario_id] = (acc[curr.usuario_id] || 0) + curr.puntos_fecha;
-    return acc;
-  }, {});
+  if (!rErr && rankingData && rankingData.length > 0) {
+    // Caso A: Usar tabla procesada (Rápido)
+    totalPuntosMap = (rankingData || []).reduce((acc, curr) => {
+      acc[curr.usuario_id] = (acc[curr.usuario_id] || 0) + curr.puntos_fecha;
+      return acc;
+    }, {});
+  } else {
+    // Caso B: Cálculo on-the-fly (Automático)
+    const now = new Date();
+    const [statsRes, teamsRes, fechasRes] = await Promise.all([
+      supabase.from('estadisticas_partido').select('*'),
+      supabase.from('equipos_usuarios').select('usuario_id, jugador_id, capitan_id, fecha_id'),
+      supabase.from('fechas').select('*')
+    ]);
+
+    if (!statsRes.error && !teamsRes.error && !fechasRes.error) {
+      // Crear mapa de fechas para acceso rápido
+      const fechasMap = (fechasRes.data || []).reduce((acc, f) => {
+        acc[f.id] = f;
+        return acc;
+      }, {});
+
+      // Filtrar partidos terminados y no libres en JS
+      const filteredStats = (statsRes.data || []).filter(s => {
+        const fecha = fechasMap[s.fecha_id];
+        if (!fecha) return false;
+        const fin = new Date(fecha.fin_fecha);
+        const isLibre = fecha.rival?.toUpperCase().includes('FECHA LIBRE');
+        return now > fin && !isLibre;
+      });
+
+      const statsMap = filteredStats.reduce((acc, s) => {
+        const key = `${s.fecha_id}_${s.jugador_id}`;
+        acc[key] = s;
+        return acc;
+      }, {});
+
+      (teamsRes.data || []).forEach(sel => {
+        const stat = statsMap[`${sel.fecha_id}_${sel.jugador_id}`];
+        if (stat) {
+          const isCaptain = sel.jugador_id === sel.capitan_id;
+          const pts = calcularPuntosJugador(stat, isCaptain);
+          totalPuntosMap[sel.usuario_id] = (totalPuntosMap[sel.usuario_id] || 0) + pts;
+        }
+      });
+    }
+  }
 
   // 2. Obtener perfiles para nombres
   const { data: profiles, error: pErr } = await supabase
@@ -639,14 +599,33 @@ export async function getPlayersStatistics() {
     return [];
   }
 
-  const { data: stats } = await supabase.from('estadisticas_partido').select('*, fechas!inner(*)').eq('fechas.stats_cargadas', true);
+  const [statsRes, fechasRes] = await Promise.all([
+    supabase.from('estadisticas_partido').select('*'),
+    supabase.from('fechas').select('*')
+  ]);
+
+  const now = new Date();
+  const fechasMap = (fechasRes.data || []).reduce((acc, f) => {
+    acc[f.id] = f;
+    return acc;
+  }, {});
+
+  // Filtrar stats en JS para asegurar que la fecha ya terminó
+  const filteredStats = (statsRes.data || []).filter(s => {
+    const fecha = fechasMap[s.fecha_id];
+    if (!fecha) return false;
+    const fin = new Date(fecha.fin_fecha);
+    const isLibre = fecha.rival?.toUpperCase().includes('FECHA LIBRE');
+    return now > fin && !isLibre;
+  });
+
   const { data: convocatorias } = await supabase
     .from('convocados_fecha')
     .select('jugador_id, categoria, fecha_id')
     .order('fecha_id', { ascending: false });
 
   return players.map(player => {
-    const playerStats = (stats || []).filter(s => s.jugador_id === player.id);
+    const playerStats = filteredStats.filter(s => s.jugador_id === player.id);
     const totalPoints = playerStats.reduce((acc, s) => acc + calcularPuntosJugador(s), 0);
     const mostRecentConv = (convocatorias || []).find(c => c.jugador_id === player.id);
 
@@ -751,6 +730,7 @@ export async function getMarketMetrics(activeFechaId) {
 export async function getEntrenadorDeLaFecha(fechaId) {
   if (!fechaId) return null;
 
+  // 1. Intentar obtener de ranking_usuarios (oficial)
   const { data: ranking, error } = await supabase
     .from('ranking_usuarios')
     .select('usuario_id, puntos_fecha, profiles(full_name)')
@@ -759,10 +739,44 @@ export async function getEntrenadorDeLaFecha(fechaId) {
     .limit(1)
     .maybeSingle();
 
-  if (error || !ranking) return null;
+  if (ranking) {
+    return {
+      nombre: ranking.profiles?.full_name || 'S/D',
+      puntos: ranking.puntos_fecha
+    };
+  }
+
+  // 2. Fallback: Cálculo on-the-fly para esta fecha específica
+  const [statsRes, teamsRes] = await Promise.all([
+    supabase.from('estadisticas_partido').select('*').eq('fecha_id', fechaId),
+    supabase.from('equipos_usuarios').select('usuario_id, jugador_id, capitan_id, profiles(full_name)').eq('fecha_id', fechaId)
+  ]);
+
+  if (statsRes.error || teamsRes.error || !teamsRes.data.length) return null;
+
+  const statsMap = (statsRes.data || []).reduce((acc, s) => {
+    acc[s.jugador_id] = s;
+    return acc;
+  }, {});
+
+  const scoresMap = {};
+  const namesMap = {};
+
+  teamsRes.data.forEach(sel => {
+    const stat = statsMap[sel.jugador_id];
+    const isCaptain = sel.jugador_id === sel.capitan_id;
+    const pts = calcularPuntosJugador(stat, isCaptain);
+    scoresMap[sel.usuario_id] = (scoresMap[sel.usuario_id] || 0) + pts;
+    if (sel.profiles?.full_name) namesMap[sel.usuario_id] = sel.profiles.full_name;
+  });
+
+  const topUserId = Object.keys(scoresMap).reduce((a, b) => scoresMap[a] > scoresMap[b] ? a : b, null);
+
+  if (!topUserId) return null;
+
   return {
-    nombre: ranking.profiles?.full_name || 'S/D',
-    puntos: ranking.puntos_fecha
+    nombre: namesMap[topUserId] || 'S/D',
+    puntos: scoresMap[topUserId]
   };
 }
 

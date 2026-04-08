@@ -15,9 +15,10 @@ import { Link } from 'react-router-dom';
 
 // --- CACHE GLOBAL PARA PERSISTENCIA DE ESTADO ---
 let dashboardCache = {
-  fecha: null,
+  upcomingMatch: null,
+  lastResultsMatch: null,
   status: null,
-  equipoData: null,
+  lastResultsData: null,
   rankingInfo: null,
   topJugadores: null,
   marketMetrics: null,
@@ -29,31 +30,31 @@ export default function Resumenes() {
   const { user } = useAuth();
   
   // Inicializamos con la data del caché si existe
-  const [fecha, setFecha] = useState(dashboardCache.fecha);
+  const [upcomingMatch, setUpcomingMatch] = useState(dashboardCache.upcomingMatch);
+  const [lastResultsMatch, setLastResultsMatch] = useState(dashboardCache.lastResultsMatch);
   const [status, setStatus] = useState(dashboardCache.status);
-  const [equipoData, setEquipoData] = useState(dashboardCache.equipoData);
+  const [lastResultsData, setLastResultsData] = useState(dashboardCache.lastResultsData);
   const [rankingInfo, setRankingInfo] = useState(dashboardCache.rankingInfo);
   const [topJugadores, setTopJugadores] = useState(dashboardCache.topJugadores || []);
   const [marketMetrics, setMarketMetrics] = useState(dashboardCache.marketMetrics);
   const [entrenadorFecha, setEntrenadorFecha] = useState(dashboardCache.entrenadorFecha);
   
-  // Solo cargamos si el equipoData es nulo (montaje inicial o logout previo)
-  const [loading, setLoading] = useState(!dashboardCache.equipoData);
+  // Solo cargamos si el lastResultsData es nulo (montaje inicial o logout previo)
+  const [loading, setLoading] = useState(!dashboardCache.lastResultsData);
 
   useEffect(() => {
     async function loadData() {
       if (!user) return;
       
       const now = Date.now();
-      const shouldSilentRefresh = dashboardCache.equipoData && (now - dashboardCache.lastFetched < 300000);
+      const shouldSilentRefresh = dashboardCache.lastResultsData && (now - dashboardCache.lastFetched < 300000);
       
       try {
         const { activeMatchday, status: liveStatus } = await getLiveStatus();
         const lastFinished = await getLastPublishedFecha();
         
-        // Las métricas (Equipo, Entrenador, etc.) ahora vienen de la ÚLTIMA fecha terminada
-        // El banner (Estado) viene de la fecha activa/próxima
-        const [eqData, ranking, allPlayerStats, market, coach] = await Promise.all([
+        // Las métricas (Equipo, Entrenador, etc.) ahora vienen SIEMPRE de la ÚLTIMA fecha terminada
+        const [resultsData, ranking, allPlayerStats, market, coach] = await Promise.all([
           lastFinished ? getResumenFecha(lastFinished.id, user.id) : Promise.resolve(null),
           getRankingCompleto(),
           getPlayersStatistics(),
@@ -62,9 +63,10 @@ export default function Resumenes() {
         ]);
 
         // Guardar en estados
-        setFecha(activeMatchday);
+        setUpcomingMatch(activeMatchday);
+        setLastResultsMatch(lastFinished);
         setStatus(liveStatus);
-        setEquipoData(eqData || { items: [], puntosTotal: 0 });
+        setLastResultsData(resultsData || { items: [], puntosTotal: 0 });
         setMarketMetrics(market);
         setEntrenadorFecha(coach);
 
@@ -87,9 +89,10 @@ export default function Resumenes() {
 
         // ACTUALIZAR CACHÉ GLOBAL
         dashboardCache = {
-          fecha: activeMatchday,
+          upcomingMatch: activeMatchday,
+          lastResultsMatch: lastFinished,
           status: liveStatus,
-          equipoData: eqData || { items: [], puntosTotal: 0 },
+          lastResultsData: resultsData || { items: [], puntosTotal: 0 },
           rankingInfo: dashboardCache.rankingInfo,
           topJugadores: top5,
           marketMetrics: market,
@@ -106,7 +109,7 @@ export default function Resumenes() {
     loadData();
   }, [user]);
 
-  if (loading && !dashboardCache.equipoData) {
+  if (loading && !dashboardCache.lastResultsData) {
     return (
       <PlayerLayout>
         <div className="flex flex-col items-center justify-center min-h-[500px]">
@@ -118,16 +121,16 @@ export default function Resumenes() {
   }
 
   // --- DERIVED METRICS ---
-  const teamCount = equipoData?.items?.length || 0;
+  const teamCount = lastResultsData?.items?.length || 0;
   let mvp = null;
   let capitan = null;
   let statsAtaque = 0;
   let statsDefensa = 0;
   let statsDisciplina = 0;
 
-  if (equipoData && equipoData.items.length > 0) {
+  if (lastResultsData && lastResultsData.items.length > 0) {
     let maxPts = -999;
-    equipoData.items.forEach(jugador => {
+    lastResultsData.items.forEach(jugador => {
       if (jugador.puntos > maxPts) {
         maxPts = jugador.puntos;
         mvp = jugador;
@@ -160,47 +163,63 @@ export default function Resumenes() {
   // --- BANNER RENDERER ---
   // ── RENDERIZADO DE BANNER DINÁMICO ──
   const renderBanner = () => {
-    if (!fecha) return null;
+    if (!upcomingMatch) return null;
 
     let bannerConfig = {
       bg: 'bg-blue-50/50',
       border: 'border-blue-100',
       icon: Clock,
       iconColor: 'text-blue-500',
-      title: '⏳ ESPERANDO CONVOCADOS',
-      desc: `El Staff está confirmando los planteles para el partido contra ${fecha.rival}...`,
-      textColor: 'text-blue-900'
+      title: `⏳ PRÓXIMA FECHA: ${upcomingMatch.rival}`,
+      desc: 'Esperando carga de planteles...',
+      textColor: 'text-blue-900',
+      showButton: false
     };
 
-    if (status === APP_STATUS.MERCADO_ABIERTO) {
+    if (status === APP_STATUS.ARMADO_EQUIPO) {
       bannerConfig = {
         bg: 'bg-green-50/50',
         border: 'border-green-100',
         icon: Footprints,
         iconColor: 'text-green-600',
-        title: '🏉 ¡MERCADO ABIERTO!',
-        desc: `Armá tu XV para jugar contra ${fecha.rival}. Cierre: Viernes 23:59hs.`,
-        textColor: 'text-green-900'
+        title: `🏉 PRÓXIMA FECHA: ${upcomingMatch.rival}`,
+        desc: `Armá tu equipo hasta el ${new Date(upcomingMatch.fecha_cierre_equipo).toLocaleDateString('es-AR', { weekday: 'long' })} 23:59`,
+        textColor: 'text-green-900',
+        showButton: true,
+        showCountdown: true
       };
-    } else if (status === APP_STATUS.MERCADO_CERRADO || status === APP_STATUS.PROCESANDO) {
+    } else if (status === APP_STATUS.FECHA_EN_JUEGO) {
       bannerConfig = {
         bg: 'bg-slate-50/50',
         border: 'border-slate-200',
         icon: Shield,
         iconColor: 'text-slate-500',
-        title: '🔒 MERCADO CERRADO',
-        desc: `¡Éxitos al UNI en el clásico contra ${fecha.rival}!`,
-        textColor: 'text-slate-900'
+        title: '🔒 FECHA EN JUEGO',
+        desc: 'Esperando resultados...',
+        textColor: 'text-slate-900',
+        showButton: false
       };
-    } else if (status === APP_STATUS.RESULTADOS_LISTOS) {
+    } else if (status === APP_STATUS.ESPERANDO_STATS) {
+      bannerConfig = {
+        bg: 'bg-amber-50/50',
+        border: 'border-amber-100',
+        icon: Activity,
+        iconColor: 'text-amber-600',
+        title: '🏁 FECHA FINALIZADA',
+        desc: `Esperando estadísticas técnicas (hasta ${new Date(upcomingMatch.fecha_limite_stats).toLocaleDateString('es-AR', { weekday: 'long' })} 23:59)`,
+        textColor: 'text-amber-900',
+        showButton: false
+      };
+    } else if (status === APP_STATUS.RESULTADOS_PUBLICADOS) {
       bannerConfig = {
         bg: 'bg-emerald-500',
         border: 'border-emerald-600',
         icon: Trophy,
         iconColor: 'text-white',
-        title: '✅ RESULTADOS PUBLICADOS',
-        desc: `Mirá cómo te fue en la fecha contra ${fecha.rival}.`,
-        textColor: 'text-white'
+        title: '✅ ESTADÍSTICAS CARGADAS',
+        desc: 'Revisá el ranking y los resultados oficiales.',
+        textColor: 'text-white',
+        showButton: false
       };
     }
 
@@ -209,18 +228,27 @@ export default function Resumenes() {
         ${bannerConfig.bg} rounded-[32px] border ${bannerConfig.border} p-5 md:p-6 mb-8 relative overflow-hidden transition-all animate-fade-in
       `}>
         <div className="flex items-center gap-5 relative z-10">
-          <div className={`p-4 rounded-2xl ${status === APP_STATUS.RESULTADOS_LISTOS ? 'bg-white/20' : 'bg-white shadow-sm'}`}>
+          <div className={`p-4 rounded-2xl ${status === APP_STATUS.RESULTADOS_PUBLICADOS ? 'bg-white/20' : 'bg-white shadow-sm'}`}>
             <bannerConfig.icon className={`w-8 h-8 ${bannerConfig.iconColor}`} />
           </div>
           <div className="flex-1">
             <h3 className={`text-lg font-black tracking-tight ${bannerConfig.textColor}`}>
               {bannerConfig.title}
             </h3>
-            <p className={`text-sm font-medium ${status === APP_STATUS.RESULTADOS_LISTOS ? 'text-white/90' : 'text-neutral/70'}`}>
-              {bannerConfig.desc}
-            </p>
+            <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 mt-1">
+               <p className={`text-sm font-medium ${status === APP_STATUS.RESULTADOS_PUBLICADOS ? 'text-white/90' : 'text-neutral/70'}`}>
+                 {bannerConfig.desc}
+               </p>
+               {bannerConfig.showCountdown && upcomingMatch?.fecha_cierre_equipo && (
+                  <div className="hidden md:flex items-center gap-2 px-2 py-0.5 rounded-full bg-green-100/50 border border-green-200 text-[10px] font-black text-green-700 uppercase">
+                     <Clock className="w-3 h-3" />
+                     {/* El contador real sería un hook, por ahora mostramos tiempo aprox */}
+                     {Math.max(0, Math.floor((new Date(upcomingMatch.fecha_cierre_equipo) - new Date()) / (1000 * 60 * 60)))}h restantes
+                  </div>
+               )}
+            </div>
           </div>
-          {status === APP_STATUS.MERCADO_ABIERTO && (
+          {bannerConfig.showButton && (
             <Link to="/dashboard?tab=equipo" className="bg-primary text-white px-6 py-3 rounded-2xl font-black text-xs uppercase shadow-lg shadow-primary/20 hover:scale-105 transition-transform active:scale-95">
               Jugar
             </Link>
@@ -248,19 +276,19 @@ export default function Resumenes() {
                  <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                        <Activity className="w-6 h-6 text-primary" />
-                       <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">RESUMEN FECHA {fecha?.numero_fecha}</h2>
+                       <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">RESUMEN FECHA ANTERIOR ({lastResultsMatch?.rival || '...'})</h2>
                     </div>
                  </div>
-
+ 
                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className={`p-5 md:p-6 rounded-[32px] border transition-all hover:shadow-xl ${equipoData ? 'bg-white border-neutral/10' : 'bg-neutral-light/30 border-dashed border-neutral/20'}`}>
+                    <div className={`p-5 md:p-6 rounded-[32px] border transition-all hover:shadow-xl ${lastResultsData ? 'bg-white border-neutral/10' : 'bg-neutral-light/30 border-dashed border-neutral/20'}`}>
                       <div className="flex items-center justify-between mb-8">
                         <div className="w-12 h-12 bg-primary/5 rounded-2xl flex items-center justify-center border border-primary/10">
                           <Shield className="w-6 h-6 text-primary" />
                         </div>
                         <div className="text-right">
                           <p className="text-[10px] uppercase tracking-widest text-neutral/50 font-medium mb-1">Mi Puntuación</p>
-                          <h4 className="text-3xl font-black text-primary leading-none">{equipoData?.puntosTotal || 0}</h4>
+                          <h4 className="text-3xl font-black text-primary leading-none">{lastResultsData?.puntosTotal || 0}</h4>
                         </div>
                       </div>
                       
@@ -343,9 +371,9 @@ export default function Resumenes() {
                     {/* Más elegido Fecha */}
                     <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex items-center justify-between border-l-4 border-l-emerald-500">
                        <div className="flex flex-col">
-                          <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1">Más elegido (Esta Fecha)</span>
+                          <span className="text-[10px] text-slate-400 font-medium uppercase tracking-widest mb-1">Más elegido (Esta Fecha)</span>
                           <span className="text-lg font-black text-slate-800 leading-none">{marketMetrics?.mostElegidoFecha?.nombre || '...' }</span>
-                          <span className="text-xs font-bold text-emerald-600 mt-2">{marketMetrics?.mostElegidoFecha?.count || 0} elecciones</span>
+                          <span className="text-xs font-medium text-emerald-600 mt-2">{marketMetrics?.mostElegidoFecha?.count || 0} elecciones</span>
                        </div>
                        <div className="bg-emerald-50 p-3 rounded-full">
                           <Users className="w-6 h-6 text-emerald-600" />
@@ -355,7 +383,7 @@ export default function Resumenes() {
                     {/* Capitán más elegido */}
                     <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex items-center justify-between border-l-4 border-l-accent">
                        <div className="flex flex-col">
-                          <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1">Capitán más elegido</span>
+                          <span className="text-[10px] text-slate-400 font-medium uppercase tracking-widest mb-1">Capitán más elegido</span>
                           <span className="text-lg font-black text-slate-800 leading-none">{marketMetrics?.mostCapitanHist?.nombre || 'S/D'}</span>
                           <span className="text-xs font-medium text-accent mt-2">Liderazgo favorito</span>
                        </div>
@@ -367,7 +395,7 @@ export default function Resumenes() {
                     {/* Más Tarjetas */}
                     <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex items-center justify-between border-l-4 border-l-red-500">
                        <div className="flex flex-col">
-                          <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1">Más Penalizado</span>
+                          <span className="text-[10px] text-slate-400 font-medium uppercase tracking-widest mb-1">Más Penalizado</span>
                           <span className="text-lg font-black text-slate-800 leading-none">{marketMetrics?.mostPenalized?.nombre || 'Limpio'}</span>
                           <span className="text-xs font-medium text-red-600 mt-2">-{marketMetrics?.mostPenalized?.penaltyPoints || 0} pts disciplina</span>
                        </div>
@@ -396,7 +424,7 @@ export default function Resumenes() {
                             <div className={`${item.bg} p-2 rounded-lg`}>
                                <item.icon className={`w-4 h-4 ${item.c}`} />
                             </div>
-                            <span className="text-xs font-black uppercase text-slate-700 tracking-tight">{item.l}</span>
+                            <span className="text-xs font-medium uppercase text-slate-700 tracking-tight">{item.l}</span>
                          </div>
                          <div className="flex items-baseline gap-1">
                             <span className={`text-4xl font-black ${item.c}`}>{item.neg ? '-' : '+'}{item.v}</span>
@@ -424,7 +452,7 @@ export default function Resumenes() {
                     <div className="absolute -inset-2 bg-primary/5 rounded-full -z-10 animate-pulse"></div>
                  </div>
                  <h3 className="text-2xl font-black text-primary tracking-tighter">¡VAMOS UNI! 🦉</h3>
-                 <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-2">Club Universitario MDP</p>
+                 <p className="text-[10px] text-slate-400 font-medium uppercase tracking-[0.2em] mt-2">Club Universitario MDP</p>
               </div>
 
               {/* Top 5 del Torneo - Arriba en Mobile, Abajo en Desktop */}
@@ -463,7 +491,7 @@ export default function Resumenes() {
           <section className="mt-16 pb-12">
              <div className="text-center mb-10">
                 <h2 className="text-3xl font-black text-primary uppercase tracking-tighter">Premios de Temporada</h2>
-                <p className="text-slate-400 font-medium text-sm mt-1 uppercase tracking-widest">Reconocimiento al esfuerzo y la estrategia</p>
+                <p className="text-neutral font-medium">Estamos a la espera de que el Staff oficial anuncie los planteles para la próxima fecha.</p>
              </div>
 
              <div className="grid grid-cols-1 md:grid-cols-3 items-end gap-6 max-w-4xl mx-auto px-4">

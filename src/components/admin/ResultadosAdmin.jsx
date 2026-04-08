@@ -121,24 +121,16 @@ export default function ResultadosAdmin() {
         
         setPublishing(true);
         try {
-            // 1. Marcar fecha actual como completada
-            await supabase.from('fechas').update({ 
-               stats_cargadas: true 
-            }).eq('id', selectedFecha);
+            // Mapear stats al formato esperado por el RPC
+            const statsArray = jugadores.map(j => ({
+                jugador_id: j.id,
+                ...stats[j.id]
+            }));
 
-            // 2. Abrir la siguiente fecha automáticamente
-            const current = fechas.find(f => f.id === selectedFecha);
-            if (current) {
-                const nextNum = (current.numero_fecha || 0) + 1;
-                const next = fechas.find(f => f.numero_fecha === nextNum);
-                if (next) {
-                    await supabase.from('fechas').update({
-                        inicio_semana: new Date().toISOString()
-                    }).eq('id', next.id);
-                }
-            }
+            // Llamar al RPC Atómico V3 (Cálculo -> Snapshot -> Reset -> Publicación)
+            await publicarResultadosFecha(selectedFecha, statsArray);
 
-            setMsg({ text: '¡Resultados publicados y próxima fecha habilitada!', type: 'success' });
+            setMsg({ text: '¡Fecha procesada con éxito! Puntos calculados y equipo archivado.', type: 'success' });
             
             // Recargar datos
             const { activeMatchday, status: liveStatus } = await getLiveStatus();
