@@ -18,6 +18,38 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;700;900&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
+    <!-- Diagnostic Script (RE-INJECTED) -->
+    <script>
+      window.onerror = function(msg, url, lineNo, columnNo, error) {
+        var div = document.createElement('div');
+        div.style.position = 'fixed';
+        div.style.top = '0';
+        div.style.left = '0';
+        div.style.width = '100%';
+        div.style.backgroundColor = '#ff0000';
+        div.style.color = '#ffffff';
+        div.style.padding = '15px';
+        div.style.zIndex = '9999999';
+        div.style.fontSize = '14px';
+        div.style.fontWeight = 'bold';
+        div.style.wordBreak = 'break-all';
+        div.style.boxShadow = '0 5px 20px rgba(0,0,0,0.5)';
+        div.innerHTML = '<div style="margin-bottom:10px">⚠️ ERROR DETECTADO</div>' + 
+                      '<div style="font-family:monospace; font-size:12px">' + msg + '</div>' +
+                      '<div style="font-size:10px; margin-top:5px">Línea: ' + lineNo + ' | Archivo: ' + url.split("/").pop() + '</div>';
+        if (error && error.stack) {
+          div.innerHTML += '<pre style="font-size:8px; margin-top:10px; opacity:0.8; overflow:auto; max-height:100px">' + error.stack + '</pre>';
+        }
+        document.body.appendChild(div);
+        return false;
+      };
+      
+      // Capturar errores de promesas no manejadas
+      window.onunhandledrejection = function(event) {
+        console.error('Unhandled Rejection:', event.reason);
+        // Opcionalmente mostrar en UI similar al onerror
+      };
+    </script>
   </head>
   <body>
     <div id="root"></div>

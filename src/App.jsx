@@ -14,7 +14,12 @@ import Resumenes from './pages/Resumenes';
 function RootRedirect() {
   const { user, role, loading } = useAuth();
   
-  if (loading) return null; // Or a simple loader
+  if (loading) return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-primary text-white p-4">
+      <div className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin mb-4"></div>
+      <p className="font-black animate-pulse">CARGANDO...</p>
+    </div>
+  );
 
   if (!user) return <Navigate to="/login" replace />;
   
@@ -51,7 +56,12 @@ function UserGate({ Component }) {
     }
   }, [loading, profile, role, user]);
 
-  if (loading) return null;
+  if (loading) return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-primary text-white p-4">
+      <div className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin mb-4"></div>
+      <p className="font-black animate-pulse">VALIDANDO USUARIO...</p>
+    </div>
+  );
 
   // 1. Admin SIEMPRE saltan el onboarding.
   if (role === 'admin') return <Component />;
@@ -61,8 +71,12 @@ function UserGate({ Component }) {
 
   // 3. Chequeo de Veterano (en progreso)
   if (isVeteran === null) {
-    // Si aún no hemos comprobado si es veterano y está en es_competidor === false, mostramos loader o nada (esperando fetch)
-    if (profile?.es_competidor === false) return null; 
+    if (profile?.es_competidor === false) return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-primary text-white p-4">
+        <div className="w-12 h-12 border-4 border-accent/20 border-t-accent rounded-full animate-spin mb-4"></div>
+        <p className="font-black animate-pulse">VERIFICANDO HISTORIAL...</p>
+      </div>
+    ); 
   }
 
   // 4. Si es veterano, bypass.
