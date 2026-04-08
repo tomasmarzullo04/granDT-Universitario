@@ -304,16 +304,16 @@ export default function AdminDragDropBuilder() {
       <div className="mb-6 space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-neutral/20 pb-4">
           <div>
-            <h1 className="text-3xl font-black text-primary flex items-center gap-2">
-              <Users className="w-8 h-8 text-accent" /> Armado de Equipos
+            <h1 className="text-xl md:text-3xl font-black text-primary flex items-center gap-2">
+              <Users className="w-6 h-6 md:w-8 md:h-8 text-accent" /> Armado de Equipos
             </h1>
-            <p className="text-sm font-bold text-neutral uppercase tracking-widest mt-1">
-              Matchday Setup vs {activeFecha.rival}
+            <p className="text-[10px] md:text-sm font-bold text-neutral uppercase tracking-widest mt-1">
+              Matchday vs {activeFecha.rival}
             </p>
           </div>
           
-          <div className="flex items-center gap-3">
-             {saving && <span className="text-xs font-bold text-primary animate-pulse hidden md:inline">Guardando cambios...</span>}
+          <div className="hidden md:flex items-center gap-3">
+             {saving && <span className="text-xs font-bold text-primary animate-pulse">Guardando cambios...</span>}
              <button
                 onClick={handleSave}
                 disabled={saving}
@@ -499,7 +499,7 @@ export default function AdminDragDropBuilder() {
                       onDragStart={(e) => handleDragStart(e, player.id)}
                       onDragEnd={handleDragEnd}
                       onClick={() => handlePlayerClick(player, isUsed)}
-                      className={`p-4 rounded-2xl border-2 flex justify-between items-center transition-all ${
+                      className={`p-3 md:p-4 rounded-xl md:rounded-2xl border-2 flex justify-between items-center transition-all ${
                         isUsed 
                           ? 'opacity-40 grayscale border-neutral/10 bg-neutral-light/50 cursor-not-allowed scale-[0.98]' 
                           : selectedPosition !== null || isMenuOpen
@@ -581,6 +581,18 @@ export default function AdminDragDropBuilder() {
               </p>
            </div>
         </div>
+      </div>
+
+      {/* MOBILE SAVE BUTTON (STATIC & CENTERED) */}
+      <div className="mt-8 flex md:hidden justify-center pb-8 border-t border-neutral/10 pt-8">
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="w-full max-w-xs bg-accent hover:bg-accent-dark text-white py-4 rounded-2xl font-black transition-all shadow-xl flex items-center justify-center gap-3 disabled:opacity-70 group"
+        >
+          {saving ? <Loader2 className="w-6 h-6 animate-spin" /> : <Save className="w-6 h-6" />}
+          GUARDAR CONVOCADOS
+        </button>
       </div>
     </div>
   );

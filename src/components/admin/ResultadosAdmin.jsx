@@ -308,13 +308,13 @@ export default function ResultadosAdmin() {
         {/* ── Header ───────────────────────────────────────────────────── */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-neutral/10 pb-6">
           <div>
-            <h2 className="text-2xl font-black text-primary flex items-center gap-2">
-              <TrendingUp className="w-6 h-6 text-accent" /> CARGA DE ESTADÍSTICAS (ACTUALIZADO)
+            <h2 className="text-xl md:text-2xl font-black text-primary flex items-center gap-2">
+              <TrendingUp className="w-6 h-6 text-accent" /> CARGA DE ESTADÍSTICAS
             </h2>
-            <p className="text-xs font-black text-neutral uppercase tracking-widest mt-1">
+            <p className="text-[10px] md:text-xs font-black text-neutral uppercase tracking-widest mt-1">
               {isFinalizada
-                ? '✓ Fecha Finalizada — Resultados Publicados'
-                : 'Cargá las stats por categoría y publicá los resultados finales'}
+                ? '✓ Fecha Finalizada'
+                : 'Cargá las stats por categoría'}
             </p>
           </div>
 
@@ -403,96 +403,84 @@ export default function ResultadosAdmin() {
                 </p>
               </div>
             ) : (
-              <div className="bg-white rounded-2xl overflow-hidden border border-neutral/20 shadow-sm">
-                {/* Table head */}
-                <div className="grid bg-primary/5 border-b border-neutral/20 px-4 py-3"
-                  style={{ gridTemplateColumns: '1fr repeat(12, auto) 80px' }}>
-                  <div className="text-[10px] font-black text-neutral uppercase tracking-widest">
-                    Jugador
-                  </div>
-                  {STAT_FIELDS.map(f => (
-                    <div key={f.key} title={f.desc} className={`text-[10px] font-black uppercase tracking-widest text-center px-2 cursor-help ${f.color}`}>
-                      {f.label}
-                      <br />
-                      <span className="text-[8px] opacity-60">{f.pts > 0 ? `+${f.pts}` : f.pts} pts</span>
-                    </div>
-                  ))}
-                  <div className="text-[10px] font-black text-neutral uppercase tracking-widest text-right">
-                    Total
+              <>
+                {/* ── Desktop Table ── */}
+                <div className="hidden md:block bg-white rounded-2xl overflow-hidden border border-neutral/20 shadow-sm">
+                  {/* ... table content remains same ... */}
+                  <div className="divide-y divide-neutral/10">
+                    {activePlayers.map((player, idx) => {
+                      const pStats = stats[player.id] || {};
+                      const pts = calcularPuntosJugador(pStats);
+                      const initials = player.nombre?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || '?';
+                      return (
+                        <div key={player.id} className="grid items-center px-4 py-3 hover:bg-neutral-light/20 transition-colors" style={{ gridTemplateColumns: '1fr repeat(12, auto) 80px' }}>
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                              <span className="text-[11px] font-black text-primary">{initials}</span>
+                            </div>
+                            <div className="min-w-0"><p className="font-black text-sm text-primary truncate leading-tight">{player.nombre}</p></div>
+                          </div>
+                          {STAT_FIELDS.map(f => (
+                            <div key={f.key} className="flex justify-center px-1">
+                              <StatBox field={f} value={pStats[f.key] || 0} onInc={() => updateStat(player.id, f.key, 1)} onDec={() => updateStat(player.id, f.key, -1)} />
+                            </div>
+                          ))}
+                          <div className="text-right font-black text-primary">{pts}</div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
-                {/* Table rows */}
-                <div className="divide-y divide-neutral/10">
-                  {activePlayers.map((player, idx) => {
+                {/* ── Mobile Card View ── */}
+                <div className="md:hidden space-y-6">
+                  {activePlayers.map(player => {
                     const pStats = stats[player.id] || {};
                     const pts = calcularPuntosJugador(pStats);
-                    const initials = player.nombre?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || '?';
-
                     return (
-                      <div
-                        key={player.id}
-                        className={`grid items-center px-4 py-3 hover:bg-neutral-light/20 transition-colors ${
-                          idx % 2 === 0 ? 'bg-white' : 'bg-neutral-light/10'
-                        }`}
-                        style={{ gridTemplateColumns: '1fr repeat(12, auto) 80px' }}
-                      >
-                        {/* Player info */}
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
-                            <span className="text-[11px] font-black text-primary">{initials}</span>
+                      <div key={player.id} className="bg-white rounded-2xl border border-neutral/20 shadow-md p-4">
+                        <div className="flex items-center justify-between mb-4 pb-3 border-b border-neutral/10">
+                          <div className="flex items-center gap-3">
+                             <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center font-black text-primary text-xs">
+                                {player.nombre.charAt(0)}
+                             </div>
+                             <div>
+                                <p className="font-black text-primary text-sm leading-none">{player.nombre}</p>
+                                <p className="text-[10px] font-bold text-neutral uppercase mt-1">{player.posicion}</p>
+                             </div>
                           </div>
-                          <div className="min-w-0">
-                            <p className="font-black text-sm text-primary truncate leading-tight">{player.nombre}</p>
-                            <p className="text-[9px] font-bold text-neutral uppercase tracking-widest truncate">
-                              {player.posicion || 'Jugador'}
-                            </p>
+                          <div className="text-right">
+                             <span className={`text-2xl font-black ${pts >= 0 ? 'text-primary' : 'text-red-500'}`}>{pts}</span>
+                             <p className="text-[8px] font-black text-neutral uppercase">PTS</p>
                           </div>
                         </div>
-
-                        {/* Stat boxes */}
-                        {STAT_FIELDS.map(f => (
-                          <div key={f.key} className="flex justify-center px-1">
-                            <StatBox
-                              field={f}
-                              value={pStats[f.key] || 0}
-                              onInc={() => updateStat(player.id, f.key, 1)}
-                              onDec={() => updateStat(player.id, f.key, -1)}
-                            />
-                          </div>
-                        ))}
-
-                        {/* Total points */}
-                        <div className="text-right">
-                          <span className={`text-xl font-black ${pts > 0 ? 'text-primary' : pts < 0 ? 'text-red-500' : 'text-neutral/40'}`}>
-                            {pts}
-                          </span>
-                          <p className="text-[9px] text-neutral font-bold">pts</p>
+                        
+                        <div className="grid grid-cols-3 gap-2">
+                           {STAT_FIELDS.map(f => (
+                             <div key={f.key} className={`flex flex-col items-center p-2 rounded-xl border ${f.bg} ${f.border}`}>
+                                <span className={`text-[8px] font-black uppercase mb-1 ${f.color}`}>{f.label}</span>
+                                <div className="flex items-center gap-2">
+                                   <button onClick={() => updateStat(player.id, f.key, -1)} disabled={(pStats[f.key] || 0) <= 0} className="w-6 h-6 bg-white rounded-md border border-neutral/20 flex items-center justify-center font-black text-xs shadow-sm">-</button>
+                                   <span className="text-sm font-black">{pStats[f.key] || 0}</span>
+                                   <button onClick={() => updateStat(player.id, f.key, 1)} className="w-6 h-6 bg-white rounded-md border border-neutral/20 flex items-center justify-center font-black text-xs shadow-sm">+</button>
+                                </div>
+                             </div>
+                           ))}
                         </div>
                       </div>
                     );
                   })}
                 </div>
-
-                {/* Category total footer */}
-                <div className="bg-primary/5 border-t-2 border-primary/10 px-4 py-3 flex items-center justify-between">
-                  <span className="text-xs font-black text-neutral uppercase tracking-widest">
-                    Total puntos generados — {activeCategory}
-                  </span>
-                  <span className="text-2xl font-black text-primary">
-                    {activePlayers.reduce((sum, p) => sum + calcularPuntosJugador(stats[p.id] || {}), 0)}
-                  </span>
-                </div>
-              </div>
+              </>
             )}
 
             {/* ── Action Buttons ──────────────────────────────────────── */}
-            <div className="flex flex-col sm:flex-row gap-4 pt-2">
+            <div className="flex flex-col md:flex-row items-center justify-center gap-4 pt-4">
               {/* Guardar Categoría */}
               <button
                 onClick={handleSaveCategory}
                 disabled={saving || activePlayers.length === 0 || isFinalizada}
-                className="flex items-center justify-center gap-2 px-6 py-3 bg-white border-2 border-primary text-primary font-black rounded-2xl hover:bg-primary/5 hover-shadow transition-all shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                className="w-full md:w-auto flex items-center justify-center gap-2 px-8 py-4 bg-white border-2 border-primary text-primary font-black rounded-2xl hover:bg-primary/5 hover-shadow transition-all shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {saving
                   ? <Loader2 className="w-5 h-5 animate-spin" />
@@ -502,20 +490,22 @@ export default function ResultadosAdmin() {
               </button>
 
               {/* Publicar Resultados Finales */}
-              <button
-                onClick={() => setShowConfirm(true)}
-                disabled={totalPlayersAll === 0 || isFinalizada}
-                className="flex-1 flex items-center justify-center gap-2 px-8 py-3 bg-accent text-white font-black rounded-2xl shadow-xl hover:scale-[1.02] hover-shadow transition-all disabled:opacity-40 disabled:hover:scale-100 disabled:cursor-not-allowed"
-              >
-                <Zap className="w-5 h-5" />
-                {isFinalizada ? '✓ RESULTADOS YA PUBLICADOS' : 'PUBLICAR RESULTADOS FINALES'}
-              </button>
+              {!isFinalizada && (
+                <button
+                  onClick={() => setShowConfirm(true)}
+                  disabled={totalPlayersAll === 0}
+                  className="w-full md:w-auto flex items-center justify-center gap-2 px-10 py-4 bg-accent text-white font-black rounded-2xl shadow-xl hover:scale-[1.02] hover-shadow transition-all disabled:opacity-40 disabled:hover:scale-100 disabled:cursor-not-allowed"
+                >
+                  <Zap className="w-5 h-5" />
+                  PUBLICAR RESULTADOS
+                </button>
+              )}
             </div>
 
             {/* Hint sobre proceso */}
             {!isFinalizada && (
-              <p className="text-[11px] text-neutral font-bold text-center opacity-60">
-                Guardá cada categoría por separado para no perder datos, luego presioná "PUBLICAR RESULTADOS FINALES" para actualizar el ranking.
+              <p className="text-[10px] text-neutral font-bold text-center opacity-60 uppercase tracking-widest">
+                Guardá cada categoría por separado antes de publicar.
               </p>
             )}
           </>

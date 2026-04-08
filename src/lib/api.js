@@ -170,8 +170,7 @@ export async function getConvocados(fechaId) {
       posicion_actual,
       jugadores (
         id,
-        nombre,
-        precio
+        nombre
       )
     `)
     .eq('fecha_id', fechaId);
@@ -609,22 +608,6 @@ export async function getPlayersStatistics() {
       categoria: mostRecentConv?.categoria || 'Sin Categoría',
     };
   });
-}
-
-/**
- * Actualiza el precio de un jugador.
- */
-export async function updatePlayerPrice(playerId, newPrice) {
-  const { data, error } = await supabase
-    .from('jugadores')
-    .update({ precio: newPrice })
-    .eq('id', playerId);
-
-  if (error) {
-    console.error('Error updating player price:', error);
-    throw error;
-  }
-  return data;
 }
 
 // ==========================================

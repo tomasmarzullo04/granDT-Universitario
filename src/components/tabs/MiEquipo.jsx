@@ -122,7 +122,7 @@ export default function MiEquipo() {
           const lastPlayerIds = lastTeamSelection.map(s => s.jugador_id);
           const { data: lastPlayersData } = await supabase
             .from('jugadores')
-            .select('id, nombre, precio')
+            .select('id, nombre')
             .in('id', lastPlayerIds);
 
           if (lastPlayersData) {

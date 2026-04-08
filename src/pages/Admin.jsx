@@ -12,27 +12,27 @@ export default function Admin() {
     <AdminLayout>
       <div className="w-full h-full flex flex-col">
         {/* Sub-nav Local (Tabs) */}
-        <div className="flex bg-white p-1 rounded-2xl border border-neutral/20 shadow-sm max-w-lg mb-6">
+        <div className="flex bg-white p-1 rounded-2xl border border-neutral/20 shadow-sm w-full md:max-w-lg mb-6 overflow-x-auto no-scrollbar whitespace-nowrap">
           <button
             onClick={() => setActiveTab('armado')}
-            className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-black transition-all flex items-center justify-center gap-2 ${
-              activeTab === 'armado' ? 'bg-primary text-white shadow-lg scale-[1.02]' : 'text-neutral hover:bg-neutral-light'
+            className={`flex-1 min-w-[100px] px-3 md:px-4 py-2 md:py-2.5 rounded-xl text-[11px] md:text-sm font-black transition-all flex items-center justify-center gap-2 ${
+              activeTab === 'armado' ? 'bg-primary text-white shadow-lg' : 'text-neutral hover:bg-neutral-light'
             }`}
           >
             <Users className="w-4 h-4" /> Armado
           </button>
           <button
             onClick={() => setActiveTab('pagos')}
-            className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-black transition-all flex items-center justify-center gap-2 ${
-              activeTab === 'pagos' ? 'bg-primary text-white shadow-lg scale-[1.02]' : 'text-neutral hover:bg-neutral-light'
+            className={`flex-1 min-w-[100px] px-3 md:px-4 py-2 md:py-2.5 rounded-xl text-[11px] md:text-sm font-black transition-all flex items-center justify-center gap-2 ${
+              activeTab === 'pagos' ? 'bg-primary text-white shadow-lg' : 'text-neutral hover:bg-neutral-light'
             }`}
           >
             <UserCheck className="w-4 h-4" /> Inscripciones
           </button>
           <button
             onClick={() => setActiveTab('stats')}
-            className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-black transition-all flex items-center justify-center gap-2 ${
-              activeTab === 'stats' ? 'bg-primary text-white shadow-lg scale-[1.02]' : 'text-neutral hover:bg-neutral-light'
+            className={`flex-1 min-w-[100px] px-3 md:px-4 py-2 md:py-2.5 rounded-xl text-[11px] md:text-sm font-black transition-all flex items-center justify-center gap-2 ${
+              activeTab === 'stats' ? 'bg-primary text-white shadow-lg' : 'text-neutral hover:bg-neutral-light'
             }`}
           >
             <ClipboardCheck className="w-4 h-4" /> Estadísticas

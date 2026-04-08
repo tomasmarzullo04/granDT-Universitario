@@ -1,8 +1,6 @@
 import { Check, User, Crown } from 'lucide-react';
 
 export default function PlayerCard({ player, isSelected, isCaptain, onToggle, onCaptainToggle, disabled }) {
-  // Asignar precio en función de la categoría mapeada
-  const price = player.categoryDef === 'primera' ? '$10M' : player.categoryDef === 'intermedia' ? '$7M' : '$5M';
 
   return (
     <div
@@ -34,7 +32,6 @@ export default function PlayerCard({ player, isSelected, isCaptain, onToggle, on
         <div className="flex-1 min-w-0 pr-2">
           <div className="flex justify-between items-start gap-2">
             <h3 className="font-black text-sm text-slate-900 leading-tight player-name-full">{player.nombre || player.name}</h3>
-            <span className="text-accent font-black text-xs shrink-0">{price}</span>
           </div>
           <p className="text-[10px] text-neutral font-bold uppercase tracking-widest mt-0.5">{player.posicion || 'Jugador'}</p>
         </div>

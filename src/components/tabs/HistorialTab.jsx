@@ -95,7 +95,7 @@ export default function HistorialTab() {
       if (validIds.length > 0) {
         const { data: playersData, error: pError } = await supabase
           .from('jugadores')
-          .select('id, nombre, precio')
+          .select('id, nombre')
           .in('id', validIds);
           
         if (pError) console.error("Error fetching jugadores:", pError);

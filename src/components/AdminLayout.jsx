@@ -42,7 +42,7 @@ export default function AdminLayout({ children }) {
         </div>
       </header>
 
-      <main className="flex-1 w-full max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
+      <main className="flex-1 w-full max-w-7xl mx-auto p-4 md:p-6 lg:p-8 pb-24 md:pb-8">
         {children}
       </main>
       
