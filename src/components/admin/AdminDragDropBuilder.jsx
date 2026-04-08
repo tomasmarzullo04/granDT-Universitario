@@ -361,10 +361,10 @@ export default function AdminDragDropBuilder() {
             return (
               <div
                 key={i}
-                className={`absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-300 ${
+                className={`absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-300 w-[60px] h-[60px] md:w-[75px] md:h-[75px] ${
                   (isActiveSlot || (isWaitingSlot && !player)) ? 'scale-110 z-20' : 'z-10'
                 }`}
-                style={{ top: pos.top, left: pos.left, width: '70px', height: '70px' }}
+                style={{ top: pos.top, left: pos.left }}
                 onClick={() => handleSlotClick(i)}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => handleDrop(e, i)}
@@ -372,11 +372,11 @@ export default function AdminDragDropBuilder() {
                 {player ? (
                   <div className={`relative group w-full h-full flex items-center justify-center ${isLocked ? 'cursor-default' : 'cursor-pointer animate-fade-in'}`}>
                     {/* Circle with Full Name */}
-                    <div className="w-14 h-14 md:w-16 md:h-16 rounded-full border-2 border-white shadow-xl overflow-hidden bg-primary relative transition-all duration-300 group-hover:scale-110 flex items-center justify-center p-2 text-center">
+                    <div className="w-12 h-12 md:w-16 md:h-16 rounded-full border-2 border-white shadow-xl overflow-hidden bg-primary relative transition-all duration-300 group-hover:scale-110 flex items-center justify-center p-2 text-center">
                        {player.foto_url && (
                          <img src={player.foto_url} alt={player.nombre} className="absolute inset-0 w-full h-full object-cover opacity-40" />
                        )}
-                       <p className="relative z-10 text-[7.5px] md:text-[8.5px] font-black text-white uppercase tracking-[0.2em] leading-tight font-bebas break-words">
+                       <p className="relative z-10 text-[7px] md:text-[8.5px] font-black text-white uppercase tracking-[0.2em] leading-tight font-bebas break-words">
                          {player.nombre}
                        </p>
                     </div>
@@ -479,8 +479,8 @@ export default function AdminDragDropBuilder() {
         </div>
       </div>
 
-      {/* FOOTER ACTION BAR */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-neutral/10 p-4 pb-10 z-[60] flex flex-col gap-3 shadow-[0_-15px_35px_rgba(0,0,0,0.1)] md:left-auto md:right-8 md:bottom-8 md:w-[350px] md:rounded-3xl md:border md:shadow-2xl">
+      {/* FOOTER ACTION BAR - Relative on mobile, Fixed Card on Desktop */}
+      <div className="relative mt-8 md:fixed md:bottom-8 md:right-8 bg-white/80 backdrop-blur-xl border border-neutral/10 p-4 md:pb-8 z-[60] flex flex-col gap-3 shadow-[0_-15px_35px_rgba(0,0,0,0.05)] md:shadow-2xl md:w-[350px] md:rounded-3xl mb-12 md:mb-0 mx-4 md:mx-0">
          <div className="flex gap-3">
             <button 
               onClick={() => toggleCategoryLock(activeCategory)}
