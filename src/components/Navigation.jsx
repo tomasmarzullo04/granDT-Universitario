@@ -53,7 +53,7 @@ export default function Navigation() {
   ];
 
   return (
-    <div className="flex bg-white p-1 rounded-2xl border border-neutral/20 shadow-sm sticky top-[72px] z-40 overflow-x-auto no-scrollbar mb-6">
+    <div className="hidden md:flex bg-white p-1 rounded-2xl border border-neutral/20 shadow-sm sticky top-[72px] z-40 overflow-x-auto no-scrollbar mb-6">
       <div className="flex w-full min-w-max md:min-w-0">
         {items.map(item => (
           <Link

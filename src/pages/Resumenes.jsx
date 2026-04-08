@@ -231,10 +231,10 @@ export default function Resumenes() {
 
     return (
       <div className={`
-        ${bannerConfig.bg} rounded-[32px] border ${bannerConfig.border} p-5 md:p-6 mb-8 relative overflow-hidden transition-all animate-fade-in
+        ${bannerConfig.bg} rounded-[32px] border-2 ${bannerConfig.border} p-5 md:p-6 mb-10 relative overflow-hidden transition-all animate-fade-in shadow-sm
       `}>
         <div className="flex items-center gap-5 relative z-10">
-          <div className={`p-4 rounded-2xl ${status === APP_STATUS.RESULTADOS_PUBLICADOS ? 'bg-white/20' : 'bg-white shadow-sm'}`}>
+          <div className={`p-4 rounded-2xl ${status === APP_STATUS.RESULTADOS_PUBLICADOS ? 'bg-white/20' : 'bg-white shadow-md border border-neutral/5'}`}>
             <bannerConfig.icon className={`w-8 h-8 ${bannerConfig.iconColor}`} />
           </div>
           <div className="flex-1">
@@ -293,10 +293,10 @@ export default function Resumenes() {
                     </div>
                  </div>
  
-                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className={`p-5 md:p-6 rounded-[32px] border transition-all hover:shadow-xl ${lastResultsData ? 'bg-white border-neutral/10' : 'bg-neutral-light/30 border-dashed border-neutral/20'}`}>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className={`p-6 rounded-[32px] border-2 transition-all hover:shadow-2xl ${lastResultsData ? 'bg-white border-neutral/10 shadow-lg shadow-neutral/5' : 'bg-neutral-light/30 border-dashed border-neutral/20'}`}>
                       <div className="flex items-center justify-between mb-8">
-                        <div className="w-12 h-12 bg-primary/5 rounded-2xl flex items-center justify-center border border-primary/10">
+                        <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center border border-primary/20 shadow-inner">
                           <Shield className="w-6 h-6 text-primary" />
                         </div>
                         <div className="text-right">
@@ -318,9 +318,9 @@ export default function Resumenes() {
                     </div>
 
                     {/* MVP de la Fecha */}
-                    <div className="bg-white border border-neutral/10 p-5 md:p-6 rounded-[32px] transition-all hover:shadow-xl group relative overflow-hidden">
+                    <div className="bg-white border-2 border-neutral/10 p-6 rounded-[32px] transition-all hover:shadow-2xl group relative overflow-hidden shadow-lg shadow-neutral/5">
                       <div className="flex items-center justify-between mb-8 relative z-10">
-                        <div className="w-12 h-12 bg-accent/5 rounded-2xl flex items-center justify-center border border-accent/10">
+                        <div className="w-12 h-12 bg-accent/10 rounded-2xl flex items-center justify-center border border-accent/20 shadow-inner">
                           <Zap className="w-6 h-6 text-accent" />
                         </div>
                         <div className="text-right">
@@ -374,57 +374,57 @@ export default function Resumenes() {
               </section>
 
               {/* Estadísticas Individuales (Anterior Inteligencia de Mercado) */}
-              <section>
-                 <div className="flex items-center gap-3 mb-4">
+              <section className="pt-4">
+                 <div className="flex items-center gap-3 mb-6">
                     <TrendingUp className="w-6 h-6 text-emerald-600" />
                     <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">Estadísticas Individuales</h2>
                  </div>
                  
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Más elegido Fecha */}
-                    <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex items-center justify-between border-l-4 border-l-emerald-500 min-h-[110px]">
+                    <div className="bg-white rounded-[24px] p-6 border-2 border-slate-100 shadow-xl shadow-slate-200/20 flex items-center justify-between border-l-8 border-l-emerald-500 min-h-[120px] transition-transform hover:scale-[1.02]">
                        <div className="flex flex-col">
-                          <span className="text-[10px] text-slate-400 font-medium uppercase tracking-widest mb-1">Más elegido (Esta Fecha)</span>
-                          <span className="text-lg font-black text-slate-800 leading-none">{marketMetrics?.mostElegidoFecha?.nombre || 'S/D' }</span>
-                          <span className="text-xs font-medium text-emerald-600 mt-2">{marketMetrics?.mostElegidoFecha?.count || 0} elecciones</span>
+                          <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-2">Más elegido (Esta Fecha)</span>
+                          <span className="text-xl font-black text-slate-800 leading-tight">{marketMetrics?.mostElegidoFecha?.nombre || 'S/D' }</span>
+                          <span className="bg-emerald-50 text-emerald-700 text-[10px] font-black w-fit px-2 py-0.5 rounded-full mt-3 uppercase">{marketMetrics?.mostElegidoFecha?.count || 0} elecciones</span>
                        </div>
-                       <div className="bg-emerald-50 p-3 rounded-full">
+                       <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100">
                           <Users className="w-6 h-6 text-emerald-600" />
                        </div>
                     </div>
 
                     {/* Capitán más elegido */}
-                    <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex items-center justify-between border-l-4 border-l-accent min-h-[110px]">
+                    <div className="bg-white rounded-[24px] p-6 border-2 border-slate-100 shadow-xl shadow-slate-200/20 flex items-center justify-between border-l-8 border-l-accent min-h-[120px] transition-transform hover:scale-[1.02]">
                        <div className="flex flex-col">
-                          <span className="text-[10px] text-slate-400 font-medium uppercase tracking-widest mb-1">Capitán más elegido</span>
-                          <span className="text-lg font-black text-slate-800 leading-none">{marketMetrics?.mostCapitanHist?.nombre || 'S/D'}</span>
-                          <span className="text-xs font-medium text-accent mt-2">{marketMetrics?.mostCapitanHist?.count || 0} elecciones</span>
+                          <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-2">Capitán más elegido</span>
+                          <span className="text-xl font-black text-slate-800 leading-tight">{marketMetrics?.mostCapitanHist?.nombre || 'S/D'}</span>
+                          <span className="bg-orange-50 text-orange-700 text-[10px] font-black w-fit px-2 py-0.5 rounded-full mt-3 uppercase">{marketMetrics?.mostCapitanHist?.count || 0} elecciones</span>
                        </div>
-                       <div className="bg-orange-50 p-3 rounded-full">
+                       <div className="bg-orange-50 p-4 rounded-2xl border border-orange-100">
                           <Shield className="w-6 h-6 text-accent" />
                        </div>
                     </div>
 
                     {/* Más Tarjetas */}
-                    <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex items-center justify-between border-l-4 border-l-red-500 min-h-[110px]">
+                    <div className="bg-white rounded-[24px] p-6 border-2 border-slate-100 shadow-xl shadow-slate-200/20 flex items-center justify-between border-l-8 border-l-red-500 min-h-[120px] transition-transform hover:scale-[1.02]">
                        <div className="flex flex-col">
-                          <span className="text-[10px] text-slate-400 font-medium uppercase tracking-widest mb-1">Más Penalizado</span>
-                          <span className="text-lg font-black text-slate-800 leading-none">{marketMetrics?.mostPenalized?.nombre || 'S/D'}</span>
-                          <span className="text-xs font-medium text-red-600 mt-2">-{marketMetrics?.mostPenalized?.penaltyPoints || 0} pts disciplina</span>
+                          <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-2">Más Penalizado</span>
+                          <span className="text-xl font-black text-slate-800 leading-tight">{marketMetrics?.mostPenalized?.nombre || 'S/D'}</span>
+                          <span className="bg-red-50 text-red-700 text-[10px] font-black w-fit px-2 py-0.5 rounded-full mt-3 uppercase">-{marketMetrics?.mostPenalized?.penaltyPoints || 0} pts</span>
                        </div>
-                       <div className="bg-red-50 p-3 rounded-full">
+                       <div className="bg-red-50 p-4 rounded-2xl border border-red-100">
                           <Zap className="w-6 h-6 text-red-500" />
                        </div>
                     </div>
 
                     {/* Entrenador de la Fecha */}
-                    <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex items-center justify-between border-l-4 border-l-primary min-h-[110px]">
+                    <div className="bg-white rounded-[24px] p-6 border-2 border-slate-100 shadow-xl shadow-slate-200/20 flex items-center justify-between border-l-8 border-l-primary min-h-[120px] transition-transform hover:scale-[1.02]">
                        <div className="flex flex-col">
-                          <span className="text-[10px] text-slate-400 font-medium uppercase tracking-widest mb-1">Entrenador de la Fecha</span>
-                          <span className="text-lg font-black text-slate-800 leading-none">{entrenadorFecha?.nombre || 'S/D'}</span>
-                          <span className="text-xs font-medium text-primary mt-2">{entrenadorFecha?.puntos || 0} puntos totales</span>
+                          <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-2">Entrenador de la Fecha</span>
+                          <span className="text-xl font-black text-slate-800 leading-tight">{entrenadorFecha?.nombre || 'S/D'}</span>
+                          <span className="bg-primary-light/10 text-primary-light text-[10px] font-black w-fit px-2 py-0.5 rounded-full mt-3 uppercase">{entrenadorFecha?.puntos || 0} puntos</span>
                        </div>
-                       <div className="bg-primary/5 p-3 rounded-full">
+                       <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10">
                           <Medal className="w-6 h-6 text-primary" />
                        </div>
                     </div>
@@ -432,7 +432,8 @@ export default function Resumenes() {
               </section>
 
               {/* Desglose Táctico */}
-              <section className="bg-white rounded-2xl border border-slate-100 shadow-sm p-8">
+              <section className="bg-white rounded-[40px] border-2 border-slate-100 shadow-2xl shadow-slate-200/40 p-10 mt-6 relative overflow-hidden group">
+                 <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-150 duration-700"></div>
                  <div className="flex items-center gap-3 mb-6">
                     <Zap className="w-6 h-6 text-accent" />
                     <h2 className="text-xl font-black text-primary uppercase tracking-tighter">Desglose Técnico (La Fecha)</h2>
