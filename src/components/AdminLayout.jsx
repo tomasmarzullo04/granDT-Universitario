@@ -46,11 +46,6 @@ export default function AdminLayout({ children }) {
         {children}
       </main>
       
-      {/* Footer Nav for Mobile (Optional, but pro) */}
-      <nav className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-md border border-neutral/20 rounded-2xl shadow-xl px-6 py-3 flex gap-8 z-50">
-         <button className="text-primary opacity-40 hover:opacity-100 transition-opacity"><LayoutDashboard className="w-6 h-6" /></button>
-         <button className="text-primary opacity-40 hover:opacity-100 transition-opacity"><ClipboardCheck className="w-6 h-6" /></button>
-      </nav>
     </div>
   );
 }
