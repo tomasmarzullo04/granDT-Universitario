@@ -287,7 +287,7 @@ export default function Resumenes() {
                     ? `PRÓXIMA FECHA: ${upcomingMatch.rival}`
                     : status === APP_STATUS.ESPERANDO_PLANTELES
                       ? 'RESUMEN GENERAL'
-                      : `RESUMEN FECHA ANTERIOR (${lastResultsMatch?.rival || 'S/D'} - ${lastResultsMatch?.rival?.split('-')[1]?.trim() || ''})`
+                      : `RESUMEN FECHA ANTERIOR (${lastResultsMatch?.rival || 'S/D'} - ${lastResultsMatch?.rival?.split('-')?.[1]?.trim() || ''})`
                   }
               </h2>
                     </div>

@@ -328,7 +328,7 @@ const POSITION_MAP = {
               <Users className="w-6 h-6 md:w-8 md:h-8 text-accent" /> Armado de Equipos
             </h1>
             <p className="text-[10px] md:text-xs font-bold text-neutral uppercase tracking-widest mt-1">
-              Matchday vs {activeFecha.rival}
+              Matchday vs {activeFecha?.rival || 'Cargando...'}
             </p>
           </div>
           

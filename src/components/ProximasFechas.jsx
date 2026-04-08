@@ -59,13 +59,13 @@ export default function ProximasFechas() {
                     Fecha {fecha.numero_fecha}
                   </span>
                   <span className={`text-sm font-bold ${isLibre ? 'text-neutral italic' : 'text-primary'}`}>
-                    {fecha.rival}
+                    {fecha.rival || 'S/D'}
                   </span>
                 </div>
                 {!isLibre && (
                   <div className="flex items-center gap-1 text-xs text-primary font-bold bg-neutral-light px-2 py-1 rounded-md border border-neutral/20">
                     <MapPin className="w-3 h-3 text-accent" />
-                    {fecha.rival.toLowerCase().includes('local') ? 'Local' : 'Visitante'}
+                    {fecha.rival?.toLowerCase().includes('local') ? 'Local' : 'Visitante'}
                   </div>
                 )}
               </div>

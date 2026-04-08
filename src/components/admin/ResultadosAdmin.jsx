@@ -185,7 +185,7 @@ export default function ResultadosAdmin() {
                    >
                      {fechas.map(f => (
                        <option key={f.id} value={f.id}>
-                          {f.stats_cargadas ? '✅ ' : ''}Fecha {f.numero_fecha} vs {f.rival}
+                          {f.stats_cargadas ? '✅ ' : ''}Fecha {f.numero_fecha} vs {f.rival || 'S/D'}
                        </option>
                      ))}
                    </select>
