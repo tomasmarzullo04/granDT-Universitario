@@ -627,3 +627,111 @@ export async function updatePlayerPrice(playerId, newPrice) {
   return data;
 }
 
+// ==========================================
+// MÉTRICAS GLOBALES DEL MERCADO
+// ==========================================
+
+/**
+ * Obtiene los "Most Picked" de la fecha activa y del histórico.
+ */
+export async function getMarketMetrics(activeFechaId) {
+  // 1. Más elegido de la fecha activa
+  let mostElegidoFecha = null;
+  if (activeFechaId) {
+    const { data: feData } = await supabase
+      .from('equipos_usuarios')
+      .select('jugador_id')
+      .eq('fecha_id', activeFechaId);
+    
+    if (feData && feData.length > 0) {
+      const counts = feData.reduce((acc, curr) => {
+        acc[curr.jugador_id] = (acc[curr.jugador_id] || 0) + 1;
+        return acc;
+      }, {});
+      const topId = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b);
+      const { data: p } = await supabase.from('jugadores').select('nombre').eq('id', topId).single();
+      mostElegidoFecha = { id: topId, nombre: p?.nombre || 'S/D', count: counts[topId] };
+    }
+  }
+
+  // 2. Más elegido Histórico
+  let mostElegidoHist = null;
+  const { data: histData } = await supabase
+    .from('equipos_usuarios')
+    .select('jugador_id');
+  
+  if (histData && histData.length > 0) {
+    const counts = histData.reduce((acc, curr) => {
+      acc[curr.jugador_id] = (acc[curr.jugador_id] || 0) + 1;
+      return acc;
+    }, {});
+    const topId = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b);
+    const { data: p } = await supabase.from('jugadores').select('nombre').eq('id', topId).single();
+    mostElegidoHist = { id: topId, nombre: p?.nombre || 'S/D', count: counts[topId] };
+  }
+
+  // 3. Capitán más elegido Histórico
+  let mostCapitanHist = null;
+  const { data: capData } = await supabase
+    .from('equipos_usuarios')
+    .select('capitan_id')
+    .not('capitan_id', 'is', null);
+
+  if (capData && capData.length > 0) {
+    const counts = capData.reduce((acc, curr) => {
+      acc[curr.capitan_id] = (acc[curr.capitan_id] || 0) + 1;
+      return acc;
+    }, {});
+    const topId = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b);
+    const { data: p } = await supabase.from('jugadores').select('nombre').eq('id', topId).single();
+    mostCapitanHist = { id: topId, nombre: p?.nombre || 'S/D', count: counts[topId] };
+  }
+
+  // 4. Más Tarjetas (Por puntos negativos)
+  let mostPenalized = null;
+  const { data: stats } = await supabase
+    .from('estadisticas_partido')
+    .select('jugador_id, amarillas, rojas');
+  
+  if (stats && stats.length > 0) {
+    const penaltyPointsMap = stats.reduce((acc, curr) => {
+      const points = ((curr.amarillas || 0) * Math.abs(SCORING.AMARILLA)) + ((curr.rojas || 0) * Math.abs(SCORING.ROJA));
+      acc[curr.jugador_id] = (acc[curr.jugador_id] || 0) + points;
+      return acc;
+    }, {});
+    const topId = Object.keys(penaltyPointsMap).reduce((a, b) => penaltyPointsMap[a] > penaltyPointsMap[b] ? a : b);
+    if (penaltyPointsMap[topId] > 0) {
+      const { data: p } = await supabase.from('jugadores').select('nombre').eq('id', topId).single();
+      mostPenalized = { id: topId, nombre: p?.nombre || 'S/D', penaltyPoints: penaltyPointsMap[topId] };
+    }
+  }
+
+  return {
+    mostElegidoFecha,
+    mostElegidoHist,
+    mostCapitanHist,
+    mostPenalized
+  };
+}
+
+/**
+ * Obtiene el nombre del usuario con mayor puntaje en una fecha específica.
+ */
+export async function getEntrenadorDeLaFecha(fechaId) {
+  if (!fechaId) return null;
+
+  const { data: ranking, error } = await supabase
+    .from('ranking_usuarios')
+    .select('usuario_id, puntos_fecha, profiles(full_name)')
+    .eq('fecha_id', fechaId)
+    .order('puntos_fecha', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error || !ranking) return null;
+  return {
+    nombre: ranking.profiles?.full_name || 'S/D',
+    puntos: ranking.puntos_fecha
+  };
+}
+

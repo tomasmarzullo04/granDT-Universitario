@@ -80,8 +80,8 @@ export default function Signup() {
         }
       }
 
-      // Redirect player to dashboard
-      navigate('/dashboard');
+      // Redirect player to resumenes
+      navigate('/resumenes');
       
     } catch (err) {
       setError(err.message || 'Ocurrió un error al intentar crear tu cuenta.');

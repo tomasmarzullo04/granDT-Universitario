@@ -17,7 +17,7 @@ export default function Login() {
   useEffect(() => {
     if (user && profile) {
       if (profile.role === 'admin') navigate('/admin', { replace: true });
-      else navigate('/dashboard', { replace: true });
+      else navigate('/resumenes', { replace: true });
     }
   }, [user, profile, navigate]);
 

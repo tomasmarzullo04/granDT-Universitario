@@ -9,6 +9,7 @@ import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import Admin from './pages/Admin';
 import OnboardingScreen from './pages/OnboardingScreen';
+import Resumenes from './pages/Resumenes';
 
 function RootRedirect() {
   const { user, role, loading } = useAuth();
@@ -19,10 +20,10 @@ function RootRedirect() {
   
   if (role === 'admin') return <Navigate to="/admin" replace />;
   
-  return <Navigate to="/dashboard" replace />;
+  return <Navigate to="/resumenes" replace />;
 }
 
-function UserDashboardGate() {
+function UserGate({ Component }) {
   const { user, profile, role, loading } = useAuth();
   const [isVeteran, setIsVeteran] = useState(null);
   
@@ -53,10 +54,10 @@ function UserDashboardGate() {
   if (loading) return null;
 
   // 1. Admin SIEMPRE saltan el onboarding.
-  if (role === 'admin') return <Dashboard />;
+  if (role === 'admin') return <Component />;
   
   // 2. Si ya es competidor verificado, también pasa directo.
-  if (profile?.es_competidor === true) return <Dashboard />;
+  if (profile?.es_competidor === true) return <Component />;
 
   // 3. Chequeo de Veterano (en progreso)
   if (isVeteran === null) {
@@ -65,7 +66,7 @@ function UserDashboardGate() {
   }
 
   // 4. Si es veterano, bypass.
-  if (isVeteran === true) return <Dashboard />;
+  if (isVeteran === true) return <Component />;
 
   // 5. Es nuevo y es_competidor es falso -> Onboarding!
   if (profile?.es_competidor === false && isVeteran === false) {
@@ -73,7 +74,7 @@ function UserDashboardGate() {
   }
 
   // Fallback (ej: si recien se esta creando)
-  return <Dashboard />;
+  return <Component />;
 }
 
 export default function App() {
@@ -90,7 +91,8 @@ export default function App() {
 
           {/* Protected Routes for Players */}
           <Route element={<ProtectedRoute />}>
-            <Route path="/dashboard" element={<UserDashboardGate />} />
+            <Route path="/resumenes" element={<UserGate Component={Resumenes} />} />
+            <Route path="/dashboard" element={<UserGate Component={Dashboard} />} />
           </Route>
 
           {/* Protected Routes for Admins (requireAdmin = true) */}

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Trophy, BookOpen, Instagram, LogOut, Code, ChevronDown, ChevronUp, ShieldAlert, Zap, Users, CalendarDays, History } from 'lucide-react';
+import { X, Trophy, BookOpen, Instagram, LogOut, Code, ChevronDown, ChevronUp, ShieldAlert, Zap, Users, CalendarDays, History, Activity } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
@@ -56,7 +56,7 @@ export default function Sidebar({ isOpen, onClose }) {
            <div className="grid grid-cols-1 gap-2">
               {/* ACCESO ADMIN (Solo si aplica) */}
               {role === 'admin' && (
-                <button
+                 <button
                   onClick={() => {
                     navigate('/admin');
                     onClose();
@@ -68,6 +68,14 @@ export default function Sidebar({ isOpen, onClose }) {
                 </button>
               )}
 
+              <button
+                onClick={() => { navigate('/resumenes'); onClose(); }}
+                className="flex items-center gap-3 p-3 bg-white border border-neutral/10 rounded-xl hover:border-accent transition-all group active:scale-95"
+              >
+                <Activity className="w-5 h-5 text-accent" />
+                <span className="font-black text-primary text-sm uppercase tracking-tight">Inicio (Resumen)</span>
+              </button>
+
               {[
                 { label: 'Mi Equipo', icon: Users, id: 'equipo' },
                 { label: 'Jugadores', icon: Users, id: 'jugadores' },
@@ -77,7 +85,11 @@ export default function Sidebar({ isOpen, onClose }) {
               ].map(item => (
                 <button
                   key={item.id}
-                  onClick={() => handleTabClick(item.id)}
+                  onClick={() => {
+                    navigate(`/dashboard?tab=${item.id}`);
+                    onClose();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
                   className="flex items-center gap-3 p-3 bg-white border border-neutral/10 rounded-xl hover:border-accent transition-all group active:scale-95"
                 >
                   <item.icon className="w-5 h-5 text-accent" />

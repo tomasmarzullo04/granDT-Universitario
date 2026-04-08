@@ -35,7 +35,7 @@ export default function AprobacionesAdmin() {
 
   const sendWelcomeEmail = async (userEmail, userName) => {
     try {
-      // Plantilla HTML Pro-Style para el correo
+      // Plantilla HTML Pro-Style para el correo (Resend)
       const htmlTemplate = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0;">
           <div style="text-align: center; margin-bottom: 20px;">
@@ -52,7 +52,7 @@ export default function AprobacionesAdmin() {
               Entrá ahora a la plataforma para armar tu XV ideal y elegir a tu capitán.
             </p>
             
-            <a href="https://localhost:5173/dashboard" style="background-color: #1966B3; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: bold; display: inline-block; font-size: 16px; letter-spacing: 0.5px;">IR A MI EQUIPO</a>
+            <a href="https://grandtuni.com" style="background-color: #1966B3; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: bold; display: inline-block; font-size: 16px; letter-spacing: 0.5px;">IR A MI EQUIPO</a>
           </div>
           
           <div style="text-align: center; margin-top: 20px; color: #94a3b8; font-size: 12px;">
@@ -61,11 +61,9 @@ export default function AprobacionesAdmin() {
         </div>
       `;
 
-      // NOTA: Para desarrollo rápido en frontend usando Resend
       const RESEND_API_KEY = "re_BcnePqhQ_AMQMPX5TRC1XyJMCUZy3Hg4y";
-
+      
       // IMPORTANTE: En el plan gratuito sin dominio verificado, Resend SOLO permite enviar AL correo registrado (el tuyo).
-      // Por eso hardcodeamos tu mail como destinatario para que la prueba no falle y te llegue de verdad.
       const testEmail = "tomasmarzullo04@gmail.com";
 
       const response = await fetch('https://api.resend.com/emails', {
@@ -76,16 +74,13 @@ export default function AprobacionesAdmin() {
         },
         body: JSON.stringify({
           from: 'onboarding@resend.dev',
-          to: testEmail, // En producción real iría userEmail (requiere dominio verificado en Resend)
+          to: testEmail, // Cambiar a userEmail cuando se vinculen dominios
           subject: '¡Bienvenido a la cancha! Inscripción Aprobada 🏉',
           html: htmlTemplate,
         }),
       });
 
-      if (!response.ok) {
-        throw new Error('Error al enviar el email');
-      }
-      
+      if (!response.ok) throw new Error('Error al enviar el email');
       console.log('✅ Email enviado vía Resend a:', testEmail);
     } catch (err) {
       console.error('Error enviando email:', err);
@@ -102,11 +97,11 @@ export default function AprobacionesAdmin() {
 
       if (updateError) throw updateError;
 
-      // Disparar Email de bienvenida
+      // Disparar Email de bienvenida (Volver a la versión frontend)
       await sendWelcomeEmail(userEmail, userName);
 
       // Mostrar Notificación Toast
-      setSuccessMsg(`Usuario aprobado exitosamente. Email enviado a ${userName}.`);
+      setSuccessMsg(`Usuario ${userName} aprobado exitosamente. Email enviado.`);
       setTimeout(() => setSuccessMsg(null), 5000);
 
       // Remover el aprobado de la lista local
@@ -118,6 +113,7 @@ export default function AprobacionesAdmin() {
       setProcessingId(null);
     }
   };
+
 
   if (loading) {
     return (
