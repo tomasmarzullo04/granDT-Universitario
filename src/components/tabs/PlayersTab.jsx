@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { getPlayersStatistics, getActiveFecha, isWaitingMode } from '../../lib/api';
+import { getPlayersStatistics, getActiveFecha } from '../../lib/api';
 import { supabase } from '../../lib/supabase';
 import { Users, Loader2, Trophy, Medal, Search, Filter } from 'lucide-react';
 
@@ -8,7 +8,7 @@ export default function PlayersTab() {
   const [loading, setLoading] = useState(true);
   const [searchParams] = useState(new URLSearchParams(window.location.search));
   const [activeFecha, setActiveFecha] = useState(null);
-  const isWaiting = useMemo(() => isWaitingMode(activeFecha), [activeFecha]);
+  const isWaiting = !activeFecha;
   const [filter, setFilter] = useState('Todas'); // 'Todas' | 'Primera' | 'Intermedia' | 'Pre-intermedia'
   const [searchTerm, setSearchTerm] = useState('');
 

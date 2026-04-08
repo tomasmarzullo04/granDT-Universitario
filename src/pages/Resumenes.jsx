@@ -2,19 +2,21 @@ import { useEffect, useState } from 'react';
 import PlayerLayout from '../components/PlayerLayout';
 import { useAuth } from '../contexts/AuthContext';
 import { 
-  getActiveFecha, getResumenFecha, getRankingCompleto, 
-  SCORING, getPlayersStatistics, getMarketMetrics, getEntrenadorDeLaFecha 
+  getLiveStatus, getResumenFecha, getRankingCompleto, 
+  SCORING, getPlayersStatistics, getMarketMetrics, getEntrenadorDeLaFecha,
+  APP_STATUS
 } from '../lib/api';
 import { 
   Shield, Zap, AlertTriangle, TrendingUp, Medal, Footprints, Target, 
   Clock, Star, Trophy, Activity, AlertCircle, Users, Quote, 
-  ChevronRight, CalendarDays
+  ChevronRight, CalendarDays, Loader2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 // --- CACHE GLOBAL PARA PERSISTENCIA DE ESTADO ---
 let dashboardCache = {
   fecha: null,
+  status: null,
   equipoData: null,
   rankingInfo: null,
   topJugadores: null,
@@ -28,6 +30,7 @@ export default function Resumenes() {
   
   // Inicializamos con la data del caché si existe
   const [fecha, setFecha] = useState(dashboardCache.fecha);
+  const [status, setStatus] = useState(dashboardCache.status);
   const [equipoData, setEquipoData] = useState(dashboardCache.equipoData);
   const [rankingInfo, setRankingInfo] = useState(dashboardCache.rankingInfo);
   const [topJugadores, setTopJugadores] = useState(dashboardCache.topJugadores || []);
@@ -41,28 +44,23 @@ export default function Resumenes() {
     async function loadData() {
       if (!user) return;
       
-      // Si ya cargamos hace menos de 5 minutos, no bloqueamos la UI con loading
       const now = Date.now();
       const shouldSilentRefresh = dashboardCache.equipoData && (now - dashboardCache.lastFetched < 300000);
       
-      if (!shouldSilentRefresh) {
-         // Si es la primera vez o pasó mucho tiempo, podríamos mostrar un sutil indicador 
-         // pero la instrucción pide evitar el spinner excesivo
-      }
-
       try {
-        const activeFecha = await getActiveFecha();
+        const { activeMatchday, status: liveStatus } = await getLiveStatus();
         
         const [eqData, ranking, allPlayerStats, market, coach] = await Promise.all([
-          activeFecha ? getResumenFecha(activeFecha.id, user.id) : Promise.resolve(null),
+          activeMatchday ? getResumenFecha(activeMatchday.id, user.id) : Promise.resolve(null),
           getRankingCompleto(),
           getPlayersStatistics(),
-          getMarketMetrics(activeFecha?.id),
-          activeFecha ? getEntrenadorDeLaFecha(activeFecha.id) : Promise.resolve(null)
+          getMarketMetrics(activeMatchday?.id),
+          activeMatchday ? getEntrenadorDeLaFecha(activeMatchday.id) : Promise.resolve(null)
         ]);
 
         // Guardar en estados
-        setFecha(activeFecha);
+        setFecha(activeMatchday);
+        setStatus(liveStatus);
         setEquipoData(eqData || { items: [], puntosTotal: 0 });
         setMarketMetrics(market);
         setEntrenadorFecha(coach);
@@ -86,7 +84,8 @@ export default function Resumenes() {
 
         // ACTUALIZAR CACHÉ GLOBAL
         dashboardCache = {
-          fecha: activeFecha,
+          fecha: activeMatchday,
+          status: liveStatus,
           equipoData: eqData || { items: [], puntosTotal: 0 },
           rankingInfo: dashboardCache.rankingInfo,
           topJugadores: top5,
@@ -96,7 +95,7 @@ export default function Resumenes() {
         };
 
       } catch (err) {
-        // Error silenciado para producción, solo loguear en desarrollo si fuera necesario
+        console.error(err);
       } finally {
         setLoading(false);
       }
@@ -133,7 +132,6 @@ export default function Resumenes() {
       if (jugador.es_capitan) capitan = jugador;
 
       const s = jugador.stats;
-      // REGLA: Los desgloses tácticos NO usan el multiplicador de capitán
       statsAtaque += (
         (s.tries * SCORING.TRY) +
         (s.conversiones * SCORING.CONVERSION) +
@@ -160,7 +158,8 @@ export default function Resumenes() {
   const renderBanner = () => {
     if (!fecha) return null;
 
-    if (fecha.estado === 'abierta') {
+    // 1. MERCADO ABIERTO
+    if (status === APP_STATUS.MERCADO_ABIERTO) {
       const isMissing = teamCount < 15;
       return (
         <div className={`w-full ${isMissing ? 'bg-red-600' : 'bg-emerald-600'} text-white p-4 md:p-6 rounded-2xl shadow-lg border border-white/10 relative overflow-hidden mb-8 transition-colors duration-500`}>
@@ -178,8 +177,8 @@ export default function Resumenes() {
                     </h3>
                     <p className="text-sm font-bold opacity-90 mt-1 max-w-lg">
                        {isMissing 
-                         ? `Todavía no completaste tu XV ideal para la Fecha ${fecha.numero_fecha}. Tenés ${teamCount}/15 confirmados.`
-                         : `Selección confirmada para la Fecha ${fecha.numero_fecha}. Kick-off en breve. ¡Vamos UNI!`}
+                         ? `Fecha ${fecha.numero_fecha} vs ${fecha.rival}. Tenés ${teamCount}/15 confirmados. ¡Seleccioná tu XV!`
+                         : `XV Inicial confirmado contra ${fecha.rival}. Kick-off en breve. ¡Vamos UNI!`}
                     </p>
                  </div>
               </div>
@@ -191,26 +190,76 @@ export default function Resumenes() {
       );
     }
 
-    if (fecha.estado === 'en_juego' || fecha.estado === 'finalizada') {
-       const isFinished = fecha.estado === 'finalizada';
+    // 2. MERCADO CERRADO (Sábado/Domingo pre-stats)
+    if (status === APP_STATUS.MERCADO_CERRADO) {
        return (
-        <div className={`w-full ${isFinished ? 'bg-primary' : 'bg-amber-500'} text-white p-4 md:p-6 rounded-2xl shadow-lg border border-white/10 relative overflow-hidden mb-8 transition-colors`}>
+        <div className="w-full bg-amber-500 text-white p-4 md:p-6 rounded-2xl shadow-lg border border-white/10 relative overflow-hidden mb-8 transition-colors">
            <div className="absolute right-0 top-0 opacity-10 transform translate-x-4 -translate-y-4">
-              {isFinished ? <Trophy className="w-48 h-48" /> : <Clock className="w-48 h-48" />}
+              <Clock className="w-48 h-48" />
            </div>
            <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="flex items-start gap-4">
                  <div className="p-3 bg-white/20 rounded-xl backdrop-blur-md">
-                    {isFinished ? <Star className="w-6 h-6" /> : <Clock className="w-6 h-6" />}
+                    <Clock className="w-6 h-6" />
                  </div>
                  <div>
                     <h3 className="font-black text-lg md:text-xl tracking-tight uppercase leading-none">
-                       {isFinished ? '✅ RESULTADOS PUBLICADOS' : '⏳ VENTANA CERRADA'}
+                       ⏳ MERCADO CERRADO
                     </h3>
                     <p className="text-sm font-bold opacity-90 mt-1 max-w-lg">
-                       {isFinished 
-                         ? `Los puntajes oficiales de la Fecha ${fecha.numero_fecha} ya están disponibles. Revisá tu rendimiento.`
-                         : `El Staff está procesando las estadísticas de la Fecha ${fecha.numero_fecha}. El mercado está cerrado.`}
+                       El mercado está cerrado. ¡Éxitos al UNI contra {fecha.rival}! Esperamos el silbatazo final.
+                    </p>
+                 </div>
+              </div>
+           </div>
+        </div>
+      );
+    }
+
+    // 3. PROCESANDO (Post-partido, sin stats)
+    if (status === APP_STATUS.PROCESANDO) {
+       return (
+        <div className="w-full bg-slate-600 text-white p-4 md:p-6 rounded-2xl shadow-lg border border-white/10 relative overflow-hidden mb-8 transition-colors">
+           <div className="absolute right-0 top-0 opacity-10 transform translate-x-4 -translate-y-4">
+              <Activity className="w-48 h-48" />
+           </div>
+           <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex items-start gap-4">
+                 <div className="p-3 bg-white/20 rounded-xl backdrop-blur-md">
+                    <Loader2 className="w-6 h-6 text-white animate-spin" />
+                 </div>
+                 <div>
+                    <h3 className="font-black text-lg md:text-xl tracking-tight uppercase leading-none">
+                       ⚙️ PROCESANDO DATOS
+                    </h3>
+                    <p className="text-sm font-bold opacity-90 mt-1 max-w-lg">
+                       El Staff está cargando las estadísticas del partido contra {fecha.rival}. ¡Volvé en unos minutos!
+                    </p>
+                 </div>
+              </div>
+           </div>
+        </div>
+      );
+    }
+
+    // 4. RESULTADOS LISTOS
+    if (status === APP_STATUS.RESULTADOS_LISTOS) {
+       return (
+        <div className="w-full bg-primary text-white p-4 md:p-6 rounded-2xl shadow-lg border border-white/10 relative overflow-hidden mb-8 transition-colors">
+           <div className="absolute right-0 top-0 opacity-10 transform translate-x-4 -translate-y-4">
+              <Trophy className="w-48 h-48" />
+           </div>
+           <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex items-start gap-4">
+                 <div className="p-3 bg-white/20 rounded-xl backdrop-blur-md">
+                    <Star className="w-6 h-6" />
+                 </div>
+                 <div>
+                    <h3 className="font-black text-lg md:text-xl tracking-tight uppercase leading-none">
+                       ✅ RESULTADOS LISTOS
+                    </h3>
+                    <p className="text-sm font-bold opacity-90 mt-1 max-w-lg">
+                       ¡Resultados de la Fecha {fecha.numero_fecha} vs {fecha.rival} publicados! Revisá tu rendimiento.
                     </p>
                  </div>
               </div>
@@ -239,7 +288,7 @@ export default function Resumenes() {
                  <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                        <Activity className="w-6 h-6 text-primary" />
-                       <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">Rendimiento Fecha {fecha?.numero_fecha}</h2>
+                       <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">RESUMEN FECHA {fecha?.numero_fecha}</h2>
                     </div>
                  </div>
 

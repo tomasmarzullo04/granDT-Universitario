@@ -1,584 +1,298 @@
-import { useState, useEffect, useCallback } from 'react';
-import {
-  getAllFechas,
-  getConvocados,
-  getEstadisticasPartido,
-  upsertEstadisticasCategoria,
-  publicarResultadosFecha,
-  calcularPuntosJugador,
+import { useState, useEffect } from 'react';
+import { supabase } from '../../lib/supabase';
+import { 
+  getAllFechas, 
+  getAdminStatsData, 
+  APP_STATUS, 
+  getLiveStatus,
   SCORING,
+  publicarResultadosFecha
 } from '../../lib/api';
-import {
-  Save, Loader2, FileBarChart, ChevronDown, CheckCircle,
-  AlertCircle, TrendingUp, Zap, AlertTriangle, X, Search,
+import { 
+  Save, 
+  Loader2, 
+  Activity, 
+  Search, 
+  CheckCircle, 
+  AlertCircle,
+  Trophy,
+  Rocket
 } from 'lucide-react';
 
-const CATEGORIES = ['Primera', 'Intermedia', 'Pre-intermedia'];
-const CAT_KEY = { 'Primera': 'primera', 'Intermedia': 'intermedia', 'Pre-intermedia': 'pre' };
-
 const STAT_FIELDS = [
-  { key: 'tries',       label: 'Try',    desc: 'Try', pts: SCORING.TRY,        color: 'text-green-600',  bg: 'bg-green-50',  border: 'border-green-200' },
-  { key: 'conversiones',label: 'Conv',   desc: 'Conversión', pts: SCORING.CONVERSION, color: 'text-blue-600',   bg: 'bg-blue-50',   border: 'border-blue-200' },
-  { key: 'penales',     label: 'Penal',  desc: 'Penal convertido', pts: SCORING.PENAL,      color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-200' },
-  { key: 'drops',       label: 'Drop',   desc: 'Drop goal', pts: SCORING.DROP,       color: 'text-violet-600', bg: 'bg-violet-50', border: 'border-violet-200' },
-  { key: 'amarillas',   label: 'Ama.',   desc: 'Tarjeta Amarilla', pts: SCORING.AMARILLA,   color: 'text-yellow-600', bg: 'bg-yellow-50', border: 'border-yellow-200' },
-  { key: 'rojas',       label: 'Roja',   desc: 'Tarjeta Roja', pts: SCORING.ROJA,       color: 'text-red-600',    bg: 'bg-red-50',    border: 'border-red-200' },
-  { key: 'penales_hechos', label: 'Pen. H.', desc: 'Penales hechos (foul)', pts: SCORING.PENALES_HECHOS, color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-200' },
-  { key: 'knock_ons',   label: 'Knock',  desc: 'Knock On', pts: SCORING.KNOCK_ON,   color: 'text-amber-600',  bg: 'bg-amber-50',  border: 'border-amber-200' },
-  { key: 'lines_robados', label: 'Line R.', desc: 'Lines robados', pts: SCORING.LINES_ROBADOS, color: 'text-teal-600', bg: 'bg-teal-50', border: 'border-teal-200' },
-  { key: 'asistencias', label: 'Asist.', desc: 'Asistencia', pts: SCORING.ASISTENCIA, color: 'text-cyan-600', bg: 'bg-cyan-50', border: 'border-cyan-200' },
-  { key: 'cortes_limpios', label: 'Corte', desc: 'Cortes limpios (más de 10 mts)', pts: SCORING.CORTE_LIMPIO, color: 'text-fuchsia-600', bg: 'bg-fuchsia-50', border: 'border-fuchsia-200' },
-  { key: 'tackles',     label: 'Tackle', desc: 'Tackle', pts: SCORING.TACKLE,     color: 'text-lime-600',   bg: 'bg-lime-50',   border: 'border-lime-200' },
+  { key: 'tries',          label: 'Try',    pts: SCORING.TRY },
+  { key: 'conversiones',   label: 'Conv',   pts: SCORING.CONVERSION },
+  { key: 'penales',        label: 'Penal',  pts: SCORING.PENAL },
+  { key: 'drops',          label: 'Drop',   pts: SCORING.DROP },
+  { key: 'amarillas',      label: 'Ama.',   pts: SCORING.AMARILLA },
+  { key: 'rojas',          label: 'Roja',   pts: SCORING.ROJA },
+  { key: 'penales_hechos', label: 'Pen. H', pts: SCORING.PENALES_HECHOS },
+  { key: 'knock_ons',      label: 'Knock',  pts: SCORING.KNOCK_ON },
+  { key: 'lines_robados',  label: 'Line R', pts: SCORING.LINES_ROBADOS },
+  { key: 'asistencias',    label: 'Asist',  pts: SCORING.ASISTENCIA },
+  { key: 'cortes_limpios', label: 'Corte',  pts: SCORING.CORTE_LIMPIO },
+  { key: 'tackles',        label: 'Tackle', pts: SCORING.TACKLE },
 ];
 
-// ─── StatBox Component ──────────────────────────────────────────────────────
-function StatBox({ field, value, onInc, onDec }) {
-  return (
-    <div title={field.desc} className={`flex flex-col items-center gap-1 px-2 py-2 rounded-xl border ${field.bg} ${field.border} min-w-[52px]`}>
-      <span className={`text-[9px] font-black uppercase tracking-widest cursor-help ${field.color}`}>{field.label}</span>
-      <span className="text-[8px] font-bold text-neutral opacity-60">
-        {field.pts > 0 ? `+${field.pts}` : field.pts}
-      </span>
-      <button
-        onClick={onInc}
-        className="w-6 h-6 rounded-lg bg-white border border-neutral/20 flex items-center justify-center font-black text-sm text-primary hover:bg-primary hover:text-white hover:border-primary hover-shadow transition-all shadow-sm"
-      >
-        +
-      </button>
-      <span className={`text-base font-black leading-none ${value > 0 ? field.color : 'text-neutral/40'}`}>
-        {value}
-      </span>
-      <button
-        onClick={onDec}
-        disabled={value <= 0}
-        className="w-6 h-6 rounded-lg bg-white border border-neutral/20 flex items-center justify-center font-black text-sm text-neutral hover:bg-red-50 hover:text-red-500 hover:border-red-200 hover-shadow transition-all shadow-sm disabled:opacity-30 disabled:cursor-not-allowed"
-      >
-        −
-      </button>
-    </div>
-  );
-}
-
-// ─── ConfirmPublishModal ────────────────────────────────────────────────────
-function ConfirmPublishModal({ onConfirm, onCancel, loading }) {
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-      <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl border border-neutral/20 animate-fade-in">
-        <div className="flex items-center justify-between mb-6">
-          <div className="w-14 h-14 bg-accent/10 rounded-2xl flex items-center justify-center">
-            <Zap className="w-7 h-7 text-accent" />
-          </div>
-          <button onClick={onCancel} className="p-2 rounded-xl text-neutral hover:bg-neutral-light transition-colors">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-        <h2 className="text-2xl font-black text-primary mb-2">¿Publicar Resultados Finales?</h2>
-        <p className="text-sm text-neutral font-medium leading-relaxed mb-6">
-          Esto guardará las estadísticas de todas las categorías, recalculará el ranking de todos los participantes y marcará esta fecha como <strong>finalizada</strong>. Esta acción no se puede deshacer fácilmente.
-        </p>
-        <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 flex items-start gap-3 mb-6">
-          <AlertTriangle className="w-5 h-5 text-yellow-600 shrink-0 mt-0.5" />
-          <p className="text-xs font-bold text-yellow-700">
-            Asegurate de haber guardado las estadísticas de todas las categorías antes de publicar.
-          </p>
-        </div>
-        <div className="flex gap-3">
-          <button
-            onClick={onCancel}
-            className="flex-1 py-3 px-4 rounded-2xl border border-neutral/20 font-black text-neutral hover:bg-neutral-light transition-all"
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={onConfirm}
-            disabled={loading}
-            className="flex-1 py-3 px-4 rounded-2xl bg-accent text-white font-black shadow-lg hover:scale-[1.02] transition-all disabled:opacity-60 flex items-center justify-center gap-2"
-          >
-            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Zap className="w-5 h-5" />}
-            {loading ? 'Publicando...' : '¡PUBLICAR!'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Main Component ─────────────────────────────────────────────────────────
 export default function ResultadosAdmin() {
-  const [fechas, setFechas] = useState([]);
-  const [selectedFecha, setSelectedFecha] = useState('');
-  const [selectedFechaObj, setSelectedFechaObj] = useState(null);
-  const [activeCategory, setActiveCategory] = useState('Primera');
+    const [fechas, setFechas] = useState([]);
+    const [selectedFecha, setSelectedFecha] = useState(null);
+    const [status, setStatus] = useState(APP_STATUS.MERCADO_CERRADO);
+    const [jugadores, setJugadores] = useState([]);
+    const [stats, setStats] = useState({});
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [publishing, setPublishing] = useState(false);
+    const [search, setSearch] = useState('');
+    const [msg, setMsg] = useState({ text: '', type: '' });
 
-  // stats[jugadorId] = { tries, conversiones, penales, drops, amarillas, rojas }
-  const [stats, setStats] = useState({});
-  // playersByCategory[cat] = [player, ...]
-  const [playersByCategory, setPlayersByCategory] = useState({
-    Primera: [], Intermedia: [], 'Pre-intermedia': [],
-  });
+    // ── Carga inicial ──
+    useEffect(() => {
+        async function init() {
+            setLoading(true);
+            try {
+                const { activeMatchday, status: liveStatus } = await getLiveStatus();
+                const allFechas = await getAllFechas();
+                setFechas(allFechas);
+                setStatus(liveStatus);
 
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [publishing, setPublishing] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [savedCategories, setSavedCategories] = useState(new Set());
-  const [statusMsg, setStatusMsg] = useState({ type: '', text: '' });
+                // Sugerir fecha: si hay una activa usarla, si no la más reciente finalizada
+                if (activeMatchday) {
+                  setSelectedFecha(activeMatchday.id);
+                } else if (allFechas.length > 0) {
+                  // Ordenar por fecha_inicio descendente para encontrar el más reciente
+                  const sorted = [...allFechas].sort((a, b) => new Date(b.fecha_inicio) - new Date(a.fecha_inicio));
+                  setSelectedFecha(sorted[0].id);
+                }
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        }
+        init();
+    }, []);
 
-  // ── Load fechas on mount ───────────────────────────────────────────────
-  useEffect(() => {
-    async function load() {
-      const data = await getAllFechas();
-      setFechas(data);
-      if (data.length > 0) {
-        setSelectedFecha(data[0].id.toString());
-        setSelectedFechaObj(data[0]);
-      }
-      setLoading(false);
-    }
-    load();
-  }, []);
+    // ── Carga de jugadores y stats al cambiar la fecha ──
+    useEffect(() => {
+        if (!selectedFecha) return;
+        async function loadStats() {
+            const { jugadores: list, stats: initialStats } = await getAdminStatsData(selectedFecha);
+            setJugadores(list);
+            setStats(initialStats);
+        }
+        loadStats();
+    }, [selectedFecha]);
 
-  // ── When fecha changes, reload players + existing stats ───────────────
-  useEffect(() => {
-    async function loadDataForFecha() {
-      if (!selectedFecha) return;
-      setLoading(true);
-      setStatusMsg({ type: '', text: '' });
-      setSavedCategories(new Set());
+    const handleStatChange = (jId, field, val) => {
+        setStats(prev => ({
+            ...prev,
+            [jId]: {
+                ...prev[jId],
+                [field]: parseInt(val) || 0
+            }
+        }));
+    };
 
-      try {
-        const fechaId = parseInt(selectedFecha);
-        const obj = fechas.find(f => f.id === fechaId);
-        setSelectedFechaObj(obj || null);
+    const handleSave = async () => {
+        if (!selectedFecha) return;
+        setSaving(true);
+        try {
+            const updates = Object.entries(stats).map(([jId, s]) => ({
+                fecha_id: selectedFecha,
+                jugador_id: jId,
+                ...s
+            }));
+            const { error } = await supabase.from('estadisticas_partido').upsert(updates);
+            if (error) throw error;
+            setMsg({ text: 'Estadísticas guardadas localmente', type: 'success' });
+            setTimeout(() => setMsg({ text: '', type: '' }), 3000);
+        } catch (err) {
+            console.error(err);
+            setMsg({ text: 'Error al guardar', type: 'error' });
+        } finally {
+            setSaving(false);
+        }
+    };
 
-        const [convocadosData, prevStats] = await Promise.all([
-          getConvocados(fechaId),
-          getEstadisticasPartido(fechaId),
-        ]);
+    const handlePublish = async () => {
+        if (!selectedFecha) return;
+        if (!window.confirm('¿Estás seguro de publicar los resultados finales? Esto cerrará la fecha permanentemente y abrirá la siguiente.')) return;
+        
+        setPublishing(true);
+        try {
+            // 1. Marcar fecha actual como completada
+            await supabase.from('fechas').update({ 
+               stats_cargadas: true 
+            }).eq('id', selectedFecha);
 
-        console.log('DEBUG: Carga de datos para Fecha ID:', fechaId);
-        console.log('DEBUG: Convocados crudos:', convocadosData);
+            // 2. Abrir la siguiente fecha automáticamente
+            const current = fechas.find(f => f.id === selectedFecha);
+            if (current) {
+                const nextNum = (current.numero_fecha || 0) + 1;
+                const next = fechas.find(f => f.numero_fecha === nextNum);
+                if (next) {
+                    await supabase.from('fechas').update({
+                        inicio_semana: new Date().toISOString()
+                    }).eq('id', next.id);
+                }
+            }
 
-        // Group players by category
-        const grouped = { Primera: [], Intermedia: [], 'Pre-intermedia': [] };
-        convocadosData.forEach(p => {
-          // Normalización para evitar fallos por espacios o mayúsculas
-          const cat = p.categoria ? p.categoria.trim() : 'Sin Categoría';
-          if (grouped[cat]) {
-            grouped[cat].push(p);
-          } else if (cat.toLowerCase() === 'primera') {
-            grouped.Primera.push(p);
-          } else if (cat.toLowerCase() === 'intermedia') {
-            grouped.Intermedia.push(p);
-          } else if (cat.toLowerCase() === 'pre-intermedia' || cat.toLowerCase() === 'pre') {
-            grouped['Pre-intermedia'].push(p);
-          }
-        });
-        setPlayersByCategory(grouped);
-        console.log('DEBUG: Convocados agrupados:', grouped);
+            setMsg({ text: '¡Resultados publicados y próxima fecha habilitada!', type: 'success' });
+            
+            // Recargar datos
+            const { activeMatchday, status: liveStatus } = await getLiveStatus();
+            setStatus(liveStatus);
+            if (activeMatchday) setSelectedFecha(activeMatchday.id);
+            
+        } catch (err) {
+            console.error(err);
+            setMsg({ text: 'Error al publicar resultados', type: 'error' });
+        } finally {
+            setPublishing(false);
+        }
+    };
 
-        // Initialize stats map for ALL convocados
-        const initStats = {};
-        convocadosData.forEach(p => {
-          const pre = prevStats.find(s => s.jugador_id === p.id);
-          initStats[p.id] = {
-            tries:        pre?.tries        ?? 0,
-            conversiones: pre?.conversiones ?? 0,
-            penales:      pre?.penales      ?? 0,
-            drops:        pre?.drops        ?? 0,   // handle NULL from DB
-            amarillas:    pre?.amarillas    ?? 0,
-            rojas:        pre?.rojas        ?? 0,
-            penales_hechos: pre?.penales_hechos ?? 0,
-            knock_ons:    pre?.knock_ons    ?? 0,
-            lines_robados:pre?.lines_robados?? 0,
-            asistencias:  pre?.asistencias  ?? 0,
-            cortes_limpios:pre?.cortes_limpios?? 0,
-            tackles:      pre?.tackles      ?? 0,
-          };
-        });
-        setStats(initStats);
+    const filteredJugadores = jugadores.filter(j => 
+        j.nombre.toLowerCase().includes(search.toLowerCase())
+    );
 
-      } catch (err) {
-        console.error(err);
-        setStatusMsg({ type: 'error', text: 'Error al cargar los datos.' });
-      } finally {
-        setLoading(false);
-      }
-    }
-    if (fechas.length > 0) loadDataForFecha();
-  }, [selectedFecha, fechas]);
-
-  // ── Update a single stat ───────────────────────────────────────────────
-  const updateStat = useCallback((jugadorId, field, delta) => {
-    setStats(prev => ({
-      ...prev,
-      [jugadorId]: {
-        ...prev[jugadorId],
-        [field]: Math.max(0, (prev[jugadorId]?.[field] || 0) + delta),
-      },
-    }));
-  }, []);
-
-  // ── Build stats array for a category ──────────────────────────────────
-  const buildStatsArray = (cat) => {
-    const fechaId = parseInt(selectedFecha);
-    return playersByCategory[cat].map(p => ({
-      fecha_id:     fechaId,
-      jugador_id:   p.id,
-      tries:        stats[p.id]?.tries        || 0,
-      conversiones: stats[p.id]?.conversiones || 0,
-      penales:      stats[p.id]?.penales      || 0,
-      drops:        stats[p.id]?.drops        || 0,
-      amarillas:    stats[p.id]?.amarillas    || 0,
-      rojas:        stats[p.id]?.rojas        || 0,
-      penales_hechos: stats[p.id]?.penales_hechos || 0,
-      knock_ons:    stats[p.id]?.knock_ons    || 0,
-      lines_robados:stats[p.id]?.lines_robados|| 0,
-      asistencias:  stats[p.id]?.asistencias  || 0,
-      cortes_limpios:stats[p.id]?.cortes_limpios|| 0,
-      tackles:      stats[p.id]?.tackles      || 0,
-    }));
-  };
-
-  // ── Save single category ───────────────────────────────────────────────
-  const handleSaveCategory = async () => {
-    if (!selectedFecha) return;
-    setSaving(true);
-    setStatusMsg({ type: '', text: '' });
-    try {
-      await upsertEstadisticasCategoria(buildStatsArray(activeCategory));
-      setSavedCategories(prev => new Set([...prev, activeCategory]));
-      setStatusMsg({ type: 'success', text: `✓ Estadísticas de ${activeCategory} guardadas correctamente.` });
-    } catch (err) {
-      console.error(err);
-      setStatusMsg({ type: 'error', text: `Error al guardar ${activeCategory}: ${err.message}` });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // ── Publish final results ──────────────────────────────────────────────
-  const handlePublish = async () => {
-    if (!selectedFecha) return;
-    setPublishing(true);
-    setStatusMsg({ type: '', text: '' });
-    try {
-      const fechaId = parseInt(selectedFecha);
-      // Merge all stats from the 3 categories
-      const allStats = [
-        ...buildStatsArray('Primera'),
-        ...buildStatsArray('Intermedia'),
-        ...buildStatsArray('Pre-intermedia'),
-      ];
-      await publicarResultadosFecha(fechaId, allStats);
-      setShowConfirm(false);
-      setSavedCategories(new Set(['Primera', 'Intermedia', 'Pre-intermedia']));
-      setStatusMsg({
-        type: 'success',
-        text: '🏆 ¡Resultados publicados! El ranking de todos los participantes ha sido actualizado.',
-      });
-      // Refresh fechas to reflect the new state
-      const updated = await getAllFechas();
-      setFechas(updated);
-    } catch (err) {
-      console.error(err);
-      setStatusMsg({ type: 'error', text: `Error al publicar: ${err.message}` });
-      setShowConfirm(false);
-    } finally {
-      setPublishing(false);
-    }
-  };
-
-  const [searchTerm, setSearchTerm] = useState('');
-  const [expandedPlayers, setExpandedPlayers] = useState(new Set());
-
-  const toggleExpand = (playerId) => {
-    setExpandedPlayers(prev => {
-      const next = new Set(prev);
-      if (next.has(playerId)) next.delete(playerId);
-      else next.add(playerId);
-      return next;
-    });
-  };
-
-  const isFinalizada = selectedFechaObj?.estado === 'finalizada';
-  const activePlayers = (playersByCategory[activeCategory] || []).filter(p => 
-    p.nombre.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-  const totalPlayersAll = CATEGORIES.reduce((s, c) => s + (playersByCategory[c]?.length || 0), 0);
-
-  // Stats principales para mobile
-  const PRIMARY_STATS = ['tries', 'tackles', 'penales'];
-
-  return (
-    <>
-      {showConfirm && (
-        <ConfirmPublishModal
-          onConfirm={handlePublish}
-          onCancel={() => setShowConfirm(false)}
-          loading={publishing}
-        />
-      )}
-
-      {/* ── FAB GUARDAR (Mobile) ── */}
-      {!isFinalizada && activePlayers.length > 0 && (
-        <div className="md:hidden fixed bottom-24 right-6 flex flex-col gap-3 z-[60]">
-           <button
-             onClick={handleSaveCategory}
-             disabled={saving}
-             className="w-14 h-14 bg-accent text-white rounded-full shadow-2xl flex items-center justify-center border-4 border-white active:scale-95 transition-all"
-           >
-             {saving ? <Loader2 className="w-6 h-6 animate-spin" /> : <Save className="w-6 h-6" />}
-           </button>
-        </div>
-      )}
-
-      <div className="space-y-6 animate-fade-in relative">
-
-        {/* ── Header Sticky en Mobile ── */}
-        <div className="sticky top-[56px] bg-slate-50 z-40 -mx-2 px-2 pb-4 pt-2 md:relative md:top-0 md:bg-transparent md:mx-0 md:px-0">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-neutral/10 pb-4 md:pb-6">
-            <div>
-              <h2 className="text-xl md:text-2xl font-black text-primary flex items-center gap-2">
-                <TrendingUp className="w-6 h-6 text-accent" /> CARGA DE ESTADÍSTICAS
-              </h2>
-              <p className="hidden md:block text-[10px] md:text-xs font-black text-neutral uppercase tracking-widest mt-1">
-                {isFinalizada ? '✓ Fecha Finalizada' : 'Cargá las stats por categoría'}
-              </p>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-3">
-              {/* Buscador Mobile/Desktop */}
-              <div className="relative">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-neutral" />
-                <input
-                  type="text"
-                  placeholder="Buscar jugador..."
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
-                  className="w-full sm:w-64 bg-white border border-neutral/20 rounded-xl pl-9 pr-4 py-2.5 text-sm font-bold text-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all shadow-sm"
-                />
-                {searchTerm && (
-                  <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 -translate-y-1/2">
-                    <X className="w-3 h-3 text-neutral hover:text-primary" />
-                  </button>
-                )}
-              </div>
-
-              {/* Fecha selector */}
-              <div className="relative min-w-[200px]">
-                <select
-                  value={selectedFecha}
-                  onChange={e => setSelectedFecha(e.target.value)}
-                  className="w-full bg-white border border-neutral/20 rounded-xl px-4 py-2.5 text-sm font-bold text-primary appearance-none focus:ring-4 focus:ring-primary/10 outline-none shadow-sm cursor-pointer"
-                >
-                  {fechas.map(f => (
-                    <option key={f.id} value={f.id}>
-                      F{f.numero_fecha} — vs {f.rival}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="w-4 h-4 absolute right-4 top-1/2 -translate-y-1/2 text-neutral pointer-events-none" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ── Status Message ────────────────────────────────────────────── */}
-        {statusMsg.text && (
-          <div className={`p-4 rounded-2xl flex items-center gap-3 border shadow-md animate-fade-in ${
-            statusMsg.type === 'error' ? 'bg-red-50 border-red-200 text-red-600' : 'bg-green-50 border-green-200 text-green-700'
-          }`}>
-            {statusMsg.type === 'error' ? <AlertCircle className="w-5 h-5 shrink-0" /> : <CheckCircle className="w-5 h-5 shrink-0" />}
-            <p className="text-sm font-bold">{statusMsg.text}</p>
-          </div>
-        )}
-
-        {loading ? (
-          <div className="flex justify-center p-20">
-            <Loader2 className="w-10 h-10 animate-spin text-primary" />
-          </div>
-        ) : totalPlayersAll === 0 ? (
-          <div className="bg-neutral-light/50 rounded-3xl p-12 text-center border-2 border-dashed border-neutral/20">
-            <FileBarChart className="w-12 h-12 text-neutral/30 mx-auto mb-4" />
-            <h3 className="text-xl font-bold text-neutral">No hay jugadores convocados</h3>
-          </div>
-        ) : (
-          <>
-            {/* ── Tabs de Categoría Táctiles ── */}
-            <div className="flex gap-1 p-1 bg-neutral-light rounded-2xl border border-neutral/20 overflow-x-auto no-scrollbar snap-x">
-              {CATEGORIES.map(cat => {
-                const count = playersByCategory[cat]?.length || 0;
-                const saved = savedCategories.has(cat);
-                return (
-                  <button
-                    key={cat}
-                    onClick={() => setActiveCategory(cat)}
-                    className={`flex-1 min-w-[110px] items-center justify-center gap-2 px-4 py-3 rounded-xl text-[11px] font-black tracking-wide transition-all snap-center ${
-                      activeCategory === cat ? 'bg-primary text-white shadow-lg' : 'text-neutral hover:bg-white/50'
-                    }`}
-                  >
-                    {cat}
-                    <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-black ml-1 ${
-                      saved ? 'bg-green-500 text-white' : count > 0 ? 'bg-accent text-white' : 'bg-neutral/20 text-neutral'
-                    }`}>
-                      {saved ? '✓' : count}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* ── Players View ────────────────────────────────────────── */}
-            {activePlayers.length === 0 ? (
-              <div className="bg-white rounded-3xl p-12 text-center border border-neutral/20">
-                <p className="font-black text-neutral opacity-40 uppercase tracking-widest">No hay coincidencias</p>
-              </div>
-            ) : (
-              <>
-                {/* ── Desktop Table ── */}
-                <div className="hidden md:block bg-white rounded-2xl overflow-hidden border border-neutral/20 shadow-sm transition-all">
-                  <div className="divide-y divide-neutral/10">
-                    {activePlayers.map((player) => {
-                      const pStats = stats[player.id] || {};
-                      const pts = calcularPuntosJugador(pStats);
-                      const initials = player.nombre?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
-                      return (
-                        <div key={player.id} className="grid items-center px-4 py-3 hover:bg-neutral-light/20 transition-colors" style={{ gridTemplateColumns: '1.2fr repeat(12, auto) 80px' }}>
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
-                              <span className="text-[11px] font-black text-primary">{initials}</span>
-                            </div>
-                            <div className="min-w-0"><p className="font-black text-sm text-primary truncate leading-tight">{player.nombre}</p></div>
-                          </div>
-                          {STAT_FIELDS.map(f => (
-                            <div key={f.key} className="flex justify-center px-0.5">
-                              <StatBox field={f} value={pStats[f.key] || 0} onInc={() => updateStat(player.id, f.key, 1)} onDec={() => updateStat(player.id, f.key, -1)} />
-                            </div>
-                          ))}
-                          <div className="text-right font-black text-primary text-lg">{pts}</div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* ── Mobile Compact Cards ── */}
-                <div className="md:hidden space-y-4">
-                  {activePlayers.map(player => {
-                    const pStats = stats[player.id] || {};
-                    const pts = calcularPuntosJugador(pStats);
-                    const isExpanded = expandedPlayers.has(player.id);
-                    return (
-                      <div key={player.id} className="bg-white rounded-[24px] border border-neutral/20 shadow-sm overflow-hidden animate-pop-in">
-                        {/* Fila Principal */}
-                        <div className="p-4 bg-white">
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center gap-3">
-                               <div className="w-10 h-10 bg-primary/5 rounded-2xl flex items-center justify-center font-black text-primary text-xs border border-primary/10">
-                                  {player.nombre.charAt(0)}
-                               </div>
-                               <div>
-                                  <p className="font-black text-primary text-sm leading-tight">{player.nombre}</p>
-                                  <p className="text-[9px] font-bold text-neutral uppercase mt-1 tracking-tighter opacity-70">{player.posicion}</p>
-                               </div>
-                            </div>
-                            <div className="bg-primary/5 px-3 py-1 rounded-xl border border-primary/10 flex flex-col items-center">
-                               <span className={`text-lg font-black leading-none ${pts >= 0 ? 'text-primary' : 'text-red-600'}`}>{pts}</span>
-                               <span className="text-[8px] font-black text-neutral/40 uppercase">PTS</span>
-                            </div>
-                          </div>
-                          
-                          {/* 3 Stats Principales */}
-                          <div className="grid grid-cols-3 gap-2">
-                             {STAT_FIELDS.filter(f => PRIMARY_STATS.includes(f.key)).map(f => (
-                               <div key={f.key} className={`flex flex-col items-center p-2 rounded-xl border ${f.bg} ${f.border}`}>
-                                  <span className={`text-[8px] font-black uppercase mb-1.5 ${f.color} tracking-tighter`}>{f.label}</span>
-                                  <div className="flex items-center gap-2">
-                                     <button onClick={() => updateStat(player.id, f.key, -1)} disabled={(pStats[f.key] || 0) <= 0} className="w-7 h-7 bg-white rounded-lg border border-neutral/20 flex items-center justify-center font-black text-xs shadow-sm active:bg-red-50">-</button>
-                                     <span className="text-sm font-black w-3 text-center">{pStats[f.key] || 0}</span>
-                                     <button onClick={() => updateStat(player.id, f.key, 1)} className="w-7 h-7 bg-white rounded-lg border border-neutral/20 flex items-center justify-center font-black text-xs shadow-sm active:bg-green-50">+</button>
-                                  </div>
-                               </div>
-                             ))}
-                          </div>
-
-                          <button 
-                            onClick={() => toggleExpand(player.id)}
-                            className="w-full mt-3 py-2 text-[10px] font-black text-neutral/40 flex items-center justify-center gap-2 uppercase tracking-widest border-t border-dashed border-neutral/10 pt-3"
-                          >
-                             {isExpanded ? 'Ocultar extras' : 'Ver todas las métricas'}
-                             <ChevronDown className={`w-3 h-3 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-                          </button>
-                        </div>
-
-                        {/* Panel Expandido (Resto de Stats) */}
-                        {isExpanded && (
-                          <div className="bg-neutral-light/30 px-3 pb-4 pt-1 border-t border-neutral/5 grid grid-cols-3 sm:grid-cols-4 gap-2 animate-slide-down">
-                             {STAT_FIELDS.filter(f => !PRIMARY_STATS.includes(f.key)).map(f => (
-                               <div key={f.key} className={`flex flex-col items-center p-2 rounded-xl border ${f.bg} ${f.border} opacity-90`}>
-                                  <span className={`text-[7px] font-black uppercase mb-1 ${f.color} tracking-tighter`}>{f.label}</span>
-                                  <div className="flex items-center gap-1.5">
-                                     <button onClick={() => updateStat(player.id, f.key, -1)} disabled={(pStats[f.key] || 0) <= 0} className="w-6 h-6 bg-white rounded-lg border border-neutral/20 flex items-center justify-center font-black text-[10px] shadow-sm">-</button>
-                                     <span className="text-xs font-black min-w-[12px] text-center">{pStats[f.key] || 0}</span>
-                                     <button onClick={() => updateStat(player.id, f.key, 1)} className="w-6 h-6 bg-white rounded-lg border border-neutral/20 flex items-center justify-center font-black text-[10px] shadow-sm">+</button>
-                                  </div>
-                               </div>
-                             ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </>
-            )}
-
-            {/* ── Footer Actions Desktop ── */}
-            <div className="hidden md:flex flex-col md:flex-row items-center justify-center gap-4 pt-4 pb-12">
-              <button
-                onClick={handleSaveCategory}
-                disabled={saving || activePlayers.length === 0 || isFinalizada}
-                className="w-full md:w-auto flex items-center justify-center gap-2 px-8 py-4 bg-white border-2 border-primary text-primary font-black rounded-2xl hover:bg-primary/5 transition-all shadow-sm active:scale-95 transition-transform"
-              >
-                {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-                Guardar {activeCategory}
-              </button>
-
-              {!isFinalizada && (
-                <button
-                  onClick={() => setShowConfirm(true)}
-                  disabled={totalPlayersAll === 0}
-                  className="w-full md:w-auto flex items-center justify-center gap-2 px-10 py-4 bg-accent text-white font-black rounded-2xl shadow-xl hover:scale-[1.02] transition-all"
-                >
-                  <Zap className="w-5 h-5" />
-                  PUBLICAR RESULTADOS
-                </button>
-              )}
-            </div>
-
-            {/* Botón de Publicar en Mobile (Sección Final) */}
-            {!isFinalizada && (
-              <div className="md:hidden pb-12 px-2">
-                 <button
-                    onClick={() => setShowConfirm(true)}
-                    disabled={totalPlayersAll === 0}
-                    className="w-full py-5 bg-primary text-white font-black rounded-2xl shadow-2xl flex items-center justify-center gap-3 active:scale-95 transition-transform"
-                  >
-                    <Zap className="w-6 h-6 text-accent" />
-                    PUBLICAR FECHA FINAL
-                  </button>
-                  <p className="text-[10px] text-neutral font-bold text-center mt-4 opacity-10 uppercase tracking-[0.2em]">
-                    Club Universitario de Salta — Rugby Manager
-                  </p>
-              </div>
-            )}
-          </>
-        )}
+    if (loading) return (
+      <div className="flex flex-col items-center justify-center p-20 space-y-4">
+        <Loader2 className="w-10 h-10 animate-spin text-primary" />
+        <p className="font-bold text-neutral">Preparando planilla técnica...</p>
       </div>
-    </>
-  );
+    );
+
+    return (
+        <div className="space-y-6 animate-fade-in relative pb-16">
+            {/* FAB GUARDAR (Solo Mobile) */}
+            <div className="md:hidden fixed bottom-24 right-6 z-50">
+               <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="w-16 h-16 bg-accent text-white rounded-full shadow-2xl flex items-center justify-center border-4 border-white active:scale-95 transition-all"
+               >
+                  {saving ? <Loader2 className="w-7 h-7 animate-spin" /> : <Save className="w-7 h-7" />}
+               </button>
+            </div>
+
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-neutral/10 pb-6">
+                <div>
+                   <h2 className="text-2xl font-black text-primary flex items-center gap-2">
+                       <Activity className="w-6 h-6 text-accent" /> CARGA DE RESULTADOS
+                   </h2>
+                   <p className="text-xs font-black text-neutral uppercase tracking-widest mt-1">Sincronización de estadísticas técnicas</p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                   <select
+                     value={selectedFecha || ''}
+                     onChange={e => setSelectedFecha(e.target.value)}
+                     className="bg-white border border-neutral/20 px-4 py-3 rounded-xl font-bold text-sm outline-none focus:ring-4 focus:ring-primary/10 transition-all"
+                   >
+                     {fechas.map(f => (
+                       <option key={f.id} value={f.id}>
+                          {f.stats_cargadas ? '✅ ' : ''}Fecha {f.numero_fecha} vs {f.rival}
+                       </option>
+                     ))}
+                   </select>
+
+                   <button
+                     onClick={handleSave}
+                     disabled={saving || publishing}
+                     className="hidden md:flex items-center gap-2 px-6 py-3 bg-white border border-neutral/20 text-primary font-black rounded-xl hover:bg-neutral-light transition-all disabled:opacity-50"
+                   >
+                     {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                     GUARDAR
+                   </button>
+
+                   <button
+                     onClick={handlePublish}
+                     disabled={publishing || saving}
+                     className="hidden md:flex items-center gap-2 px-6 py-3 bg-primary text-white font-black rounded-xl hover:bg-primary-dark transition-all shadow-lg shadow-primary/20 disabled:opacity-50"
+                   >
+                     {publishing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Rocket className="w-5 h-5" />}
+                     PUBLICAR RESULTADOS
+                   </button>
+                </div>
+            </div>
+
+            {msg.text && (
+                <div className={`p-4 rounded-2xl flex items-center gap-3 animate-fade-in ${
+                  msg.type === 'error' ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-green-50 text-green-700 border border-green-100'
+                }`}>
+                  {msg.type === 'error' ? <AlertCircle className="w-5 h-5" /> : <CheckCircle className="w-5 h-5" />}
+                  <p className="text-sm font-bold">{msg.text}</p>
+                </div>
+            )}
+
+            {/* BARRA DE BÚSQUEDA STICKY */}
+            <div className="sticky top-[56px] md:top-0 z-40 py-2 bg-slate-50/80 backdrop-blur-md -mx-4 px-4 md:mx-0 md:px-0">
+               <div className="relative group">
+                  <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-neutral group-focus-within:text-primary transition-colors" />
+                  <input
+                    type="text"
+                    placeholder="Filtrar por nombre..."
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    className="w-full pl-12 pr-4 py-4 bg-white border border-neutral/20 rounded-2xl text-sm font-bold focus:outline-none focus:ring-4 focus:ring-primary/10 transition-all shadow-sm"
+                  />
+               </div>
+            </div>
+
+            {/* LISTA DE JUGADORES */}
+            <div className="space-y-4">
+                {filteredJugadores.map(j => (
+                    <div key={j.id} className="bg-white rounded-3xl border border-neutral/10 overflow-hidden shadow-sm hover:shadow-md transition-all">
+                        {/* Header del Jugador */}
+                        <div className="px-5 py-4 bg-neutral-light/30 flex items-center justify-between border-b border-neutral/5">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-primary text-white rounded-xl flex items-center justify-center font-black text-sm">
+                                    {j.nombre.charAt(0)}
+                                </div>
+                                <div>
+                                    <h4 className="font-black text-primary leading-tight">{j.nombre}</h4>
+                                    <p className="text-[10px] font-bold text-neutral uppercase tracking-widest">{j.categoria}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Grid de Estadísticas (Todas visibles) */}
+                        <div className="p-4 bg-white">
+                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                                {STAT_FIELDS.map(field => (
+                                    <div key={field.key} className="flex flex-col gap-1">
+                                        <label className="text-[9px] font-black text-neutral uppercase tracking-tighter truncate opacity-60">
+                                            {field.label}
+                                        </label>
+                                        <div className="flex items-center">
+                                            <button 
+                                                onClick={() => handleStatChange(j.id, field.key, Math.max(0, (stats[j.id]?.[field.key] || 0) - 1))}
+                                                className="w-8 h-8 rounded-l-lg bg-neutral-light border border-neutral/10 flex items-center justify-center text-primary font-bold active:scale-95 transition-transform"
+                                            >
+                                                -
+                                            </button>
+                                            <input
+                                                type="number"
+                                                value={stats[j.id]?.[field.key] || 0}
+                                                onChange={e => handleStatChange(j.id, field.key, e.target.value)}
+                                                className="w-full min-w-0 h-8 text-center bg-white border-y border-neutral/10 font-bold text-sm outline-none"
+                                            />
+                                            <button 
+                                                onClick={() => handleStatChange(j.id, field.key, (stats[j.id]?.[field.key] || 0) + 1)}
+                                                className="w-8 h-8 rounded-r-lg bg-neutral-light border border-neutral/10 flex items-center justify-center text-primary font-bold active:scale-95 transition-transform"
+                                            >
+                                                +
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
 }
-
-
-

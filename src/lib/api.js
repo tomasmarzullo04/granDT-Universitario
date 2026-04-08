@@ -41,11 +41,65 @@ export function calcularPuntosJugador(s, isCaptain = false) {
 }
 
 // ==========================================
-// FECHAS
+// FECHAS (CICLO DE VIDA DINÁMICO)
 // ==========================================
 
+export const APP_STATUS = {
+  MERCADO_ABIERTO: 'MERCADO_ABIERTO',
+  MERCADO_CERRADO: 'MERCADO_CERRADO',
+  PROCESANDO: 'PROCESANDO',
+  RESULTADOS_LISTOS: 'RESULTADOS_LISTOS',
+};
+
+/**
+ * Determina dinámicamente el estado del torneo basándose en la fecha/hora actual.
+ * Prioriza la automatización por timestamps sobre el estado manual.
+ */
+export async function getLiveStatus() {
+  const now = new Date();
+  
+  const { data: fechas, error } = await supabase
+    .from('fechas')
+    .select('*')
+    .order('numero_fecha', { ascending: true });
+
+  if (error || !fechas || fechas.length === 0) {
+    return { activeMatchday: null, status: APP_STATUS.MERCADO_CERRADO };
+  }
+
+  // 1. Prioridad: Fecha en la que estamos actualmente (desde inicio_semana hasta fin_fecha o sin stats_cargadas)
+  // Buscamos la primera fecha que NO esté finalizada (stats_cargadas = false)
+  let activeMatchday = fechas.find(f => !f.stats_cargadas);
+
+  // Si todas tienen stats_cargadas, mostramos la última como RESULTADOS_LISTOS
+  if (!activeMatchday) {
+    const last = fechas[fechas.length - 1];
+    return { activeMatchday: last, status: APP_STATUS.RESULTADOS_LISTOS };
+  }
+
+  // 2. Determinar estado de la fecha activa
+  if (activeMatchday.stats_cargadas) return { activeMatchday, status: APP_STATUS.RESULTADOS_LISTOS };
+
+  const inicio = activeMatchday.inicio_semana ? new Date(activeMatchday.inicio_semana) : new Date(0);
+  const cierre = activeMatchday.cierre_mercado ? new Date(activeMatchday.cierre_mercado) : new Date(0);
+  const fin = activeMatchday.fin_fecha ? new Date(activeMatchday.fin_fecha) : new Date(0);
+
+  if (now < cierre) {
+    return { activeMatchday, status: APP_STATUS.MERCADO_ABIERTO };
+  } else if (now >= cierre && now < fin) {
+    return { activeMatchday, status: APP_STATUS.MERCADO_CERRADO };
+  } else {
+    // now >= fin pero stats_cargadas es false
+    return { activeMatchday, status: APP_STATUS.PROCESANDO };
+  }
+}
+
 export async function getActiveFecha() {
-  // 1. Intentar traer la abierta (para armar equipo)
+  // Priorizar automatización
+  const { activeMatchday } = await getLiveStatus();
+  if (activeMatchday) return activeMatchday;
+
+  // Fallback manual (legacy)
   let { data: abierta } = await supabase
     .from('fechas')
     .select('*')
@@ -56,7 +110,6 @@ export async function getActiveFecha() {
 
   if (abierta) return abierta;
 
-  // 2. Intentar la que está 'en_juego' (bloqueada)
   let { data: enJuego } = await supabase
     .from('fechas')
     .select('*')
@@ -67,7 +120,6 @@ export async function getActiveFecha() {
 
   if (enJuego) return enJuego;
 
-  // 3. Por último, la más reciente finalizada
   let { data: finalizada } = await supabase
     .from('fechas')
     .select('*')
@@ -77,72 +129,6 @@ export async function getActiveFecha() {
     .single();
 
   return finalizada || null;
-}
-
-/**
- * Determina si el sistema está en "Modo de Espera" (Jueves y Viernes hasta que se carguen planteles).
- */
-export function isWaitingMode(activeFecha) {
-  const now = new Date();
-  const day = now.getDay(); 
-
-  // Si no hay fecha activa o la que hay es la pasada (finalizada), y estamos en Jueves (4) o Viernes (5)
-  if (!activeFecha || activeFecha.estado === 'finalizada') {
-    return [4, 5].includes(day);
-  }
-
-  return false;
-}
-
-/**
- * CICLO SEMANAL — Ventana de selección cerrada.
- * Retorna true desde Sábado 00:00 (Viernes 23:59:59) hasta que se cargue una nueva fecha.
- * Bloquea edición.
- */
-export function isSelectionWindowClosed() {
-  const now = new Date();
-  const day = now.getDay(); // 0=Dom, 1=Lun, ..., 5=Vie, 6=Sáb
-  
-  // Sábado (6) o Domingo (0) → cerrado
-  if (day === 6 || day === 0) return true;
-  // Lunes (1), Martes (2), Miércoles (3) → cerrado (viendo puntos)
-  if ([1, 2, 3].includes(day)) return true;
-
-  // El Viernes (5) a las 23:59 cierra.
-  if (day === 5) {
-    const hour = now.getHours();
-    const min = now.getMinutes();
-    if (hour >= 23 && min >= 59) return true;
-  }
-
-  return false;
-}
-
-/**
- * CICLO SEMANAL — Modo transición / Archivado.
- * El Miércoles a las 23:59 cierra el ciclo de la fecha actual.
- * De Jueves a Viernes (hasta que abran planteles) es transición.
- */
-export function isTransitionMode(activeFecha) {
-  const now = new Date();
-  const day = now.getDay();
-  const hour = now.getHours();
-  const min = now.getMinutes();
-
-  // Si la fecha ya fue finalizada manualmente por el Admin → transición inmediata
-  if (activeFecha?.estado === 'finalizada') return true;
-
-  // Miércoles después de las 23:59
-  if (day === 3 && hour === 23 && min >= 59) return true;
-  
-  // Jueves (4) y Viernes (5) son días de transición/espera
-  if (day === 4 || day === 5) {
-    // Si ya hay una fecha abierta, salimos de transición
-    if (activeFecha?.estado === 'abierta') return false;
-    return true;
-  }
-
-  return false;
 }
 
 export async function getAllFechas() {
@@ -211,6 +197,14 @@ export async function getConvocados(fechaId) {
 // ==========================================
 
 export async function saveEquipoSelection(userId, fechaId, selectedPlayerIds, captainId) {
+  // SEGURIDAD: Validar cierre de mercado
+  const { data: fecha } = await supabase.from('fechas').select('cierre_mercado').eq('id', fechaId).single();
+  if (fecha && fecha.cierre_mercado) {
+    if (new Date() >= new Date(fecha.cierre_mercado)) {
+      throw new Error('MERCADO_CERRADO');
+    }
+  }
+
   await supabase
     .from('equipos_usuarios')
     .delete()
@@ -300,9 +294,34 @@ export async function getHistoricalTeam(userId, fechaId) {
 }
 
 // ==========================================
-// ESTADÍSTICAS POR PARTIDO
-
+// ESTADÍSTICAS ADMIN
 // ==========================================
+
+export async function getAdminStatsData(fechaId) {
+  try {
+    const [playersRes, statsRes] = await Promise.all([
+      supabase.from('jugadores').select('id, nombre, categoria').order('nombre'),
+      supabase.from('estadisticas_partido').select('*').eq('fecha_id', fechaId)
+    ]);
+
+    if (playersRes.error) throw playersRes.error;
+    if (statsRes.error) throw statsRes.error;
+
+    // Convertir array de stats en un objeto indexado por jugador_id
+    const statsMap = {};
+    (statsRes.data || []).forEach(s => {
+      statsMap[s.jugador_id] = s;
+    });
+
+    return {
+      jugadores: playersRes.data || [],
+      stats: statsMap
+    };
+  } catch (err) {
+    console.error('Error in getAdminStatsData:', err);
+    return { jugadores: [], stats: {} };
+  }
+}
 
 export async function getEstadisticasPartido(fechaId) {
   const { data, error } = await supabase
@@ -440,10 +459,13 @@ export async function publicarResultadosFecha(fechaId, allStatsArray) {
     }
   }
 
-  // 7. Marcar fecha como finalizada
+  // 7. Marcar fecha como finalizada y cargar stats
   const { error: fechaErr } = await supabase
     .from('fechas')
-    .update({ estado: 'finalizada' })
+    .update({ 
+      estado: 'finalizada',
+      stats_cargadas: true 
+    })
     .eq('id', fechaId);
 
   if (fechaErr) throw fechaErr;
@@ -591,7 +613,7 @@ export async function getPlayersStatistics() {
     return [];
   }
 
-  const { data: stats } = await supabase.from('estadisticas_partido').select('*');
+  const { data: stats } = await supabase.from('estadisticas_partido').select('*, fechas!inner(*)').eq('fechas.stats_cargadas', true);
   const { data: convocatorias } = await supabase
     .from('convocados_fecha')
     .select('jugador_id, categoria, fecha_id')
