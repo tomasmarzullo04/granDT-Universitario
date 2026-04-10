@@ -543,7 +543,7 @@ export default function MiEquipo() {
               )}
 
               <div 
-                className={`relative w-full max-w-md mx-auto rounded-xl border-2 border-[#12362b] overflow-hidden shadow-[inset_0_0_20px_rgba(0,0,0,0.5)] transition-all duration-500 pitch-grass ${!isEditing && !isLocked && selectedPlayers.length > 0 ? 'opacity-80 saturate-50 cursor-not-allowed' : ''}`}
+                className={`relative w-full max-w-md mx-auto rounded-xl border-2 border-[#12362b] overflow-hidden shadow-[inset_0_0_20px_rgba(0,0,0,0.5)] transition-all duration-500 pitch-grass ${!isEditing && !isLocked && selectedPlayers.length > 0 ? 'opacity-80 saturate-50 pointer-events-none' : ''}`}
                 style={{ aspectRatio: '2/3.2' }}
               >
                 {/* Pitch Markings (Chalk Lines) */}
@@ -733,18 +733,24 @@ export default function MiEquipo() {
                 </div>
                 
                 <div className="flex-1 overflow-y-auto p-2 sm:p-3 grid grid-cols-2 gap-2 custom-scrollbar bg-neutral-light/20 content-start relative min-h-[400px]">
-                  {isLocked ? (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-white/50 backdrop-blur-sm z-20 animate-fade-in">
-                       <div className="w-16 h-16 bg-primary/5 rounded-full flex items-center justify-center mb-6 border-2 border-dashed border-primary/20">
-                          <Lock className="w-6 h-6 text-primary/30" />
+                   {isLocked ? (
+                    <div className="absolute inset-x-0 bottom-0 top-0 z-50 flex flex-col items-center justify-center p-8 text-center bg-white/95 backdrop-blur-md animate-fade-in rounded-[2rem] shadow-inner">
+                       <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center mb-8 border-2 border-primary/20 shadow-xl transform -rotate-3">
+                          <Lock className="w-10 h-10 text-primary" />
                        </div>
-                       <h5 className="font-black text-primary text-sm uppercase tracking-tighter mb-2">
-                          {matchdayStatus === APP_STATUS.ESPERANDO_PLANTELES ? 'Esperando Planteles' : 'Mercado Cerrado'}
-                       </h5>
-                       <p className="text-[10px] font-bold text-neutral/60 uppercase tracking-widest leading-relaxed">
-                          La ventana de selección no está disponible en este momento.<br/>
-                          <span className="text-accent font-black">Consultá el banner en el inicio.</span>
-                       </p>
+                       <div className="space-y-4 max-w-[280px]">
+                          <h5 className="font-black text-primary text-xl uppercase tracking-tighter leading-none">
+                             {matchdayStatus === APP_STATUS.ESPERANDO_PLANTELES ? 'Esperando Planteles' : 'Mercado Cerrado'}
+                          </h5>
+                          <p className="text-xs font-bold text-neutral/70 uppercase tracking-widest leading-relaxed">
+                             La ventana de selección no está disponible en este momento.
+                          </p>
+                          <div className="pt-4">
+                             <span className="inline-block bg-accent/10 text-accent font-black text-[10px] px-4 py-2 rounded-full border border-accent/20 uppercase tracking-[0.2em] shadow-sm">
+                                Consultá el inicio
+                             </span>
+                          </div>
+                       </div>
                     </div>
                   ) : null}
 
@@ -880,8 +886,8 @@ export default function MiEquipo() {
                     <li>- Respetá las posiciones oficiales de la convocatoria.</li>
                  </ul>
               </div>
-              {/* Footer Actions */}
-              <div className="sticky bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md p-4 -mx-4 border-t border-neutral/10 sm:relative sm:bg-transparent sm:border-none sm:p-0 sm:m-0 z-40 flex flex-col sm:flex-row gap-3">
+              {/* Footer Actions - Ahora en flujo normal */}
+              <div className="mt-10 flex flex-col gap-3 py-4 border-t border-neutral/10">
                 
                 {!isEditing && !isLocked && (
                   <button

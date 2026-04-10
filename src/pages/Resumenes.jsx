@@ -370,12 +370,12 @@ export default function Resumenes() {
                       </div>
                       <Trophy className="absolute -bottom-6 -left-6 w-24 h-24 text-white/5 group-hover:rotate-12 transition-transform duration-700" />
                     </div>
-                 </div>
-              </section>
+                  </div>
+               </section>
 
-              {/* Estadísticas Individuales (Anterior Inteligencia de Mercado) */}
-              <section className="pt-4">
-                 <div className="flex items-center gap-3 mb-6">
+               {/* Estadísticas Individuales (Anterior Inteligencia de Mercado) */}
+               <section className="pt-10 md:pt-14">
+                  <div className="flex items-center gap-3 mb-8">
                     <TrendingUp className="w-6 h-6 text-emerald-600" />
                     <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">Estadísticas Individuales</h2>
                  </div>
@@ -432,7 +432,7 @@ export default function Resumenes() {
               </section>
 
               {/* Desglose Táctico */}
-              <section className="bg-white rounded-[40px] border-2 border-slate-100 shadow-2xl shadow-slate-200/40 p-10 mt-6 relative overflow-hidden group">
+              <section className="bg-white rounded-[40px] border-2 border-slate-100 shadow-2xl shadow-slate-200/40 p-10 mt-20 md:mt-24 relative overflow-hidden group">
                  <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-150 duration-700"></div>
                  <div className="flex items-center gap-3 mb-6">
                     <Zap className="w-6 h-6 text-accent" />
@@ -445,7 +445,7 @@ export default function Resumenes() {
                       { l: 'La Muralla', v: statsDefensa, c: 'text-blue-600', bg: 'bg-blue-50', sub: 'Tackles y Turnovers', icon: Shield },
                       { l: 'Disciplina', v: statsDisciplina, c: 'text-red-500', bg: 'bg-red-50', sub: 'Infracciones cometidas', icon: AlertTriangle, neg: true }
                     ].map((item, i) => (
-                      <div key={i} className="flex flex-col p-4 md:px-8 first:pl-0 last:pr-0">
+                      <div key={i} className="flex flex-col items-start p-0 py-6 md:p-8 first:md:pl-0 last:md:pr-0 text-left border-b last:border-0 md:border-b-0 border-slate-100">
                          <div className="flex items-center gap-3 mb-3">
                             <div className={`${item.bg} p-2 rounded-lg`}>
                                <item.icon className={`w-4 h-4 ${item.c}`} />
