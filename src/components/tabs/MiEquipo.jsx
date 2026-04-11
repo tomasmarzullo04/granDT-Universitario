@@ -543,6 +543,24 @@ export default function MiEquipo() {
                   </div>
               </div>
 
+              {/* Professional Captain Selection Bar (Outside the pitch) */}
+              {!isLocked && (
+                <div className="w-full mb-6 flex justify-center px-2">
+                  <button
+                    onClick={() => setIsCaptainSelectorOpen(true)}
+                    className="w-full sm:w-auto flex items-center justify-center gap-4 px-6 py-3 bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-primary rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] transition-all shadow-lg hover:shadow-yellow-500/20 active:scale-[0.98] border-b-4 border-yellow-700/30 group"
+                  >
+                    <div className="w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform">
+                       <span className="text-primary font-black text-sm">C</span>
+                    </div>
+                    <span className="flex flex-col items-start leading-none">
+                      <span>ELEGIR CAPITÁN</span>
+                      <span className="text-[8px] opacity-60 mt-0.5 tracking-widest">PUNTUACIÓN DOBLE</span>
+                    </span>
+                  </button>
+                </div>
+              )}
+
               {error && error.includes('Atención') && (
                 <div className="relative z-20 w-full mb-6 bg-red-50 border-2 border-red-200 text-red-600 p-4 rounded-2xl flex items-center gap-3 animate-shake shadow-md font-bold text-xs">
                   <AlertCircle className="w-5 h-5 shrink-0" />
@@ -567,21 +585,6 @@ export default function MiEquipo() {
                 <div className="absolute inset-x-2 top-[22%] border-t-2 border-white/85 shadow-[0_0_2px_rgba(255,255,255,0.4)] pointer-events-none z-0"></div>
                 <div className="absolute inset-x-2 top-[78%] border-t-2 border-white/85 shadow-[0_0_2px_rgba(255,255,255,0.4)] pointer-events-none z-0"></div>
                 
-                {/* Floating Captain Button */}
-                {!isLocked && (
-                  <button
-                    onClick={() => setIsCaptainSelectorOpen(true)}
-                    className="absolute top-2 right-2 z-30 bg-yellow-500 hover:bg-yellow-400 text-primary p-1.5 rounded-xl shadow-xl border-2 border-white/50 transition-all hover:scale-110 active:scale-95 group flex items-center justify-center min-w-[38px] min-h-[38px]"
-                    title="Seleccionar Capitán"
-                  >
-                    <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center shadow-inner">
-                       <span className="text-primary font-black text-sm leading-none">C</span>
-                    </div>
-                    <span className="absolute right-full mr-2 top-1/2 -translate-y-1/2 bg-primary text-white text-[9px] font-black px-2 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl border border-white/10 uppercase tracking-widest">
-                       Elegir Capitán
-                    </span>
-                  </button>
-                )}
                 
                 {/* 5m lines (dashed) */}
                 <div className="absolute inset-x-2 top-[5%] border-t border-dashed border-white/50 pointer-events-none z-0"></div>
