@@ -312,13 +312,32 @@ export async function getHistoricalTeam(userId, fechaId) {
 
 export async function getAdminStatsData(fechaId) {
   try {
-    const [playersRes, statsRes] = await Promise.all([
-      supabase.from('jugadores').select('id, nombre, categoria').order('nombre'),
+    const [convRes, statsRes] = await Promise.all([
+      supabase
+        .from('convocados_fecha')
+        .select(`
+          jugador_id,
+          posicion_actual,
+          categoria,
+          jugadores (
+            id,
+            nombre,
+            categoria
+          )
+        `)
+        .eq('fecha_id', fechaId),
       supabase.from('estadisticas_partido').select('*').eq('fecha_id', fechaId)
     ]);
 
-    if (playersRes.error) throw playersRes.error;
+    if (convRes.error) throw convRes.error;
     if (statsRes.error) throw statsRes.error;
+
+    // Mapear convocados a formato de jugador plano
+    const convocadosList = (convRes.data || []).map(c => ({
+      id: c.jugador_id,
+      nombre: c.jugadores?.nombre || 'Jugador Desconocido',
+      categoria: c.categoria || c.jugadores?.categoria || 'S/D'
+    })).sort((a,b) => a.nombre.localeCompare(b.nombre));
 
     // Convertir array de stats en un objeto indexado por jugador_id
     const statsMap = {};
@@ -327,7 +346,7 @@ export async function getAdminStatsData(fechaId) {
     });
 
     return {
-      jugadores: playersRes.data || [],
+      jugadores: convocadosList,
       stats: statsMap
     };
   } catch (err) {

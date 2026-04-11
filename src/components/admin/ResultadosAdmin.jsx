@@ -235,55 +235,67 @@ export default function ResultadosAdmin() {
 
             {/* LISTA DE JUGADORES */}
             <div className="space-y-4">
-                {filteredJugadores.map(j => (
-                    <div key={j.id} className="bg-white rounded-3xl border border-neutral/10 overflow-hidden shadow-sm hover:shadow-md transition-all">
-                        {/* Header del Jugador */}
-                        <div className="px-5 py-4 bg-neutral-light/30 flex items-center justify-between border-b border-neutral/5">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-primary text-white rounded-xl flex items-center justify-center font-black text-sm">
-                                    {j.nombre.charAt(0)}
-                                </div>
-                                <div>
-                                    <h4 className="font-black text-primary leading-tight">{j.nombre}</h4>
-                                    <p className="text-[10px] font-bold text-neutral uppercase tracking-widest">{j.categoria}</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Grid de Estadísticas (Todas visibles) */}
-                        <div className="p-4 bg-white">
-                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-                                {STAT_FIELDS.map(field => (
-                                    <div key={field.key} className="flex flex-col gap-1">
-                                        <label className="text-[9px] font-black text-neutral uppercase tracking-tighter truncate opacity-60">
-                                            {field.label}
-                                        </label>
-                                        <div className="flex items-center">
-                                            <button 
-                                                onClick={() => handleStatChange(j.id, field.key, Math.max(0, (stats[j.id]?.[field.key] || 0) - 1))}
-                                                className="w-8 h-8 rounded-l-lg bg-neutral-light border border-neutral/10 flex items-center justify-center text-primary font-bold active:scale-95 transition-transform"
-                                            >
-                                                -
-                                            </button>
-                                            <input
-                                                type="number"
-                                                value={stats[j.id]?.[field.key] || 0}
-                                                onChange={e => handleStatChange(j.id, field.key, e.target.value)}
-                                                className="w-full min-w-0 h-8 text-center bg-white border-y border-neutral/10 font-bold text-sm outline-none"
-                                            />
-                                            <button 
-                                                onClick={() => handleStatChange(j.id, field.key, (stats[j.id]?.[field.key] || 0) + 1)}
-                                                className="w-8 h-8 rounded-r-lg bg-neutral-light border border-neutral/10 flex items-center justify-center text-primary font-bold active:scale-95 transition-transform"
-                                            >
-                                                +
-                                            </button>
-                                        </div>
+                {filteredJugadores.length > 0 ? (
+                    filteredJugadores.map(j => (
+                        <div key={j.id} className="bg-white rounded-3xl border border-neutral/10 overflow-hidden shadow-sm hover:shadow-md transition-all">
+                            {/* Header del Jugador */}
+                            <div className="px-5 py-4 bg-neutral-light/30 flex items-center justify-between border-b border-neutral/5">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-primary text-white rounded-xl flex items-center justify-center font-black text-sm">
+                                        {j.nombre.charAt(0)}
                                     </div>
-                                ))}
+                                    <div>
+                                        <h4 className="font-black text-primary leading-tight">{j.nombre}</h4>
+                                        <p className="text-[10px] font-bold text-neutral uppercase tracking-widest">{j.categoria}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Grid de Estadísticas (Todas visibles) */}
+                            <div className="p-4 bg-white">
+                                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                                    {STAT_FIELDS.map(field => (
+                                        <div key={field.key} className="flex flex-col gap-1">
+                                            <label className="text-[9px] font-black text-neutral uppercase tracking-tighter truncate opacity-60">
+                                                {field.label}
+                                            </label>
+                                            <div className="flex items-center">
+                                                <button 
+                                                    onClick={() => handleStatChange(j.id, field.key, Math.max(0, (stats[j.id]?.[field.key] || 0) - 1))}
+                                                    className="w-8 h-8 rounded-l-lg bg-neutral-light border border-neutral/10 flex items-center justify-center text-primary font-bold active:scale-95 transition-transform"
+                                                >
+                                                    -
+                                                </button>
+                                                <input
+                                                    type="number"
+                                                    value={stats[j.id]?.[field.key] || 0}
+                                                    onChange={e => handleStatChange(j.id, field.key, e.target.value)}
+                                                    className="w-full min-w-0 h-8 text-center bg-white border-y border-neutral/10 font-bold text-sm outline-none"
+                                                />
+                                                <button 
+                                                    onClick={() => handleStatChange(j.id, field.key, (stats[j.id]?.[field.key] || 0) + 1)}
+                                                    className="w-8 h-8 rounded-r-lg bg-neutral-light border border-neutral/10 flex items-center justify-center text-primary font-bold active:scale-95 transition-transform"
+                                                >
+                                                    +
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         </div>
+                    ))
+                ) : (
+                    <div className="flex flex-col items-center justify-center p-12 bg-white rounded-3xl border-2 border-dashed border-neutral/10 text-center">
+                        <div className="w-16 h-16 bg-neutral-light rounded-full flex items-center justify-center mb-4">
+                           <Activity className="w-8 h-8 text-neutral" />
+                        </div>
+                        <h3 className="font-black text-primary text-lg">No se encontraron jugadores</h3>
+                        <p className="text-sm text-neutral max-w-xs mt-2">
+                           Asegurate de haber cargado la convocatoria para esta fecha o probá con otro término de búsqueda.
+                        </p>
                     </div>
-                ))}
+                )}
             </div>
         </div>
     );
