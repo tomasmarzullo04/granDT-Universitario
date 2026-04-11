@@ -73,13 +73,20 @@ export default function ResultadosAdmin() {
         init();
     }, []);
 
+    const [fetchError, setFetchError] = useState(null);
+
     // ── Carga de jugadores y stats al cambiar la fecha ──
     useEffect(() => {
         if (!selectedFecha) return;
         async function loadStats() {
-            const { jugadores: list, stats: initialStats } = await getAdminStatsData(selectedFecha);
-            setJugadores(list);
-            setStats(initialStats);
+            setFetchError(null);
+            const { jugadores: list, stats: initialStats, error: apiError } = await getAdminStatsData(selectedFecha);
+            if (apiError) {
+              setFetchError(apiError);
+            } else {
+              setJugadores(list);
+              setStats(initialStats);
+            }
         }
         loadStats();
     }, [selectedFecha]);
@@ -209,6 +216,17 @@ export default function ResultadosAdmin() {
                    </button>
                 </div>
             </div>
+
+            {fetchError && (
+                <div className="p-6 bg-red-50 border-2 border-red-200 rounded-3xl text-red-600 animate-pulse">
+                    <div className="flex items-center gap-3 mb-2">
+                        <AlertCircle className="w-6 h-6" />
+                        <h4 className="font-black">ERROR TÉCNICO DE CONEXIÓN</h4>
+                    </div>
+                    <p className="text-sm font-bold opacity-80">{fetchError}</p>
+                    <p className="text-xs mt-4 uppercase tracking-widest font-black">Por favor, avisale al soporte técnico con este mensaje.</p>
+                </div>
+            )}
 
             {msg.text && (
                 <div className={`p-4 rounded-2xl flex items-center gap-3 animate-fade-in ${

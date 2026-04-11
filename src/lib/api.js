@@ -312,13 +312,22 @@ export async function getHistoricalTeam(userId, fechaId) {
 
 export async function getAdminStatsData(fechaId) {
   try {
+    console.log('AdminStats: Iniciando carga para fecha:', fechaId);
     const [playersRes, statsRes] = await Promise.all([
-      supabase.from('jugadores').select('id, nombre, categoria').order('nombre'),
+      supabase.from('jugadores').select('*').order('nombre'),
       supabase.from('estadisticas_partido').select('*').eq('fecha_id', fechaId)
     ]);
 
-    if (playersRes.error) throw playersRes.error;
-    if (statsRes.error) throw statsRes.error;
+    if (playersRes.error) {
+      console.error('AdminStats: Error en jugadores:', playersRes.error);
+      throw new Error(`Error Jugadores: ${playersRes.error.message}`);
+    }
+    if (statsRes.error) {
+      console.error('AdminStats: Error en stats:', statsRes.error);
+      throw new Error(`Error Stats: ${statsRes.error.message}`);
+    }
+
+    console.log('AdminStats: Jugadores recibidos:', playersRes.data?.length || 0);
 
     // Convertir array de stats en un objeto indexado por jugador_id
     const statsMap = {};
@@ -328,11 +337,12 @@ export async function getAdminStatsData(fechaId) {
 
     return {
       jugadores: playersRes.data || [],
-      stats: statsMap
+      stats: statsMap,
+      error: null
     };
   } catch (err) {
-    console.error('Error in getAdminStatsData:', err);
-    return { jugadores: [], stats: {} };
+    console.error('Error detallado en getAdminStatsData:', err);
+    return { jugadores: [], stats: {}, error: err.message };
   }
 }
 
