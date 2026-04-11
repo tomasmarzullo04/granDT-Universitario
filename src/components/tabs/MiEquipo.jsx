@@ -402,7 +402,9 @@ export default function MiEquipo() {
           </div>
           <div>
             <p className="text-xs font-black text-green-900 uppercase tracking-tight">✅ Mercado Abierto</p>
-            <p className="text-[10px] font-bold text-green-700/70 uppercase">¡Armá tu XV para jugar contra {activeFecha.rival}! Cierra el viernes a las 23:59.</p>
+            <p className="text-[10px] font-bold text-green-700/70 uppercase">
+              ¡Armá tu XV para jugar contra {activeFecha.rival}! Cierra hoy sábado a las 13:00.
+            </p>
           </div>
         </div>
       )}
@@ -419,7 +421,7 @@ export default function MiEquipo() {
           <CheckCircle className="w-6 h-6 flex-shrink-0" />
           <div>
             <p>¡Progreso guardado correctamente!</p>
-            <p className="text-[10px] opacity-70 uppercase tracking-widest mt-1">No olvides completar tus 15 antes del viernes 23:59</p>
+            <p className="text-[10px] opacity-70 uppercase tracking-widest mt-1">No olvides completar tus 15 antes de las 13:00 hs de hoy</p>
           </div>
         </div>
       )}

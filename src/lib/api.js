@@ -64,9 +64,19 @@ export async function getLiveStatus() {
     return { activeMatchday: null, status: APP_STATUS.FECHA_EN_JUEGO };
   }
 
+  // EXCEPCIÓN TEMPORAL: Sábado 11/04 hasta las 13:00 hs
+  const now = new Date();
+  const deadline = new Date('2026-04-11T13:00:00-03:00');
+  
+  let finalStatus = data.status;
+  if (now < deadline) {
+    // Si estamos antes de las 13:00 de hoy, forzamos mercado abierto para permitir cambios
+    finalStatus = APP_STATUS.ARMADO_EQUIPO;
+  }
+
   return {
     activeMatchday: data.activeMatchday,
-    status: data.status
+    status: finalStatus
   };
 }
 
@@ -195,7 +205,13 @@ export async function getConvocados(fechaId) {
 export async function saveEquipoSelection(userId, fechaId, selectedPlayerIds, captainId) {
   // SEGURIDAD: Validar cierre de mercado
   const { data: fecha } = await supabase.from('fechas').select('cierre_mercado').eq('id', fechaId).single();
-  if (fecha && fecha.cierre_mercado) {
+  
+  // EXCEPCIÓN TEMPORAL: Sábado 11/04 hasta las 13:00 hs
+  const now = new Date();
+  const deadline = new Date('2026-04-11T13:00:00-03:00');
+  const isExceptionalWindow = now < deadline;
+
+  if (!isExceptionalWindow && fecha && fecha.cierre_mercado) {
     if (new Date() >= new Date(fecha.cierre_mercado)) {
       throw new Error('MERCADO_CERRADO');
     }
