@@ -561,7 +561,7 @@ export default function MiEquipo() {
                 <div className="absolute inset-x-2 top-[78%] border-t-2 border-white/85 shadow-[0_0_2px_rgba(255,255,255,0.4)] pointer-events-none z-0"></div>
                 
                 {/* Floating Captain Button */}
-                {!isLocked && isEditing && selectedPlayers.length > 0 && (
+                {!isLocked && selectedPlayers.length > 0 && (
                   <button
                     onClick={() => setIsCaptainSelectorOpen(true)}
                     className="absolute top-4 right-4 z-30 bg-yellow-500 hover:bg-yellow-400 text-primary p-2 rounded-2xl shadow-xl border-2 border-white/50 transition-all hover:scale-110 active:scale-95 group flex items-center justify-center min-w-[44px] min-h-[44px]"
@@ -1081,6 +1081,7 @@ export default function MiEquipo() {
                       onClick={() => {
                         setCaptainId(player.id);
                         setIsCaptainSelectorOpen(false);
+                        setIsEditing(true); // Activar edición automáticamente al elegir capitán
                       }}
                       className={`w-full flex items-center gap-4 p-4 rounded-2xl border-2 transition-all group ${
                         captainId === player.id 
