@@ -114,7 +114,7 @@ export default function Resumenes() {
     return (
       <PlayerLayout>
         <div className="flex flex-col items-center justify-center min-h-[500px]">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
+          <Loader2 className="w-12 h-12 animate-spin text-primary mb-4" />
           <p className="mt-4 text-neutral/60 font-medium uppercase tracking-widest text-sm">Sincronizando Estadísticas...</p>
         </div>
       </PlayerLayout>

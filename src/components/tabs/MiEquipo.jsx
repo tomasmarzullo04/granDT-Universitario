@@ -35,6 +35,10 @@ export default function MiEquipo() {
   const [captainId, setCaptainId] = useState(null);
   const [isCaptainSelectorOpen, setIsCaptainSelectorOpen] = useState(false);
 
+  // Estados para cancelar sin recargar
+  const [originalSlots, setOriginalSlots] = useState(Array(15).fill(null));
+  const [originalCaptainId, setOriginalCaptainId] = useState(null);
+
   // Helper to get selected players from slots
   const selectedPlayers = useMemo(() => pitchSlots.filter(Boolean), [pitchSlots]);
   
@@ -110,7 +114,9 @@ export default function MiEquipo() {
             }
           });
           setPitchSlots(newSlots);
+          setOriginalSlots(newSlots); // Guardar copia para cancelar
           setCaptainId(finalCaptainId);
+          setOriginalCaptainId(finalCaptainId); // Guardar copia para cancelar
         }
         // Eliminado Fallback de fecha anterior para obligar a re-armar equipo (Req. Automización V3)
       } catch (err) {
@@ -293,7 +299,8 @@ export default function MiEquipo() {
 
   // El overlay gigante ha sido eliminado para permitir el modo lectura.
 
-  if (loading) return (
+  // Evitar pantalla de carga bloqueante si ya tenemos los datos básicos
+  if (loading && pitchSlots.every(s => s === null)) return (
     <div className="flex flex-col items-center justify-center p-20 animate-pulse">
       <Loader2 className="w-12 h-12 animate-spin text-primary mb-4" />
       <p className="font-black text-primary uppercase tracking-widest text-sm">Cargando Convocatoria...</p>
@@ -926,8 +933,10 @@ export default function MiEquipo() {
                 {isEditing && (
                   <button
                     onClick={() => {
+                        setPitchSlots([...originalSlots]); // Restaurar equipo original
+                        setCaptainId(originalCaptainId);   // Restaurar capitán original
                         setIsEditing(false);
-                        window.location.reload(); // Recargar para revertir cambios no guardados
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
                     className="py-4 px-6 rounded-2xl font-black tracking-widest transition-all bg-white border-2 border-neutral/10 text-neutral hover:bg-neutral-light"
                   >

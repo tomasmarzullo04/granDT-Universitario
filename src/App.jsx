@@ -28,14 +28,20 @@ function RootRedirect() {
   return <Navigate to="/resumenes" replace />;
 }
 
+let veteranCache = new Map();
+
 function UserGate({ Component }) {
   const { user, profile, role, loading } = useAuth();
   const [isVeteran, setIsVeteran] = useState(null);
   
   useEffect(() => {
-    // Solo chequeamos si profile cargó, tiene rol player, y explícitamente está en false (o null antes de migracion real).
-    // Si es_competidor === true o es admin, bypass inmediato no requiere check.
     if (!loading && profile && role !== 'admin' && profile.es_competidor === false) {
+      // Si ya está en caché, no volver a consultar
+      if (veteranCache.has(user.id)) {
+        setIsVeteran(veteranCache.get(user.id));
+        return;
+      }
+
       const checkVeteran = async () => {
         try {
           const { count, error } = await supabase
@@ -43,11 +49,9 @@ function UserGate({ Component }) {
             .select('*', { count: 'exact', head: true })
             .eq('usuario_id', user.id);
             
-          if (!error && count > 0) {
-            setIsVeteran(true);
-          } else {
-            setIsVeteran(false);
-          }
+          const veteranStatus = !error && count > 0;
+          veteranCache.set(user.id, veteranStatus);
+          setIsVeteran(veteranStatus);
         } catch (e) {
           setIsVeteran(false);
         }
