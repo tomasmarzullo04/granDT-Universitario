@@ -568,17 +568,17 @@ export default function MiEquipo() {
                 <div className="absolute inset-x-2 top-[78%] border-t-2 border-white/85 shadow-[0_0_2px_rgba(255,255,255,0.4)] pointer-events-none z-0"></div>
                 
                 {/* Floating Captain Button */}
-                {!isLocked && selectedPlayers.length > 0 && (
+                {!isLocked && (
                   <button
                     onClick={() => setIsCaptainSelectorOpen(true)}
-                    className="absolute top-4 right-4 z-30 bg-yellow-500 hover:bg-yellow-400 text-primary p-2 rounded-2xl shadow-xl border-2 border-white/50 transition-all hover:scale-110 active:scale-95 group flex items-center justify-center min-w-[44px] min-h-[44px]"
+                    className="absolute top-2 right-2 z-30 bg-yellow-500 hover:bg-yellow-400 text-primary p-1.5 rounded-xl shadow-xl border-2 border-white/50 transition-all hover:scale-110 active:scale-95 group flex items-center justify-center min-w-[38px] min-h-[38px]"
                     title="Seleccionar Capitán"
                   >
-                    <div className="w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-inner">
-                       <span className="text-primary font-black text-lg leading-none">C</span>
+                    <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center shadow-inner">
+                       <span className="text-primary font-black text-sm leading-none">C</span>
                     </div>
-                    <span className="absolute right-full mr-2 top-1/2 -translate-y-1/2 bg-primary text-white text-[10px] font-black px-2 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl border border-white/10 uppercase tracking-widest">
-                      Elegir Capitán
+                    <span className="absolute right-full mr-2 top-1/2 -translate-y-1/2 bg-primary text-white text-[9px] font-black px-2 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl border border-white/10 uppercase tracking-widest">
+                       Elegir Capitán
                     </span>
                   </button>
                 )}
