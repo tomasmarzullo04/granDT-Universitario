@@ -20,18 +20,18 @@ import {
 } from 'lucide-react';
 
 const STAT_FIELDS = [
-  { key: 'tries',          label: 'Try',    pts: SCORING.TRY },
-  { key: 'conversiones',   label: 'Conv',   pts: SCORING.CONVERSION },
-  { key: 'penales',        label: 'Penal',  pts: SCORING.PENAL },
-  { key: 'drops',          label: 'Drop',   pts: SCORING.DROP },
-  { key: 'amarillas',      label: 'Ama.',   pts: SCORING.AMARILLA },
-  { key: 'rojas',          label: 'Roja',   pts: SCORING.ROJA },
-  { key: 'penales_hechos', label: 'Pen. H', pts: SCORING.PENALES_HECHOS },
-  { key: 'knock_ons',      label: 'Knock',  pts: SCORING.KNOCK_ON },
-  { key: 'lines_robados',  label: 'Line R', pts: SCORING.LINES_ROBADOS },
-  { key: 'asistencias',    label: 'Asist',  pts: SCORING.ASISTENCIA },
-  { key: 'cortes_limpios', label: 'Corte',  pts: SCORING.CORTE_LIMPIO },
-  { key: 'tackles',        label: 'Tackle', pts: SCORING.TACKLE },
+  { key: 'tries',             label: 'Try',         pts: SCORING.TRY },
+  { key: 'conversiones',      label: 'Conv',        pts: SCORING.CONVERSION },
+  { key: 'penales',           label: 'Penal',       pts: SCORING.PENAL },
+  { key: 'drops',             label: 'Drop',        pts: SCORING.DROP },
+  { key: 'asistencias',       label: 'Asist',       pts: SCORING.ASISTENCIA },
+  { key: 'tackles',           label: 'Tackle',      pts: SCORING.TACKLE },
+  { key: 'tackles_ofensivos', label: 'Tackle Of.',  pts: SCORING.TACKLE_OFENSIVO },
+  { key: 'recuperaciones',    label: 'Recuper.',    pts: SCORING.RECUPERACION },
+  { key: 'cortes_limpios',    label: 'Corte L.',    pts: SCORING.CORTE_LIMPIO },
+  { key: 'penales_hechos',    label: 'Penal Contra', pts: SCORING.PENALES_HECHOS },
+  { key: 'amarillas',         label: 'Amarilla',    pts: SCORING.AMARILLA },
+  { key: 'rojas',             label: 'Roja',        pts: SCORING.ROJA },
 ];
 
 export default function ResultadosAdmin() {

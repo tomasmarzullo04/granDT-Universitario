@@ -149,7 +149,8 @@ export default function Resumenes() {
 
       statsDefensa += (
         (s.tackles * SCORING.TACKLE) +
-        (s.lines_robados * SCORING.LINES_ROBADOS) +
+        (s.tackles_ofensivos * SCORING.TACKLE_OFENSIVO) +
+        (s.recuperaciones * SCORING.RECUPERACION) +
         (s.cortes_limpios * SCORING.CORTE_LIMPIO)
       );
 

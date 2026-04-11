@@ -1,24 +1,26 @@
 import { supabase } from './supabase';
 
 export const SCORING = {
-  TRY: 5,
-  CONVERSION: 2,
-  PENAL: 2,
-  DROP: 3,
-  AMARILLA: -3,
-  ROJA: -7,
+  TRY: 15,
+  CONVERSION: 3,
+  PENAL: 3,
+  DROP: 5,
+  AMARILLA: -5,
+  ROJA: -10,
   PRESENCIA: 0,
-  PENALES_HECHOS: -2,
-  KNOCK_ON: -1,
-  LINES_ROBADOS: 2,
-  ASISTENCIA: 2,
-  CORTE_LIMPIO: 1,
-  TACKLE: 1,
+  PENALES_HECHOS: -5,
+  KNOCK_ON: 0,
+  LINES_ROBADOS: 0,
+  ASISTENCIA: 5,
+  CORTE_LIMPIO: 3,
+  TACKLE: 2,
+  TACKLE_OFENSIVO: 5,
+  RECUPERACION: 5,
 };
 
 /**
  * Calcula los puntos de un jugador dadas sus estadísticas.
- * Maneja valores null/undefined en cualquier campo (incluido drops).
+ * Maneja valores null/undefined en cualquier campo.
  */
 export function calcularPuntosJugador(s, isCaptain = false) {
   if (!s) return 0;
@@ -30,12 +32,11 @@ export function calcularPuntosJugador(s, isCaptain = false) {
     ((s.amarillas || 0) * SCORING.AMARILLA) +
     ((s.rojas || 0) * SCORING.ROJA) +
     ((s.penales_hechos || 0) * SCORING.PENALES_HECHOS) +
-    ((s.knock_ons || 0) * SCORING.KNOCK_ON) +
-    ((s.lines_robados || 0) * SCORING.LINES_ROBADOS) +
     ((s.asistencias || 0) * SCORING.ASISTENCIA) +
     ((s.cortes_limpios || 0) * SCORING.CORTE_LIMPIO) +
     ((s.tackles || 0) * SCORING.TACKLE) +
-    SCORING.PRESENCIA
+    ((s.tackles_ofensivos || 0) * SCORING.TACKLE_OFENSIVO) +
+    ((s.recuperaciones || 0) * SCORING.RECUPERACION)
   );
   return isCaptain ? basePoints * 2 : basePoints;
 }
