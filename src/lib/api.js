@@ -9,7 +9,7 @@ export const SCORING = {
   ROJA: -10,
   PRESENCIA: 0,
   PENALES_HECHOS: -5,
-  KNOCK_ON: 0,
+  KNOCK_ON: -3,
   LINES_ROBADOS: 0,
   ASISTENCIA: 5,
   CORTE_LIMPIO: 3,
@@ -36,7 +36,8 @@ export function calcularPuntosJugador(s, isCaptain = false) {
     ((s.cortes_limpios || 0) * SCORING.CORTE_LIMPIO) +
     ((s.tackles || 0) * SCORING.TACKLE) +
     ((s.tackles_ofensivos || 0) * SCORING.TACKLE_OFENSIVO) +
-    ((s.recuperaciones || 0) * SCORING.RECUPERACION)
+    ((s.recuperaciones || 0) * SCORING.RECUPERACION) +
+    ((s.knock_ons || 0) * SCORING.KNOCK_ON)
   );
   return isCaptain ? basePoints * 2 : basePoints;
 }
@@ -430,7 +431,9 @@ export async function publicarResultadosFecha(fechaId, allStatsArray) {
     lines_robados: parseInt(s.lines_robados || 0),
     asistencias: parseInt(s.asistencias || 0),
     cortes_limpios: parseInt(s.cortes_limpios || 0),
-    tackles: parseInt(s.tackles || 0)
+    tackles: parseInt(s.tackles || 0),
+    tackles_ofensivos: parseInt(s.tackles_ofensivos || 0),
+    recuperaciones: parseInt(s.recuperaciones || 0)
   }));
 
   const { data, error } = await supabase.rpc('process_publication_v3', {

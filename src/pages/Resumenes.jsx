@@ -157,7 +157,8 @@ export default function Resumenes() {
       statsDisciplina += (
         (s.penales_hechos * Math.abs(SCORING.PENALES_HECHOS)) +
         (s.amarillas * Math.abs(SCORING.AMARILLA)) +
-        (s.rojas * Math.abs(SCORING.ROJA))
+        (s.rojas * Math.abs(SCORING.ROJA)) +
+        (s.knock_ons * Math.abs(SCORING.KNOCK_ON))
       );
     });
   }

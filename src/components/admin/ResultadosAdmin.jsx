@@ -6,7 +6,8 @@ import {
   APP_STATUS, 
   getLiveStatus,
   SCORING,
-  publicarResultadosFecha
+  publicarResultadosFecha,
+  calcularPuntosJugador
 } from '../../lib/api';
 import { 
   Save, 
@@ -30,6 +31,7 @@ const STAT_FIELDS = [
   { key: 'recuperaciones',    label: 'Recuper.',    pts: SCORING.RECUPERACION },
   { key: 'cortes_limpios',    label: 'Corte L.',    pts: SCORING.CORTE_LIMPIO },
   { key: 'penales_hechos',    label: 'Penal Contra', pts: SCORING.PENALES_HECHOS },
+  { key: 'knock_ons',         label: 'Knock on',    pts: SCORING.KNOCK_ON },
   { key: 'amarillas',         label: 'Amarilla',    pts: SCORING.AMARILLA },
   { key: 'rojas',             label: 'Roja',        pts: SCORING.ROJA },
 ];
@@ -266,6 +268,18 @@ export default function ResultadosAdmin() {
                                         <h4 className="font-black text-primary leading-tight">{j.nombre}</h4>
                                         <p className="text-[10px] font-bold text-neutral uppercase tracking-widest">{j.categoria}</p>
                                     </div>
+                                </div>
+
+                                {/* Contador de Puntos en Vivo */}
+                                <div className="flex flex-col items-end">
+                                    <div className="flex items-center gap-1.5 bg-accent/10 border border-accent/20 px-3 py-1 rounded-lg">
+                                        <Trophy className="w-3.5 h-3.5 text-accent" />
+                                        <span className="text-sm font-black text-accent">
+                                            {calcularPuntosJugador(stats[j.id])}
+                                        </span>
+                                        <span className="text-[9px] font-black text-accent/60 uppercase tracking-tighter">pts</span>
+                                    </div>
+                                    <p className="text-[8px] font-bold text-neutral/40 uppercase tracking-widest mt-0.5">Suma en vivo</p>
                                 </div>
                             </div>
 

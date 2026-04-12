@@ -164,6 +164,7 @@ export default function Sidebar({ isOpen, onClose }) {
                       <li className="flex justify-between border-b mx-1 border-neutral/10 pb-1"><span>Recuperación</span><span className="text-primary font-bold">+5 pts</span></li>
                       <li className="flex justify-between border-b mx-1 border-neutral/10 pb-1"><span>Asistencia</span><span className="text-primary font-bold">+5 pts</span></li>
                       <li className="flex justify-between border-b mx-1 border-neutral/10 pb-1"><span>Corte limpio</span><span className="text-primary font-bold">+3 pts</span></li>
+                      <li className="flex justify-between border-b mx-1 border-neutral/10 pb-1"><span>Knock on</span><span className="text-red-500 font-bold">-3 pts</span></li>
                       <li className="flex justify-between border-b mx-1 border-neutral/10 pb-1"><span>Penal en contra</span><span className="text-red-500 font-bold">-5 pts</span></li>
                       <li className="flex justify-between border-b mx-1 border-neutral/10 pb-1"><span>Amarilla</span><span className="text-red-500 font-bold">-5 pts</span></li>
                       <li className="flex justify-between mx-1"><span>Roja</span><span className="text-red-600 font-bold">-10 pts</span></li>

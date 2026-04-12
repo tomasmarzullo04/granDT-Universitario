@@ -224,11 +224,13 @@ export default function OnboardingScreen() {
                   <div className="space-y-3">
                     <span className="text-[10px] font-black text-green-600 bg-green-50 px-2.5 py-1 rounded-full uppercase tracking-widest border border-green-100">Acciones Positivas</span>
                     <ul className="space-y-2 font-bold text-xs text-slate-700">
-                      <li className="flex justify-between border-b border-slate-100 pb-1"><span>Try</span><span className="text-primary">+5 Pts</span></li>
-                      <li className="flex justify-between border-b border-slate-100 pb-1"><span>Conversión / Penal</span><span className="text-primary">+2 Pts</span></li>
-                      <li className="flex justify-between border-b border-slate-100 pb-1"><span>Tackle Ganado</span><span className="text-primary">+1 Pt</span></li>
-                      <li className="flex justify-between border-b border-slate-100 pb-1"><span>Asistencia de Try</span><span className="text-primary">+2 Pts</span></li>
-                      <li className="flex justify-between border-b border-slate-100 pb-1"><span>Line Robado</span><span className="text-primary">+2 Pts</span></li>
+                      <li className="flex justify-between border-b border-slate-100 pb-1"><span>Try</span><span className="text-primary">+15 Pts</span></li>
+                      <li className="flex justify-between border-b border-slate-100 pb-1"><span>Conversión / Penal</span><span className="text-primary">+3 Pts</span></li>
+                      <li className="flex justify-between border-b border-slate-100 pb-1"><span>Tackle</span><span className="text-primary">+2 Pts</span></li>
+                      <li className="flex justify-between border-b border-slate-100 pb-1"><span>Tackle Ofensivo</span><span className="text-primary">+5 Pts</span></li>
+                      <li className="flex justify-between border-b border-slate-100 pb-1"><span>Recuperación</span><span className="text-primary">+5 Pts</span></li>
+                      <li className="flex justify-between border-b border-slate-100 pb-1"><span>Asistencia</span><span className="text-primary">+5 Pts</span></li>
+                      <li className="flex justify-between border-b border-slate-100 pb-1"><span>Corte Limpio</span><span className="text-primary">+3 Pts</span></li>
                       <li className="flex justify-between text-primary/60 italic pt-1"><span>Capitán en Fecha</span><span className="font-black">Puntaje x2</span></li>
                     </ul>
                   </div>
@@ -236,8 +238,8 @@ export default function OnboardingScreen() {
                   <div className="space-y-3">
                     <span className="text-[10px] font-black text-red-600 bg-red-50 px-2.5 py-1 rounded-full uppercase tracking-widest border border-red-100">Acciones Negativas</span>
                     <ul className="space-y-2 font-bold text-xs text-slate-700">
-                      <li className="flex justify-between border-b border-slate-100 pb-1"><span>Knock-on</span><span className="text-red-500">-1 Pt</span></li>
-                      <li className="flex justify-between border-b border-slate-100 pb-1"><span>Penal Cometido</span><span className="text-red-500">-2 Pts</span></li>
+                      <li className="flex justify-between border-b border-slate-100 pb-1"><span>Knock-on</span><span className="text-red-500">-3 Pts</span></li>
+                      <li className="flex justify-between border-b border-slate-100 pb-1"><span>Penal en Contra</span><span className="text-red-500">-5 Pts</span></li>
                       <li className="flex justify-between border-b border-slate-100 pb-1"><span>Tarjeta Amarilla</span><span className="text-red-500 font-black">-5 Pts</span></li>
                       <li className="flex justify-between border-b border-slate-100 pb-1"><span>Tarjeta Roja</span><span className="text-red-600 font-black">-10 Pts</span></li>
                     </ul>
