@@ -47,6 +47,9 @@ export default function ResultadosAdmin() {
     const [publishing, setPublishing] = useState(false);
     const [search, setSearch] = useState('');
     const [msg, setMsg] = useState({ text: '', type: '' });
+    const [activeCategory, setActiveCategory] = useState('Primera'); // 'Primera' | 'Intermedia' | 'Pre-intermedia' | 'Todos'
+
+    const CATEGORIES = ['Primera', 'Intermedia', 'Pre-intermedia', 'Todos'];
 
     // ── Carga inicial ──
     useEffect(() => {
@@ -154,9 +157,11 @@ export default function ResultadosAdmin() {
         }
     };
 
-    const filteredJugadores = jugadores.filter(j => 
-        j.nombre.toLowerCase().includes(search.toLowerCase())
-    );
+    const filteredJugadores = jugadores.filter(j => {
+        const matchesSearch = j.nombre.toLowerCase().includes(search.toLowerCase());
+        const matchesCategory = activeCategory === 'Todos' || j.categoria === activeCategory;
+        return matchesSearch && matchesCategory;
+    });
 
     if (loading) return (
       <div className="flex flex-col items-center justify-center p-20 space-y-4">
@@ -238,6 +243,23 @@ export default function ResultadosAdmin() {
                   <p className="text-sm font-bold">{msg.text}</p>
                 </div>
             )}
+
+            {/* SELECTOR DE CATEGORÍA (TABS) */}
+            <div className="flex bg-neutral-light/50 p-1 rounded-2xl border border-neutral/10 overflow-x-auto no-scrollbar whitespace-nowrap">
+                {CATEGORIES.map(cat => (
+                    <button
+                        key={cat}
+                        onClick={() => setActiveCategory(cat)}
+                        className={`flex-1 px-4 py-2.5 rounded-xl text-xs font-black transition-all ${
+                            activeCategory === cat 
+                            ? 'bg-white text-primary shadow-sm ring-1 ring-neutral/5' 
+                            : 'text-neutral/60 hover:text-neutral'
+                        }`}
+                    >
+                        {cat.toUpperCase()}
+                    </button>
+                ))}
+            </div>
 
             {/* BARRA DE BÚSQUEDA STICKY */}
             <div className="sticky top-[56px] md:top-0 z-40 py-2 bg-slate-50/80 backdrop-blur-md -mx-4 px-4 md:mx-0 md:px-0">

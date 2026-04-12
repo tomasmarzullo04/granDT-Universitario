@@ -314,21 +314,46 @@ export async function getHistoricalTeam(userId, fechaId) {
 export async function getAdminStatsData(fechaId) {
   try {
     console.log('AdminStats: Iniciando carga para fecha:', fechaId);
-    const [playersRes, statsRes] = await Promise.all([
-      supabase.from('jugadores').select('*').order('nombre'),
+    
+    // 1. Obtener convocados para esta fecha específica con su categoría
+    const [convRes, statsRes] = await Promise.all([
+      supabase.from('convocados_fecha')
+        .select(`
+          categoria,
+          jugadores (*)
+        `)
+        .eq('fecha_id', fechaId),
       supabase.from('estadisticas_partido').select('*').eq('fecha_id', fechaId)
     ]);
 
-    if (playersRes.error) {
-      console.error('AdminStats: Error en jugadores:', playersRes.error);
-      throw new Error(`Error Jugadores: ${playersRes.error.message}`);
+    if (convRes.error) {
+      console.error('AdminStats: Error en convocados:', convRes.error);
+      throw new Error(`Error Convocados: ${convRes.error.message}`);
     }
     if (statsRes.error) {
       console.error('AdminStats: Error en stats:', statsRes.error);
       throw new Error(`Error Stats: ${statsRes.error.message}`);
     }
 
-    console.log('AdminStats: Jugadores recibidos:', playersRes.data?.length || 0);
+    // Aplanar los datos de convocados para que tengan el formato de jugador + categoría
+    const jugadoresConvocados = (convRes.data || []).map(c => {
+      const playerInfo = Array.isArray(c.jugadores) ? c.jugadores[0] : c.jugadores;
+      if (!playerInfo) return null;
+      return {
+        ...playerInfo,
+        categoria: c.categoria || 'Sin Categoría'
+      };
+    }).filter(Boolean);
+
+    // Fallback: Si no hay convocados, intentamos traer todos por si es una carga manual legacy
+    // Pero el comportamiento deseado es cargar lo citado.
+    let listFinal = jugadoresConvocados;
+    if (listFinal.length === 0) {
+      const { data: allPlayers } = await supabase.from('jugadores').select('*').order('nombre');
+      listFinal = (allPlayers || []).map(p => ({ ...p, categoria: 'Sin Categoría (Global)' }));
+    }
+
+    console.log('AdminStats: Jugadores procesados:', listFinal.length);
 
     // Convertir array de stats en un objeto indexado por jugador_id
     const statsMap = {};
@@ -337,7 +362,7 @@ export async function getAdminStatsData(fechaId) {
     });
 
     return {
-      jugadores: playersRes.data || [],
+      jugadores: listFinal,
       stats: statsMap,
       error: null
     };
