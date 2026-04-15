@@ -285,11 +285,11 @@ export default function Resumenes() {
                     <div className="flex items-center gap-3">
                        <Activity className="w-6 h-6 text-primary" />
                        <h2 className="text-3xl font-black text-primary uppercase tracking-tighter">
-                  {status === APP_STATUS.ESPERANDO_PLANTELES && upcomingMatch
-                    ? `PRÓXIMA FECHA: ${upcomingMatch.rival}`
-                    : status === APP_STATUS.ESPERANDO_PLANTELES
-                      ? 'RESUMEN GENERAL'
-                      : `RESUMEN FECHA ANTERIOR (${lastResultsMatch?.rival || 'S/D'} - ${lastResultsMatch?.rival?.split('-')?.[1]?.trim() || ''})`
+                  {lastResultsMatch && lastResultsData?.items?.length > 0
+                    ? `RESUMEN FECHA ${lastResultsMatch.numero_fecha} vs ${lastResultsMatch.rival || 'S/D'}`
+                    : upcomingMatch
+                      ? `PRÓXIMA: FECHA ${upcomingMatch.numero_fecha} vs ${upcomingMatch.rival || 'S/D'}`
+                      : 'RESUMEN GENERAL'
                   }
               </h2>
                     </div>

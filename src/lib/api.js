@@ -83,19 +83,25 @@ export async function getLiveStatus() {
 }
 
 /**
- * Retorna la última fecha que tiene resultados publicados oficialmente EXCLUSIVAMENTE.
+ * Retorna la última fecha que tiene resultados publicados oficialmente.
+ * Excluye FECHA LIBRE ya que no tiene datos significativos.
  */
 export async function getLastPublishedFecha() {
   const { data, error } = await supabase
     .from('fechas')
     .select('*')
     .eq('stats_cargadas', true)
-    .order('numero_fecha', { ascending: false })
-    .limit(1)
-    .single();
+    .order('numero_fecha', { ascending: false });
   
-  if (error) return null;
-  return data;
+  if (error || !data || data.length === 0) return null;
+  
+  // Filtrar FECHA LIBRE
+  const meaningful = data.filter(f => {
+    const rival = (f.rival || '').toUpperCase();
+    return !rival.includes('FECHA LIBRE') && !rival.includes('LIBRE');
+  });
+  
+  return meaningful.length > 0 ? meaningful[0] : data[0];
 }
 
 
@@ -578,18 +584,43 @@ export async function getRankingCompleto() {
  * con sus estadísticas y puntos individuales.
  */
 export async function getResumenFecha(fechaId, userId) {
-  // 1. Jugadores elegidos por el usuario
+  // 1. Intentar obtener equipo actual (fecha aún no publicada)
   const { data: equipo, error: eqErr } = await supabase
     .from('equipos_usuarios')
     .select('jugador_id, posicion_cancha, capitan_id')
     .eq('fecha_id', fechaId)
     .eq('usuario_id', userId);
 
-  if (eqErr || !equipo || equipo.length === 0) return null;
+  let jugadorIds = [];
+  let capitanId = null;
+  let posicionMap = {};
+
+  if (!eqErr && equipo && equipo.length > 0) {
+    // Caso A: Fecha aún no publicada, datos en equipos_usuarios
+    jugadorIds = equipo.map(e => e.jugador_id);
+    capitanId = equipo[0]?.capitan_id || null;
+    equipo.forEach(e => { posicionMap[e.jugador_id] = e.posicion_cancha; });
+  } else {
+    // Caso B: Fecha ya publicada, datos en historico_equipos
+    const { data: historico, error: hErr } = await supabase
+      .from('historico_equipos')
+      .select('player_ids, puntos_totales')
+      .eq('user_id', userId)
+      .eq('fecha_id', fechaId)
+      .maybeSingle();
+
+    if (hErr || !historico || !historico.player_ids || historico.player_ids.length === 0) {
+      return null;
+    }
+
+    jugadorIds = historico.player_ids;
+    // Asignar posiciones secuenciales como fallback
+    jugadorIds.forEach((id, idx) => { posicionMap[id] = idx + 1; });
+  }
+
+  if (jugadorIds.length === 0) return null;
 
   // 2. Estadísticas de esos jugadores
-  const jugadorIds = equipo.map(e => e.jugador_id);
-
   const { data: statsData } = await supabase
     .from('estadisticas_partido')
     .select('*')
@@ -609,16 +640,29 @@ export async function getResumenFecha(fechaId, userId) {
     .eq('fecha_id', fechaId)
     .in('jugador_id', jugadorIds);
 
-  // 5. Armar respuesta consolidada
-  const items = equipo.map(e => {
-    const info = (jugadoresInfo || []).find(j => j.id === e.jugador_id) || {};
-    const stats = (statsData || []).find(s => s.jugador_id === e.jugador_id) || null;
-    const conv = (convocados || []).find(c => c.jugador_id === e.jugador_id) || {};
+  // 5. Obtener capitán de historico si no lo tenemos de equipos_usuarios
+  if (!capitanId) {
+    // Intentar obtener de equipos_usuarios por si hay datos parciales
+    const { data: capData } = await supabase
+      .from('equipos_usuarios')
+      .select('capitan_id')
+      .eq('fecha_id', fechaId)
+      .eq('usuario_id', userId)
+      .limit(1)
+      .maybeSingle();
+    capitanId = capData?.capitan_id || null;
+  }
 
-    const isCaptain = e.jugador_id === e.capitan_id;
+  // 6. Armar respuesta consolidada
+  const items = jugadorIds.map(jId => {
+    const info = (jugadoresInfo || []).find(j => j.id === jId) || {};
+    const stats = (statsData || []).find(s => s.jugador_id === jId) || null;
+    const conv = (convocados || []).find(c => c.jugador_id === jId) || {};
+
+    const isCaptain = jId === capitanId;
     return {
-      jugador_id: e.jugador_id,
-      posicion_cancha: e.posicion_cancha,
+      jugador_id: jId,
+      posicion_cancha: posicionMap[jId] || 0,
       nombre: info.nombre || 'Jugador',
       categoria: conv.categoria || 'Sin Categoría',
       posicion_oficial: conv.posicion_actual || '',
