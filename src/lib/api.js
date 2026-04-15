@@ -492,7 +492,9 @@ export async function getAllProfiles() {
  * hace fallback a cálculo on-the-fly desde equipos_usuarios + estadisticas_partido.
  */
 export async function getRankingCompleto() {
-  // 1. Obtener puntos acumulados por usuario de ranking_usuarios
+  // 1. Obtener puntos acumulados por usuario
+  // Fuente primaria: ranking_usuarios (se llena con PUBLICAR)
+  // Fuente secundaria: historico_equipos (snapshot de publicación)
   const { data: rankingData, error: rErr } = await supabase
     .from('ranking_usuarios')
     .select('usuario_id, puntos_fecha');
@@ -500,51 +502,24 @@ export async function getRankingCompleto() {
   let totalPuntosMap = {};
 
   if (!rErr && rankingData && rankingData.length > 0) {
-    // Caso A: Usar tabla procesada (Rápido)
-    totalPuntosMap = (rankingData || []).reduce((acc, curr) => {
+    // Caso A: Usar tabla ranking_usuarios (llenada por PUBLICAR)
+    totalPuntosMap = rankingData.reduce((acc, curr) => {
       acc[curr.usuario_id] = (acc[curr.usuario_id] || 0) + curr.puntos_fecha;
       return acc;
     }, {});
   } else {
-    // Caso B: Cálculo on-the-fly (Automático)
-    const now = new Date();
-    const [statsRes, teamsRes, fechasRes] = await Promise.all([
-      supabase.from('estadisticas_partido').select('*'),
-      supabase.from('equipos_usuarios').select('usuario_id, jugador_id, capitan_id, fecha_id'),
-      supabase.from('fechas').select('*')
-    ]);
+    // Caso B: Fallback a historico_equipos (snapshots oficiales)
+    const { data: historicoData, error: hErr } = await supabase
+      .from('historico_equipos')
+      .select('user_id, puntos_totales');
 
-    if (!statsRes.error && !teamsRes.error && !fechasRes.error) {
-      // Crear mapa de fechas para acceso rápido
-      const fechasMap = (fechasRes.data || []).reduce((acc, f) => {
-        acc[f.id] = f;
+    if (!hErr && historicoData && historicoData.length > 0) {
+      totalPuntosMap = historicoData.reduce((acc, curr) => {
+        acc[curr.user_id] = (acc[curr.user_id] || 0) + (curr.puntos_totales || 0);
         return acc;
       }, {});
-
-      // Filtrar partidos terminados y no libres en JS
-      const filteredStats = (statsRes.data || []).filter(s => {
-        const fecha = fechasMap[s.fecha_id];
-        if (!fecha) return false;
-        const fin = new Date(fecha.fin_fecha);
-        const isLibre = fecha.rival?.toUpperCase().includes('FECHA LIBRE');
-        return now > fin && !isLibre;
-      });
-
-      const statsMap = filteredStats.reduce((acc, s) => {
-        const key = `${s.fecha_id}_${s.jugador_id}`;
-        acc[key] = s;
-        return acc;
-      }, {});
-
-      (teamsRes.data || []).forEach(sel => {
-        const stat = statsMap[`${sel.fecha_id}_${sel.jugador_id}`];
-        if (stat) {
-          const isCaptain = sel.jugador_id === sel.capitan_id;
-          const pts = calcularPuntosJugador(stat, isCaptain);
-          totalPuntosMap[sel.usuario_id] = (totalPuntosMap[sel.usuario_id] || 0) + pts;
-        }
-      });
     }
+    // Si ambas están vacías → todos con 0 puntos (esperando publicación)
   }
 
   // 2. Obtener perfiles para nombres
