@@ -62,23 +62,12 @@ export async function getLiveStatus() {
   
   if (error) {
     console.error('Error fetching live status:', error);
-    // Fallback básico si falla el RPC (poco probable si la DB está ok)
     return { activeMatchday: null, status: APP_STATUS.FECHA_EN_JUEGO };
-  }
-
-  // EXCEPCIÓN TEMPORAL: Sábado 11/04 hasta las 13:00 hs
-  const now = new Date();
-  const deadline = new Date('2026-04-11T13:00:00-03:00');
-  
-  let finalStatus = data.status;
-  if (now < deadline) {
-    // Si estamos antes de las 13:00 de hoy, forzamos mercado abierto para permitir cambios
-    finalStatus = APP_STATUS.ARMADO_EQUIPO;
   }
 
   return {
     activeMatchday: data.activeMatchday,
-    status: finalStatus
+    status: data.status
   };
 }
 

@@ -1,26 +1,45 @@
 -- =============================================================
--- FIX COMPLETO: Limpieza total + Solo Sporting + Schema fix
+-- FIX COMPLETO v2: Reparar estado de fechas + limpiar datos
 -- Ejecutar en Supabase SQL Editor
 -- =============================================================
 
 -- ═══════════════════════════════════════════════════════════════
--- PASO 1: LIMPIAR DATOS VIEJOS
--- Solo Sporting (fecha 4) es la fecha que se jugó realmente.
+-- PASO 1: MARCAR FECHAS VIEJAS (1, 2, 3) COMO FINALIZADAS
+-- stats_cargadas = true para que el RPC las ignore
+-- estado = 'finalizada' para que no aparezcan como próximas
 -- ═══════════════════════════════════════════════════════════════
+UPDATE fechas 
+SET stats_cargadas = true, estado = 'finalizada' 
+WHERE numero_fecha < 4;
 
--- Limpiar ranking completo (se regenera con la publicación)
+-- Fecha 4 (Sporting) queda como la activa sin publicar
+UPDATE fechas 
+SET stats_cargadas = false 
+WHERE numero_fecha = 4;
+
+-- ═══════════════════════════════════════════════════════════════
+-- PASO 2: LIMPIAR equipos_usuarios DE FECHAS VIEJAS
+-- (La fecha activa es Sporting / fecha 4, las viejas no sirven)
+-- ═══════════════════════════════════════════════════════════════
+DELETE FROM equipos_usuarios 
+WHERE fecha_id IN (SELECT id FROM fechas WHERE numero_fecha < 4);
+
+-- ═══════════════════════════════════════════════════════════════
+-- PASO 3: LIMPIAR estadisticas_partido DE FECHAS VIEJAS
+-- (Solo Sporting tiene datos reales)
+-- ═══════════════════════════════════════════════════════════════
+DELETE FROM estadisticas_partido 
+WHERE fecha_id IN (SELECT id FROM fechas WHERE numero_fecha < 4);
+
+-- ═══════════════════════════════════════════════════════════════
+-- PASO 4: VACIAR ranking e histórico (basura de pruebas)
+-- ═══════════════════════════════════════════════════════════════
 TRUNCATE ranking_usuarios;
-
--- Limpiar histórico completo (se regenera con la publicación)
 TRUNCATE historico_equipos;
 
--- Resetear fechas viejas como no publicadas (excepto las que tengan datos reales)
-UPDATE fechas SET stats_cargadas = false, estado = 'pendiente' 
-WHERE numero_fecha != 4;
-
 -- ═══════════════════════════════════════════════════════════════
--- PASO 2: Eliminar filas duplicadas en estadisticas_partido
--- Mantiene solo la fila más reciente para cada (fecha_id, jugador_id)
+-- PASO 5: Eliminar filas duplicadas en estadisticas_partido
+-- (Solo queda fecha 4, eliminar duplicados si los hay)
 -- ═══════════════════════════════════════════════════════════════
 DELETE FROM estadisticas_partido
 WHERE id NOT IN (
@@ -30,7 +49,7 @@ WHERE id NOT IN (
 );
 
 -- ═══════════════════════════════════════════════════════════════
--- PASO 3: Agregar columnas que podrían faltar
+-- PASO 6: Agregar columnas que podrían faltar
 -- ═══════════════════════════════════════════════════════════════
 ALTER TABLE estadisticas_partido ADD COLUMN IF NOT EXISTS lines_robados INTEGER DEFAULT 0;
 ALTER TABLE estadisticas_partido ADD COLUMN IF NOT EXISTS knock_ons INTEGER DEFAULT 0;
@@ -38,7 +57,7 @@ ALTER TABLE estadisticas_partido ADD COLUMN IF NOT EXISTS tackles_ofensivos INTE
 ALTER TABLE estadisticas_partido ADD COLUMN IF NOT EXISTS recuperaciones INTEGER DEFAULT 0;
 
 -- ═══════════════════════════════════════════════════════════════
--- PASO 4: Crear UNIQUE constraint en (fecha_id, jugador_id)
+-- PASO 7: Crear UNIQUE constraint en (fecha_id, jugador_id)
 -- ═══════════════════════════════════════════════════════════════
 DO $$
 BEGIN
@@ -52,13 +71,7 @@ BEGIN
 END $$;
 
 -- ═══════════════════════════════════════════════════════════════
--- PASO 5: Asegurar que Fecha 4 (Sporting) NO esté marcada como publicada
--- para que el RPC la pueda procesar
--- ═══════════════════════════════════════════════════════════════
-UPDATE fechas SET stats_cargadas = false WHERE numero_fecha = 4;
-
--- ═══════════════════════════════════════════════════════════════
--- PASO 6: Recrear el RPC process_publication_v3
+-- PASO 8: Recrear el RPC process_publication_v3
 -- ═══════════════════════════════════════════════════════════════
 CREATE OR REPLACE FUNCTION process_publication_v3(p_fecha_id UUID, p_stats_json JSONB)
 RETURNS VOID AS $$
