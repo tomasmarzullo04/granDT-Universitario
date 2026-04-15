@@ -165,7 +165,7 @@ export default function ResultadosAdmin() {
             
         } catch (err) {
             console.error(err);
-            setMsg({ text: 'Error al publicar resultados', type: 'error' });
+            setMsg({ text: `Error al publicar: ${err.message}`, type: 'error' });
         } finally {
             setPublishing(false);
         }

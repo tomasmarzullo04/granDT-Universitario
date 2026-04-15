@@ -463,7 +463,7 @@ export async function publicarResultadosFecha(fechaId, allStatsArray) {
 
   if (error) {
     console.error('Error in publication RPC:', error);
-    throw error;
+    throw new Error(error.message || 'Error desconocido al publicar');
   }
 
   return data;
@@ -678,13 +678,11 @@ export async function getPlayersStatistics() {
     return acc;
   }, {});
 
-  // Filtrar stats en JS para asegurar que la fecha ya terminó
+  // Solo incluir stats de fechas OFICIALMENTE PUBLICADAS
   const filteredStats = (statsRes.data || []).filter(s => {
     const fecha = fechasMap[s.fecha_id];
     if (!fecha) return false;
-    const fin = new Date(fecha.fin_fecha);
-    const isLibre = fecha.rival?.toUpperCase().includes('FECHA LIBRE');
-    return now > fin && !isLibre;
+    return fecha.stats_cargadas === true;
   });
 
   const { data: convocatorias } = await supabase
