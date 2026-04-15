@@ -134,13 +134,11 @@ export default function Resumenes() {
   let statsDefensa = 0;
   let statsDisciplina = 0;
 
+  // El MVP de la fecha ahora es GLOBAL (el jugador con más puntos), no el de mi equipo.
+  mvp = topJugadores?.length > 0 ? topJugadores[0] : null;
+
   if (lastResultsData && lastResultsData.items.length > 0) {
-    let maxPts = -999;
     lastResultsData.items.forEach(jugador => {
-      if (jugador.puntos > maxPts) {
-        maxPts = jugador.puntos;
-        mvp = jugador;
-      }
       if (jugador.es_capitan) capitan = jugador;
 
       const s = jugador.stats;

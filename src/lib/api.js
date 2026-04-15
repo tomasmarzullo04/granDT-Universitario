@@ -737,6 +737,28 @@ export async function getMarketMetrics(activeFechaId) {
       const topId = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b);
       const { data: p } = await supabase.from('jugadores').select('nombre').eq('id', topId).single();
       mostElegidoFecha = { id: topId, nombre: p?.nombre || 'S/D', count: counts[topId] };
+    } else {
+      // Fallback a historico_equipos si la fecha ya fue publicada (equipos_usuarios se limpia)
+      const { data: histData } = await supabase
+        .from('historico_equipos')
+        .select('player_ids')
+        .eq('fecha_id', activeFechaId);
+      
+      if (histData && histData.length > 0) {
+        const counts = {};
+        histData.forEach(row => {
+          if (Array.isArray(row.player_ids)) {
+            row.player_ids.forEach(id => {
+              counts[id] = (counts[id] || 0) + 1;
+            });
+          }
+        });
+        if (Object.keys(counts).length > 0) {
+          const topId = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b);
+          const { data: p } = await supabase.from('jugadores').select('nombre').eq('id', topId).single();
+          mostElegidoFecha = { id: topId, nombre: p?.nombre || 'S/D', count: counts[topId] };
+        }
+      }
     }
   }
 
