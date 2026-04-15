@@ -64,7 +64,7 @@ export default function Resumenes() {
           metricsFechaId ? getResumenFecha(metricsFechaId, user.id) : Promise.resolve(null),
           getRankingCompleto(),
           getPlayersStatistics(),
-          getMarketMetrics(activeMatchday?.id),
+          metricsFechaId ? getMarketMetrics(metricsFechaId) : Promise.resolve(null),
           metricsFechaId ? getEntrenadorDeLaFecha(metricsFechaId) : Promise.resolve(null)
         ]);
 

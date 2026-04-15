@@ -402,6 +402,18 @@ export default function MiEquipo() {
             <p className="text-[10px] font-bold text-amber-700/70 uppercase">¡Éxitos al UNI contra {activeFecha.rival}! La ventana de selección ha finalizado.</p>
           </div>
         </div>
+      ) : matchdayStatus === APP_STATUS.ESPERANDO_PLANTELES ? (
+        <div className="bg-blue-50 border border-blue-200 p-4 rounded-2xl flex items-center gap-3 shadow-sm animate-fade-in">
+          <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center shrink-0">
+            <Trophy className="w-5 h-5 text-blue-600" />
+          </div>
+          <div>
+            <p className="text-xs font-black text-blue-900 uppercase tracking-tight">⏳ ESPERANDO PLANTELES</p>
+            <p className="text-[10px] font-bold text-blue-700/70 uppercase">
+              La fecha vs {activeFecha.rival} está por abrir. El Staff comunicará en breve los convocados.
+            </p>
+          </div>
+        </div>
       ) : (
         <div className="bg-green-50 border border-green-200 p-4 rounded-2xl flex items-center gap-3 shadow-sm animate-fade-in">
           <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center shrink-0">
@@ -410,7 +422,7 @@ export default function MiEquipo() {
           <div>
             <p className="text-xs font-black text-green-900 uppercase tracking-tight">✅ Mercado Abierto</p>
             <p className="text-[10px] font-bold text-green-700/70 uppercase">
-              ¡Armá tu XV para jugar contra {activeFecha.rival}! Cierra hoy sábado a las 13:00.
+              ¡Armá tu XV para jugar contra {activeFecha.rival}! Cierra antes del partido.
             </p>
           </div>
         </div>
