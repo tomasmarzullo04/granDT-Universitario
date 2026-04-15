@@ -96,7 +96,7 @@ BEGIN
         INSERT INTO historico_equipos (user_id, numero_fecha, fecha_id, player_ids, puntos_totales)
         VALUES (
             v_user_row.usuario_id, v_numero_fecha, p_fecha_id,
-            (SELECT array_agg(jugador_id) FROM equipos_usuarios WHERE usuario_id = v_user_row.usuario_id AND fecha_id = p_fecha_id),
+            (SELECT to_jsonb(array_agg(jugador_id)) FROM equipos_usuarios WHERE usuario_id = v_user_row.usuario_id AND fecha_id = p_fecha_id),
             COALESCE(v_total_puntos, 0)
         ) ON CONFLICT (user_id, fecha_id) DO UPDATE SET
             puntos_totales = EXCLUDED.puntos_totales, player_ids = EXCLUDED.player_ids;
