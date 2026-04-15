@@ -54,18 +54,23 @@ export default function Resumenes() {
         const { activeMatchday, status: liveStatus } = await getLiveStatus();
         const lastFinished = await getLastPublishedFecha();
         
-        // Las métricas (Equipo, Entrenador, etc.) ahora vienen SIEMPRE de la ÚLTIMA fecha terminada
+        // Determinar la fecha para mostrar métricas:
+        // 1. Si hay una fecha publicada con datos reales → usarla
+        // 2. Si no, usar la fecha activa (stats en vivo, aún no publicadas)
+        const metricsFechaId = lastFinished?.id || activeMatchday?.id;
+        const metricsFecha = lastFinished || activeMatchday;
+        
         const [resultsData, ranking, allPlayerStats, market, coach] = await Promise.all([
-          lastFinished ? getResumenFecha(lastFinished.id, user.id) : Promise.resolve(null),
+          metricsFechaId ? getResumenFecha(metricsFechaId, user.id) : Promise.resolve(null),
           getRankingCompleto(),
           getPlayersStatistics(),
           getMarketMetrics(activeMatchday?.id),
-          lastFinished ? getEntrenadorDeLaFecha(lastFinished.id) : Promise.resolve(null)
+          metricsFechaId ? getEntrenadorDeLaFecha(metricsFechaId) : Promise.resolve(null)
         ]);
 
         // Guardar en estados
         setUpcomingMatch(activeMatchday);
-        setLastResultsMatch(lastFinished);
+        setLastResultsMatch(metricsFecha);
         setStatus(liveStatus);
         setLastResultsData(resultsData || { items: [], puntosTotal: 0 });
         setMarketMetrics(market);
@@ -91,7 +96,7 @@ export default function Resumenes() {
         // ACTUALIZAR CACHÉ GLOBAL
         dashboardCache = {
           upcomingMatch: activeMatchday,
-          lastResultsMatch: lastFinished,
+          lastResultsMatch: metricsFecha,
           status: liveStatus,
           lastResultsData: resultsData || { items: [], puntosTotal: 0 },
           rankingInfo: dashboardCache.rankingInfo,
