@@ -30,6 +30,7 @@ const STAT_FIELDS = [
   { key: 'tackles_ofensivos', label: 'Tackle Of.',  pts: SCORING.TACKLE_OFENSIVO },
   { key: 'recuperaciones',    label: 'Recuper.',    pts: SCORING.RECUPERACION },
   { key: 'cortes_limpios',    label: 'Corte L.',    pts: SCORING.CORTE_LIMPIO },
+  { key: 'lines_robados',    label: 'Line Rob.',   pts: SCORING.LINES_ROBADOS },
   { key: 'penales_hechos',    label: 'Penal Contra', pts: SCORING.PENALES_HECHOS },
   { key: 'knock_ons',         label: 'Knock on',    pts: SCORING.KNOCK_ON },
   { key: 'amarillas',         label: 'Amarilla',    pts: SCORING.AMARILLA },
@@ -110,14 +111,27 @@ export default function ResultadosAdmin() {
         if (!selectedFecha) return;
         setSaving(true);
         try {
-            const updates = Object.entries(stats).map(([jId, s]) => ({
-                fecha_id: selectedFecha,
-                jugador_id: jId,
-                ...s
-            }));
-            const { error } = await supabase.from('estadisticas_partido').upsert(updates);
+            // Extraer SOLO los campos de estadísticas, sin id/created_at/etc del DB
+            const STAT_KEYS = STAT_FIELDS.map(f => f.key);
+            const updates = Object.entries(stats).map(([jId, s]) => {
+                const cleanStats = {};
+                STAT_KEYS.forEach(k => { cleanStats[k] = parseInt(s?.[k]) || 0; });
+                return {
+                    fecha_id: selectedFecha,
+                    jugador_id: jId,
+                    ...cleanStats
+                };
+            });
+            const { error } = await supabase
+                .from('estadisticas_partido')
+                .upsert(updates, { onConflict: 'fecha_id,jugador_id' });
             if (error) throw error;
-            setMsg({ text: 'Estadísticas guardadas localmente', type: 'success' });
+
+            // Recargar stats del servidor para tener los IDs correctos
+            const { stats: freshStats } = await getAdminStatsData(selectedFecha);
+            setStats(freshStats);
+
+            setMsg({ text: 'Estadísticas guardadas correctamente', type: 'success' });
             setTimeout(() => setMsg({ text: '', type: '' }), 3000);
         } catch (err) {
             console.error(err);

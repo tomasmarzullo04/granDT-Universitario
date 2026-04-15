@@ -636,6 +636,8 @@ export async function getResumenFecha(fechaId, userId) {
         asistencias: stats?.asistencias || 0,
         cortes_limpios: stats?.cortes_limpios || 0,
         tackles: stats?.tackles || 0,
+        tackles_ofensivos: stats?.tackles_ofensivos || 0,
+        recuperaciones: stats?.recuperaciones || 0,
       },
       puntos: calcularPuntosJugador(stats, isCaptain),
     };
