@@ -684,8 +684,18 @@ export async function getPlayersStatistics() {
     .select('jugador_id, categoria, fecha_id')
     .order('fecha_id', { ascending: false });
 
+  // Deduplicar stats: mantener solo una fila por (fecha_id, jugador_id)
+  // Esto previene puntajes inflados si hay duplicados en la base
+  const dedupedStats = Object.values(
+    filteredStats.reduce((acc, s) => {
+      const key = `${s.fecha_id}_${s.jugador_id}`;
+      acc[key] = s; // Mantiene la última
+      return acc;
+    }, {})
+  );
+
   return players.map(player => {
-    const playerStats = filteredStats.filter(s => s.jugador_id === player.id);
+    const playerStats = dedupedStats.filter(s => s.jugador_id === player.id);
     const totalPoints = playerStats.reduce((acc, s) => acc + calcularPuntosJugador(s), 0);
     const mostRecentConv = (convocatorias || []).find(c => c.jugador_id === player.id);
 

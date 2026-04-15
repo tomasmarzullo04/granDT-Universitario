@@ -1,10 +1,12 @@
 -- =============================================================
--- FIX: Eliminar duplicados, crear constraint UNIQUE, y corregir RPC
--- Ejecutar en Supabase SQL Editor
+-- FIX COMPLETO: Duplicados + Constraint + RPC + Ranking
+-- Ejecutar en Supabase SQL Editor (un solo bloque)
 -- =============================================================
 
+-- ═══════════════════════════════════════════════════════════════
 -- PASO 1: Eliminar filas duplicadas en estadisticas_partido
--- Mantiene solo la fila con el ID más grande (última insertada) para cada (fecha_id, jugador_id)
+-- Mantiene solo la fila con el ID más reciente para cada (fecha_id, jugador_id)
+-- ═══════════════════════════════════════════════════════════════
 DELETE FROM estadisticas_partido
 WHERE id NOT IN (
     SELECT MAX(id)
@@ -12,14 +14,18 @@ WHERE id NOT IN (
     GROUP BY fecha_id, jugador_id
 );
 
+-- ═══════════════════════════════════════════════════════════════
 -- PASO 2: Agregar columnas que podrían faltar
+-- ═══════════════════════════════════════════════════════════════
 ALTER TABLE estadisticas_partido ADD COLUMN IF NOT EXISTS lines_robados INTEGER DEFAULT 0;
 ALTER TABLE estadisticas_partido ADD COLUMN IF NOT EXISTS knock_ons INTEGER DEFAULT 0;
 ALTER TABLE estadisticas_partido ADD COLUMN IF NOT EXISTS tackles_ofensivos INTEGER DEFAULT 0;
 ALTER TABLE estadisticas_partido ADD COLUMN IF NOT EXISTS recuperaciones INTEGER DEFAULT 0;
 
+-- ═══════════════════════════════════════════════════════════════
 -- PASO 3: Crear UNIQUE constraint en (fecha_id, jugador_id)
--- Esto es NECESARIO para que ON CONFLICT funcione en el RPC y en los upserts del frontend
+-- Necesario para ON CONFLICT y para evitar duplicados futuros
+-- ═══════════════════════════════════════════════════════════════
 DO $$
 BEGIN
     IF NOT EXISTS (
@@ -31,8 +37,21 @@ BEGIN
     END IF;
 END $$;
 
--- PASO 4: Recrear el RPC process_publication_v3 con TODAS las columnas
--- Incluye lines_robados, knock_ons, tackles_ofensivos, recuperaciones
+-- ═══════════════════════════════════════════════════════════════
+-- PASO 4: Reconstruir ranking_usuarios desde historico_equipos
+-- Esto limpia cualquier dato corrupto y usa la fuente de verdad
+-- ═══════════════════════════════════════════════════════════════
+TRUNCATE ranking_usuarios;
+
+INSERT INTO ranking_usuarios (usuario_id, fecha_id, puntos_fecha)
+SELECT user_id, fecha_id, puntos_totales
+FROM historico_equipos
+ON CONFLICT (usuario_id, fecha_id) DO UPDATE SET puntos_fecha = EXCLUDED.puntos_fecha;
+
+-- ═══════════════════════════════════════════════════════════════
+-- PASO 5: Recrear el RPC process_publication_v3
+-- Incluye TODAS las columnas + lines_robados
+-- ═══════════════════════════════════════════════════════════════
 CREATE OR REPLACE FUNCTION process_publication_v3(p_fecha_id UUID, p_stats_json JSONB)
 RETURNS VOID AS $$
 DECLARE
@@ -98,7 +117,7 @@ BEGIN
         WHERE fecha_id = p_fecha_id 
         GROUP BY usuario_id, capitan_id
     LOOP
-        -- Calcular puntos con los multiplicadores oficiales de SCORING
+        -- Calcular puntos con los multiplicadores oficiales
         -- Try=15, Conv=3, Penal=3, Drop=5, Amarilla=-5, Roja=-10,
         -- Penal_Hecho=-5, Knock_On=-3, Asistencia=5, Corte_Limpio=3,
         -- Tackle=2, Tackle_Ofensivo=5, Recuperacion=5, Lines_Robados=0
