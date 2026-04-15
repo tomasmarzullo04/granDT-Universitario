@@ -29,7 +29,7 @@ BEGIN
     )
     SELECT 
         p_fecha_id,
-        (val->>'jugador_id')::UUID,
+        (val->>'jugador_id')::BIGINT,
         COALESCE((val->>'tries')::INTEGER, 0),
         COALESCE((val->>'conversiones')::INTEGER, 0),
         COALESCE((val->>'penales')::INTEGER, 0),
