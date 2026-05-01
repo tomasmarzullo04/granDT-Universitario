@@ -10,6 +10,15 @@ import ResumenFecha from '../ResumenFecha';
 
 import { PITCH_POSITIONS } from '../../constants/pitchPositions';
 
+const POSICIONES_INTERCAMBIABLES = {
+  3: [3, 4],   // Segundas líneas (4 y 5)
+  4: [3, 4],
+  5: [5, 6],   // Alas (6 y 7)
+  6: [5, 6],
+  10: [10, 13], // Wings (11 y 14)
+  13: [10, 13],
+};
+
 export default function MiEquipo() {
   const { profile, role } = useAuth();
   const isAdmin = role === 'admin';
@@ -194,13 +203,20 @@ export default function MiEquipo() {
   };
 
   const assignToSlot = (player, index) => {
-    // NUEVA REGLA: El jugador solo puede ir en su posición oficial de la convocatoria
-    const targetLabel = PITCH_POSITIONS[index].label;
-    // Comprobación de posición oficial (insensible a mayúsculas/minúsculas)
-    // Saltamos esta restricción si el usuario es Admin (God Mode)
-    if (!isAdmin && player.posicion && 
-        player.posicion.toLowerCase() !== 'jugador' && 
-        player.posicion.toLowerCase() !== targetLabel.toLowerCase()) {
+    // NUEVA REGLA: El jugador solo puede ir en su posición oficial o intercambiable
+    let officialIndex = PITCH_POSITIONS.findIndex(pos => pos.label.toUpperCase() === player.posicion?.toUpperCase());
+    if (officialIndex === -1) officialIndex = (parseInt(player.posicion) || 0) - 1;
+
+    let isPosMatch = false;
+    if (officialIndex >= 0 && officialIndex <= 14) {
+      if (officialIndex === index) {
+        isPosMatch = true;
+      } else if (POSICIONES_INTERCAMBIABLES[officialIndex] && POSICIONES_INTERCAMBIABLES[officialIndex].includes(index)) {
+        isPosMatch = true;
+      }
+    }
+
+    if (!isAdmin && player.posicion && player.posicion.toLowerCase() !== 'jugador' && !isPosMatch) {
       setError(`¡Atención! No podés poner a ${player.nombre} en esta posición porque en esta fecha jugará de ${player.posicion}.`);
       setSelectedPosition(null);
       setActivePlayerMenu(null);
@@ -863,8 +879,16 @@ export default function MiEquipo() {
                                 <div className="overflow-y-auto grid grid-cols-2 gap-1 p-1 custom-scrollbar">
                                   {PITCH_POSITIONS.map((pos, idx) => {
                                     const occupied = pitchSlots[idx];
-                                    const isOfficialPos = player.posicion === pos.label;
-                                    const isRestricted = player.posicion && player.posicion !== 'Jugador' && !isOfficialPos;
+                                    
+                                    let pIdx = PITCH_POSITIONS.findIndex(pPos => pPos.label.toUpperCase() === player.posicion?.toUpperCase());
+                                    if (pIdx === -1) pIdx = (parseInt(player.posicion) || 0) - 1;
+                                    
+                                    let isValidPos = (pIdx === idx);
+                                    if (POSICIONES_INTERCAMBIABLES[pIdx] && POSICIONES_INTERCAMBIABLES[pIdx].includes(idx)) {
+                                      isValidPos = true;
+                                    }
+
+                                    const isRestricted = player.posicion && player.posicion.toLowerCase() !== 'jugador' && !isValidPos;
 
                                     return (
                                       <button
@@ -879,9 +903,9 @@ export default function MiEquipo() {
                                       >
                                         <span className={`w-5 h-5 rounded flex items-center justify-center text-[9px] font-black border ${occupied ? 'border-neutral/30' : 'bg-primary/10 border-primary/20 group-hover/item:bg-white group-hover/item:text-primary'}`}>{idx + 1}</span>
                                         <div className="flex flex-col min-w-0">
-                                          <span className={`text-[9px] font-bold truncate leading-none ${isOfficialPos ? 'text-accent group-hover/item:text-white' : ''}`}>{pos.label}</span>
+                                          <span className={`text-[9px] font-bold truncate leading-none ${isValidPos ? 'text-accent group-hover/item:text-white' : ''}`}>{pos.label}</span>
                                           {occupied && <span className="text-[7px] opacity-70 italic">Ocupado</span>}
-                                          {isOfficialPos && !occupied && <span className="text-[7px] text-accent group-hover/item:text-white/80 font-black">SU PUESTO</span>}
+                                          {isValidPos && !occupied && <span className="text-[7px] text-accent group-hover/item:text-white/80 font-black">PUESTO VÁLIDO</span>}
                                         </div>
                                       </button>
                                     )
@@ -991,7 +1015,13 @@ export default function MiEquipo() {
             <div className="p-0 space-y-0 max-h-[70vh] overflow-y-auto bg-neutral-light/5">
               <div className="px-4 py-6">
                 {convocados
-                  .filter(p => p.posicion === PITCH_POSITIONS[activeSlotIndex].label)
+                  .filter(p => {
+                    let pIdx = PITCH_POSITIONS.findIndex(pos => pos.label.toUpperCase() === p.posicion?.toUpperCase());
+                    if (pIdx === -1) pIdx = (parseInt(p.posicion) || 0) - 1;
+                    if (pIdx === activeSlotIndex) return true;
+                    if (POSICIONES_INTERCAMBIABLES[activeSlotIndex] && POSICIONES_INTERCAMBIABLES[activeSlotIndex].includes(pIdx)) return true;
+                    return false;
+                  })
                   .sort((a,b) => {
                     const order = { 'primera': 1, 'intermedia': 2, 'pre': 3 };
                     return order[a.categoryKey] - order[b.categoryKey];
@@ -1053,7 +1083,13 @@ export default function MiEquipo() {
                   })}
               </div>
 
-              {(convocados || []).filter(p => p.posicion === PITCH_POSITIONS[activeSlotIndex].label).length === 0 && (
+              {(convocados || []).filter(p => {
+                    let pIdx = PITCH_POSITIONS.findIndex(pos => pos.label.toUpperCase() === p.posicion?.toUpperCase());
+                    if (pIdx === -1) pIdx = (parseInt(p.posicion) || 0) - 1;
+                    if (pIdx === activeSlotIndex) return true;
+                    if (POSICIONES_INTERCAMBIABLES[activeSlotIndex] && POSICIONES_INTERCAMBIABLES[activeSlotIndex].includes(pIdx)) return true;
+                    return false;
+                  }).length === 0 && (
                 <div className="py-12 text-center bg-neutral-light/20 rounded-3xl border-2 border-dashed border-neutral/20">
                    <p className="text-xs font-black text-neutral uppercase tracking-widest leading-loose">
                      ⚠️ El Staff aún no cargó los jugadores<br/>oficiales para este puesto.
