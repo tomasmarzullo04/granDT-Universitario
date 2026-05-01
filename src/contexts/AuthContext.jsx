@@ -91,9 +91,18 @@ export const AuthProvider = ({ children }) => {
     // state clears through listener
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-primary text-white p-4">
+        <div className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin mb-4"></div>
+        <p className="font-black animate-pulse">INICIANDO SESIÓN...</p>
+      </div>
+    );
+  }
+
   return (
     <AuthContext.Provider value={{ session, user, profile, role: profile?.role, loading, signOut }}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };
