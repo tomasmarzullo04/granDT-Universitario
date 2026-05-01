@@ -201,15 +201,11 @@ export async function getConvocados(fechaId) {
 
 export async function saveEquipoSelection(userId, fechaId, selectedPlayerIds, captainId) {
   // SEGURIDAD: Validar cierre de mercado
-  const { data: fecha } = await supabase.from('fechas').select('cierre_mercado').eq('id', fechaId).single();
+  const { data: fecha } = await supabase.from('fechas').select('cierre_mercado, fecha_cierre_equipo').eq('id', fechaId).single();
   
-  // EXCEPCIÓN TEMPORAL: Sábado 11/04 hasta las 13:00 hs
-  const now = new Date();
-  const deadline = new Date('2026-04-11T13:00:00-03:00');
-  const isExceptionalWindow = now < deadline;
-
-  if (!isExceptionalWindow && fecha && fecha.cierre_mercado) {
-    if (new Date() >= new Date(fecha.cierre_mercado)) {
+  if (fecha) {
+    const deadlineStr = fecha.fecha_cierre_equipo || fecha.cierre_mercado;
+    if (deadlineStr && new Date() >= new Date(deadlineStr)) {
       throw new Error('MERCADO_CERRADO');
     }
   }
