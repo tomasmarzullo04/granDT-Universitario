@@ -13,8 +13,8 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     // Check for missing credentials early
-    if (!supabase.auth) {
-      setError("Error crítico: No se pudo inicializar el cliente de Supabase.");
+    if (!supabase.isConfigured) {
+      setError("Las credenciales de Supabase no están configuradas correctamente en el entorno.");
       setLoading(false);
       return;
     }
