@@ -2,7 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { getActiveFecha, getConvocados, archiveTeamSnapshot, APP_STATUS, getLiveStatus } from '../../lib/api';
+import { getConvocados } from '../../lib/api';
+import { useFechaActiva, FASES } from '../../hooks/useFechaActiva';
 import { Save, Loader2, AlertCircle, CheckCircle, Search, Trophy, Info, Users, BarChart2, Lock, Crown } from 'lucide-react';
 import RugbyPitch from '../RugbyPitch';
 import TeamCounters from '../TeamCounters';
@@ -24,8 +25,22 @@ export default function MiEquipo() {
   const isAdmin = role === 'admin';
   const [searchParams] = useSearchParams();
   const forceOpen = searchParams.get('force_open') === 'true';
-  const [matchdayStatus, setMatchdayStatus] = useState(APP_STATUS.MERCADO_CERRADO);
-  const [activeFecha, setActiveFecha] = useState(null);
+
+  // Fuente única de verdad: la fase viene de vw_fecha_activa (backend).
+  const { fechaActiva: fechaRow, fase, loading: faseLoading } = useFechaActiva();
+  const activeFecha = useMemo(
+    () =>
+      fechaRow && fechaRow.fecha_id != null
+        ? {
+            id: fechaRow.fecha_id,
+            numero_fecha: fechaRow.numero_fecha,
+            rival: fechaRow.rival,
+            condicion: fechaRow.condicion,
+          }
+        : null,
+    [fechaRow]
+  );
+
   const [convocados, setConvocados] = useState([]);
   const [pitchSlots, setPitchSlots] = useState(Array(15).fill(null));
   const [selectedPosition, setSelectedPosition] = useState(null);
@@ -74,50 +89,51 @@ export default function MiEquipo() {
   }, [convocados]);
 
   useEffect(() => {
-    async function init() {
+    let cancelled = false;
+
+    async function loadSquad() {
+      // Esperar a que el hook resuelva la fecha activa antes de decidir.
+      if (faseLoading) return;
+      if (!activeFecha) {
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
       try {
-        const { activeMatchday, status: liveStatus } = await getLiveStatus();
-        setActiveFecha(activeMatchday);
-        setMatchdayStatus(liveStatus);
-        
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
           setLoading(false);
           return;
         }
 
-        let currentSquad = [];
-        let currentSelection = [];
-        let finalCaptainId = null;
+        // 1. Traer convocados de la fecha activa
+        const players = await getConvocados(activeFecha.id);
+        const currentSquad = players.map(p => {
+          let cKey = 'pre';
+          const rawCat = (p.categoria || '').toLowerCase();
+          if (rawCat.includes('pre')) cKey = 'pre';
+          else if (rawCat.includes('superior') || rawCat.includes('primera') || rawCat.includes('1ra')) cKey = 'primera';
+          else if (rawCat.includes('intermedia') || rawCat.includes('inter')) cKey = 'intermedia';
+          return { ...p, categoryKey: cKey };
+        });
+        if (cancelled) return;
+        setConvocados(currentSquad);
 
-        // 1. Si hay fecha activa, intentar traer convocados
-        if (activeMatchday) {
-          const players = await getConvocados(activeMatchday.id);
-          currentSquad = players.map(p => {
-            let cKey = 'pre';
-            const rawCat = (p.categoria || '').toLowerCase();
-            if (rawCat.includes('pre')) cKey = 'pre';
-            else if (rawCat.includes('superior') || rawCat.includes('primera') || rawCat.includes('1ra')) cKey = 'primera';
-            else if (rawCat.includes('intermedia') || rawCat.includes('inter')) cKey = 'intermedia';
-            return { ...p, categoryKey: cKey };
-          });
-          setConvocados(currentSquad);
+        // 2. Traer selección guardada del usuario para esta fecha
+        const { data: selection } = await supabase
+          .from('equipos_usuarios')
+          .select('jugador_id, posicion_cancha, capitan_id')
+          .eq('usuario_id', user.id)
+          .eq('fecha_id', activeFecha.id);
 
-          const { data: selection } = await supabase
-            .from('equipos_usuarios')
-            .select('jugador_id, posicion_cancha, capitan_id')
-            .eq('usuario_id', user.id)
-            .eq('fecha_id', activeMatchday.id);
-          
-          currentSelection = selection || [];
-        }
+        if (cancelled) return;
 
-        // 2. Si hay selección para la fecha actual, cargarla
-        if (currentSelection.length > 0) {
-          finalCaptainId = currentSelection[0].capitan_id;
+        if (selection && selection.length > 0) {
+          const finalCaptainId = selection[0].capitan_id;
           const newSlots = Array(15).fill(null);
-          currentSelection.forEach(s => {
-            const p = currentSquad.find(p => p.id === s.jugador_id);
+          selection.forEach(s => {
+            const p = currentSquad.find(pp => pp.id === s.jugador_id);
             if (p && s.posicion_cancha >= 1 && s.posicion_cancha <= 15) {
               newSlots[s.posicion_cancha - 1] = p;
             }
@@ -127,15 +143,17 @@ export default function MiEquipo() {
           setCaptainId(finalCaptainId);
           setOriginalCaptainId(finalCaptainId); // Guardar copia para cancelar
         }
-        // Eliminado Fallback de fecha anterior para obligar a re-armar equipo (Req. Automización V3)
+        // Sin fallback de fecha anterior: se obliga a re-armar el equipo.
       } catch (err) {
         console.error('Error init MiEquipo:', err);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
-    init();
-  }, []);
+
+    loadSquad();
+    return () => { cancelled = true; };
+  }, [activeFecha?.id, faseLoading]);
 
   const counts = useMemo(() => {
     const res = { primera: 0, intermedia: 0, pre: 0 };
@@ -148,10 +166,9 @@ export default function MiEquipo() {
     return res;
   }, [selectedPlayers]);
   
-  // ── CICLO SEMANAL: Lógica de bloqueo ──
-  const canEdit = matchdayStatus === APP_STATUS.ARMADO_EQUIPO || forceOpen;
+  // ── CICLO SEMANAL: Lógica de bloqueo (derivada de fase_actual) ──
+  const canEdit = fase === FASES.MERCADO_ABIERTO || forceOpen;
   const isLocked = !canEdit;
-  const isTransition = matchdayStatus === APP_STATUS.RESULTADOS_PUBLICADOS && !activeFecha;
 
   const isComplete = isAdmin 
     ? selectedPlayers.length === 15 
@@ -306,7 +323,14 @@ export default function MiEquipo() {
       setTimeout(() => setSuccess(false), 5000);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
-      setError('Error al guardar. Intentá de nuevo.');
+      // El gate RLS rechaza escrituras fuera de 'mercado_abierto'.
+      const blockedByMarket =
+        err?.code === '42501' || /row-level security|policy/i.test(err?.message || '');
+      setError(
+        blockedByMarket
+          ? 'El mercado está cerrado. No se puede guardar el equipo en este momento.'
+          : 'Error al guardar. Intentá de nuevo.'
+      );
       console.error(err);
     } finally {
       setSaving(false);
@@ -316,7 +340,7 @@ export default function MiEquipo() {
   // El overlay gigante ha sido eliminado para permitir el modo lectura.
 
   // Evitar pantalla de carga bloqueante si ya tenemos los datos básicos
-  if (loading && pitchSlots.every(s => s === null)) return (
+  if ((faseLoading || loading) && pitchSlots.every(s => s === null)) return (
     <div className="flex flex-col items-center justify-center p-20 animate-pulse">
       <Loader2 className="w-12 h-12 animate-spin text-primary mb-4" />
       <p className="font-black text-primary uppercase tracking-widest text-sm">Cargando Convocatoria...</p>
@@ -333,7 +357,7 @@ export default function MiEquipo() {
     );
   }
 
-  if (matchdayStatus === APP_STATUS.RESULTADOS_PUBLICADOS && activeFecha) {
+  if (fase === FASES.RESULTADOS_PUBLICADOS && activeFecha) {
     return (
       <div className="space-y-6 animate-fade-in">
         <div className="flex items-center gap-3 bg-white rounded-2xl border border-neutral/20 shadow-sm px-6 py-4">
@@ -395,20 +419,8 @@ export default function MiEquipo() {
         </div>
       </div>
 
-      {/* Banner dinámico de estado */}
-      {matchdayStatus === APP_STATUS.PROCESANDO ? (
-         <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl flex items-center justify-between gap-4 shadow-sm animate-fade-in">
-           <div className="flex items-center gap-3">
-             <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center shrink-0">
-                <Loader2 className="w-5 h-5 text-slate-600 animate-spin" />
-             </div>
-             <div>
-               <p className="text-xs font-black text-slate-900 uppercase tracking-tight">⚙️ PROCESANDO RESULTADOS</p>
-               <p className="text-[10px] font-bold text-slate-700/70 uppercase">El Staff está cargando las estadísticas oficiales contra {activeFecha.rival}.</p>
-             </div>
-           </div>
-         </div>
-      ) : matchdayStatus === APP_STATUS.MERCADO_CERRADO ? (
+      {/* Banner dinámico de estado (según fase_actual) */}
+      {fase === FASES.EN_JUEGO ? (
         <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl flex items-center gap-3 shadow-sm animate-fade-in">
           <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center shrink-0">
             <Lock className="w-5 h-5 text-amber-600" />
@@ -418,7 +430,7 @@ export default function MiEquipo() {
             <p className="text-[10px] font-bold text-amber-700/70 uppercase">¡Éxitos al UNI contra {activeFecha.rival}! La ventana de selección ha finalizado.</p>
           </div>
         </div>
-      ) : matchdayStatus === APP_STATUS.ESPERANDO_PLANTELES ? (
+      ) : fase === FASES.ESPERANDO_CONVOCADOS ? (
         <div className="bg-blue-50 border border-blue-200 p-4 rounded-2xl flex items-center gap-3 shadow-sm animate-fade-in">
           <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center shrink-0">
             <Trophy className="w-5 h-5 text-blue-600" />
@@ -462,7 +474,7 @@ export default function MiEquipo() {
       )}
 
       {/* REFERENCE BOARDS (Official Teams) */}
-      {matchdayStatus !== APP_STATUS.MERCADO_CERRADO && (
+      {fase !== FASES.EN_JUEGO && (
         <div className="space-y-4 animate-fade-in">
            <div className="flex items-center gap-3 px-2">
               <Trophy className="w-5 h-5 text-accent" />
@@ -780,7 +792,7 @@ export default function MiEquipo() {
                        </div>
                        <div className="space-y-4 max-w-[280px]">
                           <h5 className="font-black text-primary text-xl uppercase tracking-tighter leading-none">
-                             {matchdayStatus === APP_STATUS.ESPERANDO_PLANTELES ? 'Esperando Planteles' : 'Mercado Cerrado'}
+                             {fase === FASES.ESPERANDO_CONVOCADOS ? 'Esperando Planteles' : 'Mercado Cerrado'}
                           </h5>
                           <p className="text-xs font-bold text-neutral/70 uppercase tracking-widest leading-relaxed">
                              La ventana de selección no está disponible en este momento.
@@ -961,8 +973,8 @@ export default function MiEquipo() {
                     `}
                   >
                     {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-                    {isLocked 
-                      ? (matchdayStatus === APP_STATUS.ESPERANDO_PLANTELES ? 'PREPARANDO PRÓXIMA FECHA' : 'VENTANA CERRADA')
+                    {isLocked
+                      ? (fase === FASES.ESPERANDO_CONVOCADOS ? 'PREPARANDO PRÓXIMA FECHA' : 'VENTANA CERRADA')
                       : (isComplete
                         ? '¡FINALIZAR EDICIÓN Y GUARDAR!'
                         : (selectedPlayers.length === 0 ? 'GUARDAR EQUIPO' : `GUARDAR PROGRESO (${selectedPlayers.length}/15)`))}

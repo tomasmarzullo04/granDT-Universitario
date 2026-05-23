@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import PlayerLayout from '../components/PlayerLayout';
 import { useAuth } from '../contexts/AuthContext';
-import { 
-  getLiveStatus, getResumenFecha, getRankingCompleto, 
+import {
+  getResumenFecha, getRankingCompleto,
   SCORING, getPlayersStatistics, getMarketMetrics, getEntrenadorDeLaFecha,
-  APP_STATUS, getLastPublishedFecha
+  getLastPublishedFecha
 } from '../lib/api';
+import { useFechaActiva, FASES } from '../hooks/useFechaActiva';
 import { 
   Shield, Zap, AlertTriangle, TrendingUp, Medal, Footprints, Target, 
   Clock, Star, Trophy, Activity, AlertCircle, Users, Quote, 
@@ -16,9 +17,7 @@ import Navigation from '../components/Navigation';
 
 // --- CACHE GLOBAL PARA PERSISTENCIA DE ESTADO ---
 let dashboardCache = {
-  upcomingMatch: null,
   lastResultsMatch: null,
-  status: null,
   lastResultsData: null,
   rankingInfo: null,
   topJugadores: null,
@@ -29,37 +28,40 @@ let dashboardCache = {
 
 export default function Resumenes() {
   const { user } = useAuth();
-  
+
+  // Fuente única de verdad: fase y fecha activa vienen del backend (vw_fecha_activa).
+  const { fechaActiva: fechaRow, fase } = useFechaActiva();
+  const upcomingMatch = useMemo(
+    () => (fechaRow && fechaRow.fecha_id != null ? { ...fechaRow, id: fechaRow.fecha_id } : null),
+    [fechaRow]
+  );
+
   // Inicializamos con la data del caché si existe
-  const [upcomingMatch, setUpcomingMatch] = useState(dashboardCache.upcomingMatch);
   const [lastResultsMatch, setLastResultsMatch] = useState(dashboardCache.lastResultsMatch);
-  const [status, setStatus] = useState(dashboardCache.status);
   const [lastResultsData, setLastResultsData] = useState(dashboardCache.lastResultsData);
   const [rankingInfo, setRankingInfo] = useState(dashboardCache.rankingInfo);
   const [topJugadores, setTopJugadores] = useState(dashboardCache.topJugadores || []);
   const [marketMetrics, setMarketMetrics] = useState(dashboardCache.marketMetrics);
   const [entrenadorFecha, setEntrenadorFecha] = useState(dashboardCache.entrenadorFecha);
-  
+
   // Solo cargamos si el lastResultsData es nulo (montaje inicial o logout previo)
   const [loading, setLoading] = useState(!dashboardCache.lastResultsData);
 
   useEffect(() => {
     async function loadData() {
       if (!user) return;
-      
-      const now = Date.now();
-      const shouldSilentRefresh = dashboardCache.lastResultsData && (now - dashboardCache.lastFetched < 300000);
-      
+
       try {
-        const { activeMatchday, status: liveStatus } = await getLiveStatus();
         const lastFinished = await getLastPublishedFecha();
-        
+
         // Determinar la fecha para mostrar métricas:
         // 1. Si hay una fecha publicada con datos reales → usarla
         // 2. Si no, usar la fecha activa (stats en vivo, aún no publicadas)
-        const metricsFechaId = lastFinished?.id || activeMatchday?.id;
-        const metricsFecha = lastFinished || activeMatchday;
-        
+        const metricsFechaId = lastFinished?.id || fechaRow?.fecha_id;
+        const metricsFecha =
+          lastFinished ||
+          (fechaRow && fechaRow.fecha_id != null ? { ...fechaRow, id: fechaRow.fecha_id } : null);
+
         const [resultsData, ranking, allPlayerStats, market, coach] = await Promise.all([
           metricsFechaId ? getResumenFecha(metricsFechaId, user.id) : Promise.resolve(null),
           getRankingCompleto(),
@@ -69,9 +71,7 @@ export default function Resumenes() {
         ]);
 
         // Guardar en estados
-        setUpcomingMatch(activeMatchday);
         setLastResultsMatch(metricsFecha);
-        setStatus(liveStatus);
         setLastResultsData(resultsData || { items: [], puntosTotal: 0 });
         setMarketMetrics(market);
         setEntrenadorFecha(coach);
@@ -95,9 +95,7 @@ export default function Resumenes() {
 
         // ACTUALIZAR CACHÉ GLOBAL
         dashboardCache = {
-          upcomingMatch: activeMatchday,
           lastResultsMatch: metricsFecha,
-          status: liveStatus,
           lastResultsData: resultsData || { items: [], puntosTotal: 0 },
           rankingInfo: dashboardCache.rankingInfo,
           topJugadores: top5,
@@ -113,7 +111,7 @@ export default function Resumenes() {
       }
     }
     loadData();
-  }, [user]);
+  }, [user, fechaRow?.fecha_id]);
 
   if (loading && !dashboardCache.lastResultsData) {
     return (
@@ -182,19 +180,21 @@ export default function Resumenes() {
       showButton: false
     };
 
-    if (status === APP_STATUS.ARMADO_EQUIPO) {
+    if (fase === FASES.MERCADO_ABIERTO) {
       bannerConfig = {
         bg: 'bg-green-50/50',
         border: 'border-green-100',
         icon: Footprints,
         iconColor: 'text-green-600',
         title: `🏉 PRÓXIMA FECHA: ${upcomingMatch.rival}`,
-        desc: `Armá tu equipo hasta el ${new Date(upcomingMatch.fecha_cierre_equipo).toLocaleDateString('es-AR', { weekday: 'long' })} 23:59`,
+        desc: upcomingMatch.cierre_mercado
+          ? `Armá tu equipo hasta el ${new Date(upcomingMatch.cierre_mercado).toLocaleDateString('es-AR', { weekday: 'long' })} 23:59`
+          : 'Armá tu equipo antes del cierre del mercado',
         textColor: 'text-green-900',
         showButton: true,
         showCountdown: true
       };
-    } else if (status === APP_STATUS.FECHA_EN_JUEGO) {
+    } else if (fase === FASES.EN_JUEGO) {
       bannerConfig = {
         bg: 'bg-slate-50/50',
         border: 'border-slate-200',
@@ -205,18 +205,7 @@ export default function Resumenes() {
         textColor: 'text-slate-900',
         showButton: false
       };
-    } else if (status === APP_STATUS.ESPERANDO_STATS) {
-      bannerConfig = {
-        bg: 'bg-amber-50/50',
-        border: 'border-amber-100',
-        icon: Activity,
-        iconColor: 'text-amber-600',
-        title: '🏁 FECHA FINALIZADA',
-        desc: `Esperando estadísticas técnicas (hasta ${new Date(upcomingMatch.fecha_limite_stats).toLocaleDateString('es-AR', { weekday: 'long' })} 23:59)`,
-        textColor: 'text-amber-900',
-        showButton: false
-      };
-    } else if (status === APP_STATUS.RESULTADOS_PUBLICADOS) {
+    } else if (fase === FASES.RESULTADOS_PUBLICADOS) {
       bannerConfig = {
         bg: 'bg-emerald-500',
         border: 'border-emerald-600',
@@ -239,7 +228,7 @@ export default function Resumenes() {
         ${bannerConfig.bg} rounded-[32px] border-2 ${bannerConfig.border} p-5 md:p-6 mb-10 relative overflow-hidden transition-all animate-fade-in shadow-sm
       `}>
         <div className="flex items-center gap-5 relative z-10">
-          <div className={`p-4 rounded-2xl ${status === APP_STATUS.RESULTADOS_PUBLICADOS ? 'bg-white/20' : 'bg-white shadow-md border border-neutral/5'}`}>
+          <div className={`p-4 rounded-2xl ${fase === FASES.RESULTADOS_PUBLICADOS ? 'bg-white/20' : 'bg-white shadow-md border border-neutral/5'}`}>
             <bannerConfig.icon className={`w-8 h-8 ${bannerConfig.iconColor}`} />
           </div>
           <div className="flex-1">
@@ -247,14 +236,13 @@ export default function Resumenes() {
               {bannerTitle}
             </h3>
             <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 mt-1">
-               <p className={`text-sm font-medium ${status === APP_STATUS.RESULTADOS_PUBLICADOS ? 'text-white/90' : 'text-neutral/70'}`}>
+               <p className={`text-sm font-medium ${fase === FASES.RESULTADOS_PUBLICADOS ? 'text-white/90' : 'text-neutral/70'}`}>
                  {bannerConfig.desc}
                </p>
-               {bannerConfig.showCountdown && upcomingMatch?.fecha_cierre_equipo && (
+               {bannerConfig.showCountdown && typeof upcomingMatch?.segundos_hasta_proximo_evento === 'number' && (
                   <div className="hidden md:flex items-center gap-2 px-2 py-0.5 rounded-full bg-green-100/50 border border-green-200 text-[10px] font-black text-green-700 uppercase">
                      <Clock className="w-3 h-3" />
-                     {/* El contador real sería un hook, por ahora mostramos tiempo aprox */}
-                     {Math.max(0, Math.floor((new Date(upcomingMatch.fecha_cierre_equipo) - new Date()) / (1000 * 60 * 60)))}h restantes
+                     {Math.max(0, Math.floor(upcomingMatch.segundos_hasta_proximo_evento / 3600))}h restantes
                   </div>
                )}
             </div>
