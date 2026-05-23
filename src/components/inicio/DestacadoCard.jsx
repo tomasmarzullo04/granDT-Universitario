@@ -4,6 +4,7 @@ import { ChevronRight } from 'lucide-react';
 /**
  * Nivel 2 (Destacados): card reutilizable para MVP de la Fecha y Coach de la Fecha.
  * Estética sobria: blanco, borde sutil, sombra suave.
+ * `tone="accent"` resalta la métrica en celeste institucional.
  */
 export default function DestacadoCard({
   icon: Icon,
@@ -13,11 +14,17 @@ export default function DestacadoCard({
   valueLabel = 'Puntos',
   pill,
   to,
+  tone = 'default',
 }) {
+  const isAccent = tone === 'accent';
+  const iconWrap = isAccent ? 'bg-accent/10' : 'bg-slate-100';
+  const iconColor = isAccent ? 'text-accent' : 'text-primary';
+  const valueColor = isAccent ? 'text-accent' : 'text-primary';
+
   return (
-    <div className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-100">
-        <Icon className="h-6 w-6 text-primary" />
+    <div className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-colors hover:border-slate-300 sm:p-6">
+      <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${iconWrap}`}>
+        <Icon className={`h-6 w-6 ${iconColor}`} />
       </div>
 
       <div className="min-w-0 flex-1">
@@ -31,7 +38,7 @@ export default function DestacadoCard({
       </div>
 
       <div className="shrink-0 text-right">
-        <p className="text-3xl font-black leading-none text-primary">{value ?? 0}</p>
+        <p className={`text-3xl font-black leading-none ${valueColor}`}>{value ?? 0}</p>
         <p className="mt-1 text-[10px] font-medium uppercase tracking-wider text-slate-500">
           {valueLabel}
         </p>

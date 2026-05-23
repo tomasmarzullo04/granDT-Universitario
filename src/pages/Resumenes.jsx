@@ -7,10 +7,11 @@ import {
   getLastPublishedFecha
 } from '../lib/api';
 import { useFechaActiva } from '../hooks/useFechaActiva';
-import { Zap, Medal, Loader2 } from 'lucide-react';
+import { Zap, Medal, Loader2, Star, Trophy } from 'lucide-react';
 import Navigation from '../components/Navigation';
 import FranjaEstado from '../components/inicio/FranjaEstado';
 import HeroPuntuacion from '../components/inicio/HeroPuntuacion';
+import SectionHeader from '../components/inicio/SectionHeader';
 import DestacadoCard from '../components/inicio/DestacadoCard';
 import DesgloseTecnico from '../components/inicio/DesgloseTecnico';
 import Top5Card from '../components/inicio/Top5Card';
@@ -185,10 +186,10 @@ export default function Resumenes() {
           teamCount={teamCount}
         />
 
-        {/* Niveles 2 y 3 — Destacados + Detalles en 2 columnas (1 en mobile) */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {/* Columna izquierda */}
-          <div className="flex flex-col gap-6">
+        {/* Nivel 2 — Destacados de la fecha */}
+        <section>
+          <SectionHeader icon={Star} title="Destacados de la Fecha" />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <DestacadoCard
               icon={Zap}
               label="MVP de la Fecha"
@@ -196,6 +197,7 @@ export default function Resumenes() {
               value={mvp?.puntos || 0}
               valueLabel="Puntos MVP"
               pill={mvp?.categoria}
+              tone="accent"
             />
             <DestacadoCard
               icon={Medal}
@@ -205,20 +207,27 @@ export default function Resumenes() {
               valueLabel="Puntos Coach"
               to="/dashboard?tab=ranking"
             />
-            <DesgloseTecnico
-              ataque={statsAtaque}
-              muralla={statsDefensa}
-              disciplina={statsDisciplina}
-            />
           </div>
+        </section>
 
-          {/* Columna derecha */}
-          <div className="flex flex-col gap-6">
+        {/* Nivel 3 — Desglose técnico (barra de stats) */}
+        <DesgloseTecnico
+          ataque={statsAtaque}
+          muralla={statsDefensa}
+          disciplina={statsDisciplina}
+        />
+
+        {/* Nivel 2/3 — El torneo: Top 5 + Estadísticas individuales */}
+        <section>
+          <SectionHeader icon={Trophy} title="El Torneo" />
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <Top5Card jugadores={topJugadores} />
             <EstadisticasIndividuales marketMetrics={marketMetrics} coach={entrenadorFecha} />
-            <IdentidadUni />
           </div>
-        </div>
+        </section>
+
+        {/* Identidad del club (sobria) */}
+        <IdentidadUni />
 
         {/* Premios de Temporada — podio a lo ancho */}
         <PodioPremios />
