@@ -16,3 +16,10 @@ export const supabase = createClient(
 
 // Exportar flag de configuración para uso en la UI
 supabase.isConfigured = isConfigured;
+
+// En dev, exponemos el cliente en window para poder ejecutar tests rápidos
+// desde la Console del navegador (chequeos de RLS, etc.). NO se incluye en
+// el bundle de producción gracias a import.meta.env.DEV.
+if (typeof window !== 'undefined' && import.meta.env.DEV) {
+  window.supabase = supabase;
+}
