@@ -1,3 +1,14 @@
+-- ⚠️  SUPERSEDED — usar la versión nueva
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Esta era la versión BIGINT de `process_publication_v3` (correcta tipológicamente)
+-- pero SIN `SECURITY DEFINER` ni check de admin. Quedó superseded por:
+--     supabase/migrations/004_process_publication_security_definer.sql
+-- La nueva versión preserva la lógica de negocio idéntica y agrega:
+--   * SECURITY DEFINER (necesario tras habilitar RLS — migración 003)
+--   * Check explícito de admin via fn_es_admin() al inicio
+--   * REVOKE/GRANT para que solo authenticated pueda invocar
+-- ─────────────────────────────────────────────────────────────────────────────
+
 -- =============================================================
 -- FIX RPC: Usar BIGINT para fecha_id (la tabla fechas usa integer IDs)
 -- Ejecutar en Supabase SQL Editor DESPUÉS del script de datos

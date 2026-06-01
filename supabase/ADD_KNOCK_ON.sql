@@ -1,3 +1,12 @@
+-- ⚠️  OBSOLETO — NO RE-EJECUTAR EN PRODUCCIÓN
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Este archivo definía una versión de `process_publication_v3` con
+-- p_fecha_id UUID, incompatible con el schema real (fechas.id es BIGINT).
+-- La versión vigente y canónica vive en:
+--     supabase/migrations/004_process_publication_security_definer.sql
+-- Se conserva solo como referencia histórica del ADD COLUMN knock_ons.
+-- ─────────────────────────────────────────────────────────────────────────────
+
 -- 1. Agregar columna knock_ons si no existe
 ALTER TABLE estadisticas_partido 
 ADD COLUMN IF NOT EXISTS knock_ons INTEGER DEFAULT 0;

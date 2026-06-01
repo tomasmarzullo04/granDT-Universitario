@@ -1,3 +1,13 @@
+-- ⚠️  OBSOLETO — NO RE-EJECUTAR EN PRODUCCIÓN
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Este archivo definía una versión de `process_publication_v3` con
+-- p_fecha_id UUID, incompatible con el schema real (fechas.id es BIGINT).
+-- La versión vigente y canónica vive en:
+--     supabase/migrations/004_process_publication_security_definer.sql
+-- Se conserva acá solo como referencia histórica de la normalización de
+-- columnas y de get_fecha_status / get_tournament_lifecycle_context.
+-- ─────────────────────────────────────────────────────────────────────────────
+
 -- 1. NORMALIZACIÓN DE COLUMNAS EN LA TABLA 'FECHAS'
 ALTER TABLE fechas ADD COLUMN IF NOT EXISTS fecha_partido TIMESTAMPTZ;
 ALTER TABLE fechas ADD COLUMN IF NOT EXISTS fecha_cierre_equipo TIMESTAMPTZ;
